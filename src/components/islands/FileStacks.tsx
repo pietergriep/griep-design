@@ -827,8 +827,11 @@ function mountFileGroups(root, opts) {
             if (p.flyOut && !g.lifting) {
                 g.lifting = true
                 animSpread(g, 0, 200)
+                // above the lent-out files (z 5) until the clip is off, so they don't cover its front wire
+                g.el.style.zIndex = 6
                 clipTo(g, false, 220, "cubic-bezier(.5,0,.8,.4)").then(() => {
                     g.lifting = false
+                    if (g.el.style.zIndex === "6") g.el.style.zIndex = 1
                 })
                 g.label.getAnimations().forEach((a) => a.cancel())
                 if (+getComputedStyle(g.label).opacity > 0)
@@ -1275,13 +1278,16 @@ function mountFileGroups(root, opts) {
     }
 
     // ---------- selection ----------
+    // loose files, files lent out of their stack to a type tab, and the files of an open
+    // stack can be selected (acting on one takes it out of its stack, see leaveGroup)
+    const loose = (p) => !p.group || p.borrowed || p.group.open
     function toggle(p, e) {
         if (busy) return
-        if (!editGroup && groups.some((g) => g.open)) return // that click closes the open group instead
-        if (!selecting && !editGroup && !p.group) {
+        if (!editGroup && groups.some((g) => g.open && !g.members.includes(p))) return // that click closes the open group instead
+        if (!selecting && !editGroup && loose(p)) {
             selecting = true
         }
-        const ok = p.group ? editGroup && p.group === editGroup : selecting
+        const ok = loose(p) ? selecting : editGroup && p.group === editGroup
         if (!ok) return
         p.sel = !p.sel
         p.el.classList.toggle("sel", p.sel)
@@ -1298,7 +1304,7 @@ function mountFileGroups(root, opts) {
             }
         })
     }
-    const selected = () => papers.filter((p) => p.sel && !p.group)
+    const selected = () => papers.filter((p) => p.sel && loose(p))
 
     const ICON_UNGROUP =
         '<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 10H7.5C6.56936 10 6.10404 10 5.72746 9.87764C4.96636 9.63035 4.36965 9.03364 4.12236 8.27254C4 7.89596 4 7.43064 4 6.5C4 5.56936 4 5.10404 4.12236 4.72746C4.36965 3.96636 4.96636 3.36965 5.72746 3.12236C6.10404 3 6.56936 3 7.5 3H10.5C11.4306 3 11.896 3 12.2725 3.12236C13.0336 3.36965 13.6303 3.96636 13.8776 4.72746C14 5.10404 14 5.56936 14 6.5C14 7.43064 14 7.89596 13.8776 8.27254C13.6303 9.03364 13.0336 9.63035 12.2725 9.87764C11.896 10 11.4306 10 10.5 10Z"/><path d="M16.5 21H13.5C12.5694 21 12.104 21 11.7275 20.8776C10.9664 20.6303 10.3697 20.0336 10.1224 19.2725C10 18.896 10 18.4306 10 17.5C10 16.5694 10 16.104 10.1224 15.7275C10.3697 14.9664 10.9664 14.3697 11.7275 14.1224C12.104 14 12.5694 14 13.5 14H16.5C17.4306 14 17.896 14 18.2725 14.1224C19.0336 14.3697 19.6303 14.9664 19.8776 15.7275C20 16.104 20 16.5694 20 17.5C20 18.4306 20 18.896 19.8776 19.2725C19.6303 20.0336 19.0336 20.6303 18.2725 20.8776C17.896 21 17.4306 21 16.5 21Z"/></svg>'
@@ -1316,7 +1322,7 @@ function mountFileGroups(root, opts) {
         })
         papers.forEach((p) => {
             const valid = selecting
-                ? !p.group
+                ? loose(p)
                 : !!editGroup && p.group === editGroup
             if (p.sel && !valid) {
                 p.sel = false
@@ -1389,7 +1395,7 @@ function mountFileGroups(root, opts) {
         )
         tiles().forEach((t, i) => {
             if (t.members) return
-            const on = editGroup ? t.group === editGroup : !t.group // keyboard-patterns: every loose file is reachable
+            const on = editGroup ? t.group === editGroup : loose(t) // keyboard-patterns: every loose file is reachable
             t.el.style.setProperty("--i", i)
             t.el.tabIndex = on ? 0 : -1
             if (on) t.el.setAttribute("role", "checkbox")
@@ -2061,6 +2067,14 @@ function mountFileGroups(root, opts) {
             p.el.classList.remove("sel", "dragging", "dropglow")
             p.el.setAttribute("aria-checked", "false")
         })
+        // stacks only show under All files and Stacks: on a type tab, go to All files first
+        // (forming the stack there used to crash, as the new stack had no place in the grid)
+        if (isType(filter)) {
+            selecting = false
+            busy = false
+            await applyFilter("all")
+            busy = true
+        }
         const g = makeGroup()
         g.name = nextGroupName()
         g.forming = true
@@ -2110,7 +2124,13 @@ function mountFileGroups(root, opts) {
         busy = true
         busyBy = g
         animSpread(g, 0, 220)
-        clipTo(g, false, reversing ? 180 : 240, "cubic-bezier(.5,0,.8,.4)")
+        // the papers leave the group element below and stack above it (z 10+), which hid the
+        // front wire the instant the stack was clicked and left only the back loop floating up.
+        // So the group (just the clip and the name) stays above the papers until the clip is off.
+        g.el.style.zIndex = 11 + g.members.length
+        clipTo(g, false, reversing ? 180 : 240, "cubic-bezier(.5,0,.8,.4)").then(() => {
+            if (seq === g.seq && g.open) g.el.style.zIndex = 1
+        })
         // papers leave the group element keeping their exact on-screen pose (mid-flight papers are already out)
         const topFirst = g.members.slice().reverse()
         g.members.forEach((p, i) => {
@@ -2182,6 +2202,7 @@ function mountFileGroups(root, opts) {
         busyBy = g
         g.open = false
         g.el.setAttribute("aria-expanded", "false")
+        if (selecting && !selected().length) selecting = false // its files were the selection
         renderBar()
         g.members.forEach((p) => p.el.classList.add("ingroup"))
         setTimeout(
@@ -2434,6 +2455,14 @@ function mountFileGroups(root, opts) {
         }
         const og = groups.find((g) => g.open)
         if (og) {
+            // a click on one of its files selects it (see toggle)
+            if (og.members.some((p) => p.el.contains(e.target))) return
+            if (selecting) {
+                if (e.target.closest(".bar,.ctl,.tpop")) return // the selection's own buttons
+                selecting = false
+                clearSel()
+                renderBar()
+            }
             collapse(og)
             return
         }
@@ -2484,7 +2513,7 @@ function mountFileGroups(root, opts) {
             return
         }
         const og = groups.find((g) => g.open)
-        if (og) {
+        if (og && !selecting) {
             collapse(og)
             return
         }
@@ -3256,8 +3285,24 @@ function mountFileGroups(root, opts) {
         p.group = null
         p.el.classList.remove("member")
         setPrefix(p, "")
+        const unlend = (q) => {
+            if (!q.borrowed) return
+            q.borrowed = false
+            q.flyOut = false
+            q.el.classList.remove("borrowed")
+            q.el.style.zIndex = ""
+        }
+        unlend(p)
         if (h.members.length < 2) {
             h.members.forEach((q) => {
+                // still inside the stack element (which goes away): out onto the stage, same spot on screen
+                if (q.el.parentNode === h.el) {
+                    const l = q.pose
+                    stage.appendChild(q.el)
+                    q.pose = { x: h.pose.x + l.x, y: h.pose.y + l.y, r: l.r, s: 1 }
+                    apply(q)
+                }
+                unlend(q)
                 q.group = null
                 q.sel = false
                 q.el.classList.remove("sel", "member", "ingroup")
