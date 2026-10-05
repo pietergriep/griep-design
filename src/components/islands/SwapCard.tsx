@@ -283,6 +283,15 @@ const CSS = `
 
 .swap-card__chip--active { background: #f2f2f2; box-shadow: none; font-weight: 600; }
 
+/* Hover states, only for a real mouse (a tap would leave them stuck on). */
+@media (hover: hover) and (pointer: fine) {
+  .swap-card--static .swap-card__chip:not(.swap-card__chip--active):hover { background: #f8f8f8; }
+  .swap-card__btn:hover:not(:disabled):not(.swap-card__btn--success):not(.swap-card__btn--loading):not(.swap-card__btn--needamt) {
+    background: #3a3a3a;
+  }
+  .swap-card__txinfo:hover { background: rgba(223, 223, 223, 0.6); color: #6f6f6f; }
+}
+
 /* Progress band ------------------------------------------------------------ */
 .swap-card__band {
   position: relative;
@@ -435,9 +444,6 @@ const CSS = `
   transition: opacity 200ms ease, background 300ms ease, color 300ms ease;
 }
 
-.swap-card__btn:hover:not(:disabled):not(.swap-card__btn--success):not(.swap-card__btn--loading) {
-  background: rgba(37, 37, 37, 0.95);
-}
 .swap-card__btn:disabled { opacity: 0.9; cursor: default; }
 .swap-card__btn--loading { pointer-events: none; cursor: default; }
 .swap-card__btn--success { background: rgba(34, 197, 94, 0.25); color: #22c55e; }
@@ -495,6 +501,7 @@ const CSS = `
   align-items: center;
   justify-content: center;
   gap: calc(6px * var(--sc-scale));
+  transition: background 160ms ease, color 160ms ease;
 }
 
 .swap-card__txinfo svg { display: block; }
