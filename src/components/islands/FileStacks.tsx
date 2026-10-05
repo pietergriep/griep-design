@@ -60,6 +60,11 @@ const CSS = `
 .pcg .bblur i{position:absolute;inset:0;border-radius:inherit;-webkit-backdrop-filter:blur(var(--b));backdrop-filter:blur(var(--b));-webkit-mask-image:linear-gradient(to bottom,transparent var(--m0),#000 var(--m1),#000 var(--m2),transparent var(--m3));mask-image:linear-gradient(to bottom,transparent var(--m0),#000 var(--m1),#000 var(--m2),transparent var(--m3))}
 .pcg .sbar{position:absolute;right:calc(5px + var(--c-bw, 0px));width:var(--sb-w,5px);z-index:260;opacity:1;transition:opacity .25s ease}
 .pcg .sbar[hidden]{display:none}
+.pcg .frame.duo .shell{padding-right:84px}
+.pcg .duo-bar{position:absolute;width:48px;color:var(--ink);pointer-events:none;z-index:250}
+.pcg .duo-bar svg{display:block;width:100%;height:auto}
+.pcg .frame.duo .shell.narrow{padding-right:var(--c-pad)}
+.pcg .frame.duo:has(.shell.narrow) .duo-bar{display:none}
 .pcg .sbar .sb-thumb{position:absolute;left:0;right:0;border-radius:99px;cursor:grab;background:var(--sb-c,color-mix(in srgb, var(--c-bg), #808080 28%));transition:background .15s ease,transform .15s ease}
 .pcg .sbar .sb-thumb:hover,.pcg .sbar.dragging .thumb{background:var(--sb-c,color-mix(in srgb, var(--c-bg), #808080 42%));transform:scaleX(1.35)}
 .pcg .sbar.dragging .thumb{cursor:grabbing}
@@ -270,6 +275,20 @@ to{transform:scale(1)}}
 .pcg .shell .tpop .thumb.grp i:first-child{background:color-mix(in srgb,var(--card),#000 8%)}
 .pcg .shell .bar .trash.active{background:color-mix(in srgb,var(--c-bg),#000 var(--tp-shade,22%))}
 `
+
+// iPhone Duo vertical status bar (time over signal), drawn in the File Explorer's ink colour
+const DUO_STATUS_SVG = `<svg width="48" height="86" viewBox="0 0 48 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12.8765 14.2045C13.475 14.2045 14.0508 14.3049 14.6038 14.5057C15.1606 14.7064 15.6568 15.0265 16.0924 15.4659C16.5318 15.9053 16.8784 16.4886 17.1322 17.2159C17.3898 17.9394 17.5205 18.8277 17.5243 19.8807C17.5243 20.8693 17.4125 21.7519 17.189 22.5284C16.9693 23.3011 16.6531 23.9583 16.2402 24.5C15.8273 25.0417 15.3292 25.4545 14.7459 25.7386C14.1625 26.0189 13.511 26.1591 12.7913 26.1591C12.0148 26.1591 11.3292 26.0095 10.7345 25.7102C10.1398 25.4072 9.66063 24.9962 9.29699 24.4773C8.93714 23.9545 8.71934 23.3674 8.64358 22.7159H11.0697C11.1644 23.1402 11.3633 23.4697 11.6663 23.7045C11.9693 23.9356 12.3443 24.0511 12.7913 24.0511C13.5489 24.0511 14.1246 23.7216 14.5186 23.0625C14.9125 22.3996 15.1114 21.4924 15.1152 20.3409H15.0356C14.8614 20.6818 14.6265 20.9754 14.3311 21.2216C14.0356 21.464 13.6966 21.6515 13.314 21.7841C12.9352 21.9167 12.5318 21.983 12.1038 21.983C11.4182 21.983 10.8065 21.822 10.2686 21.5C9.7307 21.178 9.30646 20.7348 8.99585 20.1705C8.68525 19.6061 8.52994 18.9621 8.52994 18.2386C8.52616 17.4583 8.70608 16.7633 9.06972 16.1534C9.43335 15.5436 9.94093 15.0663 10.5924 14.7216C11.2477 14.3731 12.0091 14.2008 12.8765 14.2045ZM12.8936 16.1364C12.511 16.1364 12.1701 16.2273 11.8709 16.4091C11.5754 16.5909 11.3405 16.8352 11.1663 17.142C10.9959 17.4489 10.9125 17.7917 10.9163 18.1705C10.9163 18.553 10.9996 18.8977 11.1663 19.2045C11.3368 19.5076 11.5678 19.75 11.8595 19.9318C12.1549 20.1098 12.4921 20.1989 12.8709 20.1989C13.1549 20.1989 13.4182 20.1458 13.6606 20.0398C13.903 19.9337 14.1133 19.7879 14.2913 19.6023C14.4731 19.4129 14.6152 19.1951 14.7174 18.9489C14.8197 18.7027 14.8709 18.4413 14.8709 18.1648C14.8671 17.7973 14.7799 17.4602 14.6095 17.1534C14.439 16.8466 14.2042 16.6004 13.9049 16.4148C13.6057 16.2292 13.2686 16.1364 12.8936 16.1364ZM20.2363 24.6477C19.8613 24.6477 19.5393 24.5152 19.2704 24.25C19.0052 23.9848 18.8727 23.6629 18.8727 23.2841C18.8727 22.9129 19.0052 22.5947 19.2704 22.3295C19.5393 22.0644 19.8613 21.9318 20.2363 21.9318C20.5999 21.9318 20.9181 22.0644 21.1909 22.3295C21.4636 22.5947 21.5999 22.9129 21.5999 23.2841C21.5999 23.5341 21.5355 23.7633 21.4068 23.9716C21.2818 24.1761 21.117 24.3409 20.9124 24.4659C20.7079 24.5871 20.4825 24.6477 20.2363 24.6477ZM20.2363 18.9375C19.8613 18.9375 19.5393 18.8049 19.2704 18.5398C19.0052 18.2746 18.8727 17.9527 18.8727 17.5739C18.8727 17.2027 19.0052 16.8864 19.2704 16.625C19.5393 16.3598 19.8613 16.2273 20.2363 16.2273C20.5999 16.2273 20.9181 16.3598 21.1909 16.625C21.4636 16.8864 21.5999 17.2027 21.5999 17.5739C21.5999 17.8277 21.5355 18.0587 21.4068 18.267C21.2818 18.4716 21.117 18.6345 20.9124 18.7557C20.7079 18.8769 20.4825 18.9375 20.2363 18.9375ZM22.9583 23.9545V22.017L27.8162 14.3636H29.4867V17.0455H28.4981L25.4356 21.892V21.983H32.339V23.9545H22.9583ZM28.5435 26V23.3636L28.589 22.5057V14.3636H30.8958V26H28.5435ZM38.4544 14.3636V26H35.9942V16.6989H35.926L33.2612 18.3693V16.1875L36.1419 14.3636H38.4544Z" fill="currentColor"/>
+<path d="M24.0002 36.0082C28.3778 36.0082 32.6646 37.2573 36.3568 39.6091C40.049 41.961 42.9934 45.3183 44.8439 49.2857C46.6945 53.253 47.3749 57.6664 46.8042 62.0067C46.2334 66.347 44.435 70.4344 41.6218 73.7885C41.1394 74.3632 40.2825 74.4382 39.7075 73.9559C39.1327 73.4736 39.0579 72.6167 39.5401 72.0416C42.0207 69.084 43.6055 65.4796 44.1089 61.6524C44.6121 57.825 44.0122 53.9327 42.3804 50.4342C40.7486 46.936 38.1524 43.976 34.8968 41.9021C31.641 39.8282 27.8604 38.726 24.0002 38.726C20.1399 38.726 16.3594 39.8282 13.1036 41.9021C9.84779 43.9761 7.25079 46.9358 5.61898 50.4342C3.98717 53.9327 3.38828 57.8251 3.89153 61.6524C4.39485 65.4797 5.97967 69.084 8.46029 72.0416C8.94252 72.6166 8.86762 73.4735 8.29285 73.9559C7.71775 74.4382 6.85987 74.3635 6.37754 73.7885C3.56443 70.4344 1.76696 66.3469 1.19622 62.0067C0.62552 57.6664 1.30593 53.253 3.15644 49.2857C5.00696 45.3183 7.95142 41.961 11.6436 39.6091C15.3357 37.2573 19.6227 36.0082 24.0002 36.0082Z" fill="currentColor"/>
+<circle cx="13.8402" cy="78.1077" r="1.98636" fill="currentColor"/>
+<circle cx="18.7646" cy="79.998" r="1.98636" fill="currentColor"/>
+<circle cx="24" cy="80.641" r="1.98636" fill="currentColor"/>
+<circle cx="29.2354" cy="79.998" r="1.98636" fill="currentColor"/>
+<circle cx="34.1598" cy="78.1077" r="1.98636" fill="currentColor"/>
+<path d="M24.0005 61.4076C25.1674 61.4076 26.2903 61.8568 27.1351 62.6617C27.3739 62.8894 27.3841 63.2677 27.1586 63.5086L24.439 66.4083C24.3254 66.5295 24.1666 66.5988 24.0005 66.5988C23.8344 66.5988 23.6757 66.5294 23.562 66.4083L20.8424 63.5086C20.6167 63.2677 20.6269 62.8894 20.8659 62.6617C21.7108 61.8568 22.8336 61.4076 24.0005 61.4076Z" fill="currentColor"/>
+<path d="M24.0005 56.1471C25.2386 56.1472 26.4651 56.392 27.6088 56.8662C28.7525 57.3405 29.7928 58.0363 30.6677 58.9124C31.2666 59.5131 31.2654 60.4858 30.6651 61.0852C30.0646 61.6845 29.0919 61.6839 28.4923 61.0839C27.9029 60.4936 27.2022 60.0254 26.4317 59.7059C25.6611 59.3863 24.8347 59.2218 24.0005 59.2217C23.1663 59.2217 22.3399 59.3864 21.5693 59.7059C20.7988 60.0254 20.0981 60.4936 19.5087 61.0839C18.9091 61.684 17.9364 61.6844 17.3359 61.0852C16.7353 60.4856 16.735 59.513 17.3346 58.9124C18.2096 58.0362 19.2484 57.3405 20.3922 56.8662C21.536 56.392 22.7623 56.1472 24.0005 56.1471Z" fill="currentColor"/>
+<path d="M24.0005 50.3556C25.9623 50.3557 27.9048 50.7475 29.7138 51.5066C31.5228 52.2658 33.1626 53.3782 34.537 54.7782C35.1315 55.3838 35.1229 56.3564 34.5174 56.951C33.9118 57.5453 32.9391 57.5369 32.3446 56.9314C31.2563 55.8228 29.9574 54.9422 28.5249 54.341C27.0925 53.74 25.554 53.4302 24.0005 53.4302C22.4469 53.4302 20.9074 53.7398 19.4748 54.341C18.0424 54.9423 16.7433 55.8229 15.6551 56.9314C15.0605 57.5367 14.0878 57.5454 13.4823 56.951C12.8772 56.3565 12.8685 55.3837 13.4627 54.7782C14.8371 53.3782 16.4769 52.2658 18.2859 51.5066C20.0951 50.7474 22.0385 50.3556 24.0005 50.3556Z" fill="currentColor"/>
+</svg>`
 
 const MARKUP = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><filter id="pcg-mbx1" x="-30%" y="0" width="160%" height="100%"><feGaussianBlur stdDeviation="1 0"/></filter><filter id="pcg-mbx2" x="-30%" y="0" width="160%" height="100%"><feGaussianBlur stdDeviation="2 0"/></filter><filter id="pcg-mbx3" x="-30%" y="0" width="160%" height="100%"><feGaussianBlur stdDeviation="3.5 0"/></filter><filter id="pcg-mbx4" x="-30%" y="0" width="160%" height="100%"><feGaussianBlur stdDeviation="5 0"/></filter><filter id="pcg-mby1" x="0" y="-60%" width="100%" height="220%"><feGaussianBlur stdDeviation="0 .8"/></filter><filter id="pcg-mby2" x="0" y="-60%" width="100%" height="220%"><feGaussianBlur stdDeviation="0 1.6"/></filter><filter id="pcg-mby3" x="0" y="-60%" width="100%" height="220%"><feGaussianBlur stdDeviation="0 2.6"/></filter><filter id="pcg-mby4" x="0" y="-60%" width="100%" height="220%"><feGaussianBlur stdDeviation="0 3.6"/></filter></defs></svg><div class="shell" id="shell"><div class="app" id="app"><div class="bar" id="bar"></div><div class="stage" id="stage"></div></div></div>
@@ -3553,6 +3572,26 @@ function mountFileGroups(root, opts) {
     bk.appendChild(cam)
     cam.appendChild(fwrap)
     fwrap.append(glass, frame)
+    // EXPERIMENT: the iPhone Duo's vertical status bar (time, signal) on the right edge.
+    // Hidden on narrow layouts (phones). Set DUO_STATUS to false to remove it.
+    const DUO_STATUS = false
+    if (DUO_STATUS) {
+        frame.classList.add("duo")
+        const duo = document.createElement("div")
+        duo.className = "duo-bar"
+        duo.setAttribute("aria-hidden", "true")
+        duo.innerHTML = DUO_STATUS_SVG
+        frame.appendChild(duo)
+        // as in the Figma Duo frame: an 84px column on the right (the shell's right padding),
+        // the 48px status centred in it, level with the shell's top padding
+        const placeDuo = () => {
+            const cs = getComputedStyle(shell)
+            duo.style.top = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.borderTopWidth) || 0) + "px"
+            duo.style.right = (84 - 48) / 2 + (parseFloat(cs.borderRightWidth) || 0) + "px"
+        }
+        placeDuo()
+        new ResizeObserver(placeDuo).observe(shell)
+    }
     let bkImg = "",
         bkFull = "" // bkFull: the uploaded file at full size, for this session (sharper when zoomed in)
     try {
