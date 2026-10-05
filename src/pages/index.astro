@@ -1,0 +1,143 @@
+---
+import "../styles/global.css"
+import instances from "../data/instances.json"
+import FileStacks from "../components/islands/FileStacksIsland.tsx"
+import GasFeeBar from "../components/islands/GasFeeBarIsland.tsx"
+import SwapCard from "../components/islands/SwapCardIsland.tsx"
+import ConvertDustCard from "../components/islands/ConvertDustCardIsland.tsx"
+import WorkImage from "../components/WorkImage.astro"
+
+const TITLE = "griep.design"
+const DESCRIPTION = "Product designer building clear, considered digital experiences. From concept to interface."
+const video = instances.Video.desktop.raw.file.replace("https://framerusercontent.com/assets/", "/media/")
+
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{TITLE}</title>
+        <meta name="description" content={DESCRIPTION} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={TITLE} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:image" content="https://griep.design/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <link rel="icon" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
+        <link rel="icon" href="/favicon-dark.png" media="(prefers-color-scheme: dark)" />
+        <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    </head>
+    <body>
+        <header class="nav">
+            <div class="nav-row">
+                <a class="logo" href="/" data-carousel-home>griep.design</a>
+            </div>
+        </header>
+
+        <main>
+            <section class="intro">
+                <div class="intro-who blur-in">
+                    <p class="name">Pieter Griep</p>
+                    <p class="role">Product Designer</p>
+                </div>
+                <p class="tagline blur-in blur-in-late">I design and build interfaces, down to the last interaction.</p>
+            </section>
+
+            <section class="work" id="projects">
+                <div class="carousel-buttons">
+                    <button class="cbtn" type="button" data-carousel-prev aria-label="Previous project">
+                        <span class="arrow arrow-back"></span>
+                    </button>
+                    <button class="cbtn" type="button" data-carousel-next aria-label="Next project">
+                        <span class="arrow arrow-fwd"></span>
+                    </button>
+                </div>
+
+                <div class="row" data-carousel>
+                    <div class="track">
+                    <div class="card card-files">
+                        <span class="badge"><span class="badge-text">Interactive</span></span>
+                        <FileStacks client:visible variants={instances.FileStacks} />
+                    </div>
+
+                    <div class="card card-gas">
+                        <span class="badge"><span class="badge-text">Interactive</span></span>
+                        <GasFeeBar client:visible variants={instances.GasFeeBar} />
+                    </div>
+
+                    <div class="card card-video">
+                        <video src={video} autoplay muted loop playsinline preload="metadata"></video>
+                    </div>
+
+                    <div class="card card-swap">
+                        <SwapCard client:visible variants={instances.SwapCard} />
+                        <span class="badge badge-tight"><span class="badge-text">Interactive</span></span>
+                    </div>
+
+                    <div class="card card-image">
+                        <WorkImage name="KObE4NRW19ICsSQqSbZiorigVM" />
+                    </div>
+
+                    <div class="card card-image">
+                        <WorkImage name="SZB8MGBYtuMoqpmrvEvFoBevFxc" tablet="POSwVU7ZYAKsBv8prb5yQe4nE3k" />
+                    </div>
+
+                    <div class="card card-image card-wide-image">
+                        <WorkImage name="LWyU3Kwt63ukHhi1DEkQvMJm5Y" />
+                    </div>
+
+                    <div class="card card-image">
+                        <WorkImage name="h7fAIMpsN8qqOrXqoJHIz7HGvcQ" tablet="8rdpwNSTMBDIBc1ipVIStD4" />
+                    </div>
+
+                    <!-- tablet only -->
+                    <div class="card card-dust tablet-only">
+                        <ConvertDustCard client:visible variants={instances.ConvertDustCard} />
+                    </div>
+
+                    <div class="card card-poster tablet-only">
+                        <WorkImage name="R7s3lREuP7ucRDajhSF9q2dNM" />
+                    </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-inner appear">
+                <a class="logo footer-logo" href="/">griep.design</a>
+                <div class="footer-cols">
+                    <div class="col col-social">
+                        <p class="label">Social</p>
+                        <a class="link" href="https://www.instagram.com/griep.design/" target="_blank" rel="noopener">
+                            <span>Instagram</span>
+                        </a>
+                        <a class="link" href="https://x.com/griep_design" target="_blank" rel="noopener">
+                            <span>X</span>
+                        </a>
+                    </div>
+                    <div class="col col-contact">
+                        <p class="label">Contact</p>
+                        <button class="email" type="button" data-copy-email="hola@griep.design">
+                            <span class="swap-label">hola@griep.design</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="footer-end">
+                    <button class="barca" type="button" data-visca-barca>
+                        <span class="swap-label">Barcelona, Spain</span>
+                    </button>
+                    <p class="copyright">©2026 griep.design. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            import "../scripts/carousel.ts"
+            import "../scripts/footer.ts"
+            import "../scripts/cursor.ts"
+            import "../scripts/appear.ts"
+        </script>
+    </body>
+</html>

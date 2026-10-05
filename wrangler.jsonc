@@ -1,0 +1,10 @@
+{
+	// Cloudflare hosting: static files only (no server). `npm run deploy` builds and uploads dist/.
+	// dist/_headers (long caching for media) and dist/_redirects (/home-old) are applied by Cloudflare.
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "griep-design",
+	"compatibility_date": "2026-10-01",
+	"assets": {
+		"directory": "./dist"
+	}
+}

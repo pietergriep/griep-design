@@ -1,0 +1,35 @@
+---
+// One work-card image: AVIF (visually lossless) with a lossless WebP fallback, at
+// 1x / 2x / 3x the size it's shown at, so every screen gets full sharpness without
+// downloading the multi-thousand-pixel originals. Files come from scripts/images.mjs.
+// `tablet` swaps in a different image on tablet, like the Framer tablet layout did.
+import images from "../data/images.json"
+
+interface Props {
+    name: keyof typeof images
+    tablet?: keyof typeof images
+}
+
+const { name, tablet } = Astro.props
+const TABLET = "(min-width: 810px) and (max-width: 1199.98px)"
+
+const set = (key: keyof typeof images, ext: string) =>
+    images[key].widths.map((w) => `/media/work/${key}-${w}.${ext} ${w}w`).join(", ")
+const sizes = (key: keyof typeof images) => `${images[key].shown}px`
+const main = images[name]
+const fallback = `/media/work/${name}-${main.widths[Math.min(1, main.widths.length - 1)]}.webp`
+---
+
+<picture>
+    {
+        tablet && (
+            <>
+                <source media={TABLET} type="image/avif" srcset={set(tablet, "avif")} sizes={sizes(tablet)} />
+                <source media={TABLET} type="image/webp" srcset={set(tablet, "webp")} sizes={sizes(tablet)} />
+            </>
+        )
+    }
+    <source type="image/avif" srcset={set(name, "avif")} sizes={sizes(name)} />
+    <source type="image/webp" srcset={set(name, "webp")} sizes={sizes(name)} />
+    <img src={fallback} width={main.width} height={main.height} alt="" loading="lazy" decoding="async" />
+</picture>

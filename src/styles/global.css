@@ -1,0 +1,600 @@
+/* griep.design — rebuilt from the Framer project "Portfolio New".
+   Breakpoints match Framer: desktop ≥1200, tablet 810–1199, phone <810. */
+
+@font-face {
+    font-family: "Geist";
+    src: url("/fonts/Geist-Variable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+:root {
+    --ink: rgb(0, 0, 0);
+    --ink-soft: rgba(0, 0, 0, 0.35);
+    --card: rgb(250, 250, 250);
+    --card-image: rgb(246, 246, 246);
+    --badge: rgb(237, 237, 237);
+    --badge-ink: rgb(74, 74, 74);
+    --gutter: 40px;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    background: #fff;
+    color: var(--ink);
+    font-family: "Geist", "Geist Placeholder", sans-serif;
+    /* Framer's base text size; the components inherit it wherever they don't set their own */
+    font-size: 12px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Framer's page-enter effect: a short fade on load. "backwards", not "both":
+       once it ends the animation must let go of the page completely, otherwise the
+       held opacity keeps the page as its own layer and the header's backdrop blur
+       no longer sees the content scrolling underneath it */
+    animation: page-in 0.2s cubic-bezier(0.27, 0, 0.51, 1) backwards;
+}
+
+@keyframes page-in {
+    from {
+        opacity: 0;
+    }
+}
+
+p {
+    margin: 0;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* ---------- navigation ---------- */
+
+.nav {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 3;
+    height: 65px;
+    background: rgba(255, 255, 255, 0.85);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+/* hairlines are drawn on top, like Framer does, so they take no layout space */
+.nav::after,
+.footer::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+}
+
+.nav::after {
+    bottom: 0;
+    border-bottom: 0.5px solid var(--nav-line, rgb(237, 237, 237));
+}
+
+.footer::before {
+    top: 0;
+    border-top: 0.5px solid var(--footer-line, rgb(230, 230, 230));
+}
+
+.nav-row {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--gutter);
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.2em;
+    letter-spacing: -0.03em;
+    cursor: pointer;
+}
+
+/* ---------- intro ---------- */
+
+main {
+    padding: 100px 0 0 var(--gutter);
+}
+
+.intro {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    z-index: 2;
+}
+
+.intro-who {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.name,
+.role,
+.tagline {
+    font-size: 15px;
+    letter-spacing: -0.01em;
+}
+
+.name {
+    font-weight: 500;
+    line-height: 1.2em;
+}
+
+.role {
+    font-weight: 400;
+    line-height: 1.2em;
+    color: var(--ink-soft);
+}
+
+.tagline {
+    font-weight: 400;
+    line-height: 1.3em;
+    max-width: 100%;
+}
+
+/* Framer's withBlurIn: name + role together (0.45s), tagline staggered (0.6s) */
+.blur-in {
+    animation: blur-in 0.45s cubic-bezier(0.44, 0, 0.56, 1) both;
+}
+
+.blur-in-late {
+    animation-duration: 0.6s;
+    animation-delay: 0.12s;
+}
+
+@keyframes blur-in {
+    from {
+        opacity: 0;
+        filter: blur(4px);
+    }
+}
+
+/* ---------- work ---------- */
+
+.work {
+    padding: 40px 10px 100px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.carousel-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.cbtn {
+    width: 45px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgb(250, 250, 250);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* fade + press dip from the Framer carousel override */
+    transition:
+        opacity 220ms ease,
+        transform 160ms ease-out,
+        filter 160ms ease-out;
+}
+
+.cbtn[aria-disabled="true"] {
+    opacity: 0.35;
+    pointer-events: none;
+    cursor: default;
+}
+
+.cbtn.pressed {
+    transform: scale(0.94);
+    filter: brightness(0.96);
+    transition-duration: 220ms, 60ms, 60ms;
+}
+
+/* the arrow shape is a mask and its colour a plain fill, so hover only changes the
+   colour: no second image to load, so no blank frame on the first hover */
+.arrow {
+    width: 17.849px;
+    height: 11.837px;
+    background-color: #919191;
+    -webkit-mask: center / contain no-repeat;
+    mask: center / contain no-repeat;
+}
+
+.arrow-back {
+    -webkit-mask-image: url("/media/Qmb9z97aoD7UEf0RBpAkeHwdg.svg");
+    mask-image: url("/media/Qmb9z97aoD7UEf0RBpAkeHwdg.svg");
+}
+
+.arrow-fwd {
+    -webkit-mask-image: url("/media/pPY3B0XImr0I0m8uXW3a6sujU.svg");
+    mask-image: url("/media/pPY3B0XImr0I0m8uXW3a6sujU.svg");
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .cbtn:hover .arrow {
+        background-color: #4d4d4d;
+    }
+}
+
+.row {
+    width: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+/* the cards move as one strip (translate3d, set by carousel.ts) */
+.track {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    will-change: transform;
+}
+
+.card {
+    position: relative;
+    flex: none;
+    width: 625px;
+    height: 640px;
+    border-radius: 20px;
+    overflow: clip;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.card-files {
+    width: 800px;
+}
+
+.badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1;
+    padding: 2px 7px;
+    border-radius: 7px;
+    background: var(--badge);
+    color: var(--badge-ink);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2em;
+    letter-spacing: -0.02em;
+    pointer-events: none;
+}
+
+/* the interactive components fill their card, centred (see lib/island.tsx) */
+.island-root {
+    position: absolute;
+    inset: 0;
+    padding: var(--card-pad, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.badge-tight {
+    letter-spacing: 0;
+}
+
+.card-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.card-image {
+    width: 475px;
+    padding: 35px;
+    background: var(--card-image);
+}
+
+/* <picture> adds no box: the img inside is styled as if it were the card's child */
+.card picture {
+    display: contents;
+}
+
+/* ...which would otherwise make its <source> tags layout items (and add gaps) */
+.card picture source {
+    display: none;
+}
+
+.card-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.card-wide-image img {
+    flex: none;
+    width: 575px;
+}
+
+.tablet-only {
+    display: none;
+}
+
+.card-poster {
+    width: 526px;
+    padding: 35px;
+}
+
+.card-poster img {
+    flex: none;
+    width: 110%;
+    /* Framer lets the 0.8 aspect ratio win over the 571px height it also had */
+    height: auto;
+    aspect-ratio: 0.8;
+    object-fit: contain;
+}
+
+/* ---------- footer ---------- */
+
+.footer {
+    position: relative;
+    z-index: 4;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--gutter);
+}
+
+.footer-inner {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.footer-logo,
+.copyright {
+    display: none;
+}
+
+.footer-cols {
+    display: flex;
+    gap: 80px;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.label {
+    font-size: 14px;
+    line-height: 1.2em;
+    letter-spacing: -0.02em;
+    color: var(--ink-soft);
+}
+
+.link {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 0.7em;
+}
+
+.link span {
+    transition: opacity 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .link:hover span {
+        opacity: 0.5;
+    }
+}
+
+.email,
+.barca {
+    display: block;
+    font-size: 14px;
+    text-align: left;
+}
+
+.email {
+    line-height: 0.7em;
+}
+
+.barca {
+    line-height: 1.2em;
+}
+
+/* hover dims only the clickable label, never the confirmation (see footer.ts) */
+.email .swap-label,
+.barca .swap-label {
+    display: inline-block;
+    transition:
+        opacity 0.3s ease,
+        filter 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .email:not(.swapped):hover .swap-label,
+    .barca:not(.swapped):hover .swap-label {
+        opacity: 0.5;
+    }
+}
+
+.swap-label.hidden {
+    opacity: 0 !important;
+    filter: blur(2px);
+}
+
+.copyright {
+    font-size: 12px;
+    line-height: 0.7em;
+    color: rgba(0, 0, 0, 0.5);
+}
+
+/* footer content fades in when it comes into view (Framer appear effect) */
+.appear {
+    opacity: 0;
+    transition: opacity 1.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.appear.in {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body,
+    .blur-in {
+        animation: none;
+    }
+    .appear {
+        opacity: 1;
+        transition: none;
+    }
+}
+
+/* ---------- tablet ---------- */
+
+@media (min-width: 810px) and (max-width: 1199.98px) {
+    main {
+        padding: 100px 0 0 0;
+    }
+    .intro {
+        margin-left: 40px;
+    }
+    .work {
+        padding: 40px 40px 50px 40px;
+    }
+    .card {
+        width: 500px;
+        height: 55vh;
+    }
+    .card-files {
+        --card-pad: 0 20px;
+    }
+    .card-image,
+    .card-dust {
+        width: 475px;
+    }
+    .card-poster {
+        width: 526px;
+    }
+    /* the tablet video was set to a fixed 486px height in Framer */
+    .card-video video {
+        height: 486px;
+    }
+    .tablet-only {
+        display: flex;
+    }
+}
+
+/* ---------- phone ---------- */
+
+@media (max-width: 809.98px) {
+    :root {
+        --gutter: 15px;
+    }
+    .nav {
+        height: 55px;
+        --nav-line: rgb(230, 230, 230);
+    }
+    main {
+        padding: 55px 0 0 15px;
+    }
+    .intro {
+        padding: 40px 0 20px 0;
+        width: 250px;
+    }
+    .tagline {
+        font-size: 14px;
+    }
+    .work {
+        padding: 20px 15px 50px 0;
+    }
+    .track {
+        gap: 5px;
+    }
+    /* one card per screen: the carousel script sizes them to the row */
+    .card {
+        width: 360px;
+        height: 70vh;
+    }
+    .card-files {
+        --card-pad: 0 10px;
+    }
+    .card-wide-image img {
+        width: 500px;
+    }
+    .badge {
+        font-size: 12px;
+    }
+
+    /* footer, phone variant: stacked */
+    .footer {
+        height: auto;
+        padding: 15px 15px 10px 15px;
+        --footer-line: rgb(204, 204, 204);
+    }
+    .footer-inner {
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 25px;
+    }
+    .footer-logo {
+        display: block;
+    }
+    .footer-cols {
+        flex-direction: column;
+        gap: 35px;
+    }
+    .col-contact {
+        order: -1;
+    }
+    .footer-end {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+    /* sits in a 38px-tall box, centred (as in the Framer phone footer) */
+    .barca {
+        height: 38px;
+        display: flex;
+        align-items: center;
+    }
+    .copyright {
+        display: block;
+    }
+}

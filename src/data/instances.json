@@ -1,0 +1,791 @@
+{
+ "FileStacks": {
+  "desktop": {
+   "size": {
+    "width": "675px",
+    "height": "445px"
+   },
+   "raw": {
+    "files": [
+     {
+      "title": "Project brief",
+      "type": "PDF",
+      "id": "OEokf9kLg"
+     },
+     {
+      "title": "Moodboard",
+      "type": "Figma",
+      "id": "sOYHSNsFA"
+     },
+     {
+      "title": "Interview notes",
+      "type": "Doc",
+      "id": "QI9Mg_FXz"
+     },
+     {
+      "title": "Wireframes v2",
+      "type": "Figma",
+      "id": "ZW0rQyBvz"
+     },
+     {
+      "title": "Budget",
+      "type": "Sheet",
+      "id": "Pp9hDmYfd"
+     },
+     {
+      "title": "Brand guidelines",
+      "type": "PDF",
+      "id": "UaWrNc3Bf"
+     },
+     {
+      "title": "Pitch deck",
+      "type": "PDF",
+      "id": "NEfRvwyou"
+     },
+     {
+      "title": "Style tiles",
+      "type": "Figma",
+      "id": "u_XDqpi_o"
+     },
+     {
+      "title": "Meeting minutes",
+      "type": "Doc",
+      "id": "gjZUd13XK"
+     },
+     {
+      "title": "Invoices Q3",
+      "type": "Sheet",
+      "id": "N7sShIhKj"
+     },
+     {
+      "title": "Logo explorations",
+      "type": "Figma",
+      "id": "wcxDhnWXO"
+     },
+     {
+      "title": "Roadmap",
+      "type": "PDF",
+      "id": "GKJmmF5QD"
+     },
+     {
+      "title": "Icon set",
+      "type": "Figma",
+      "id": "kilP9qQ4E"
+     },
+     {
+      "title": "Research plan",
+      "type": "Doc",
+      "id": "sDMnkV4ba"
+     },
+     {
+      "title": "Timeline",
+      "type": "Sheet",
+      "id": "WxocBlDZD"
+     },
+     {
+      "title": "Landing page",
+      "type": "Figma",
+      "id": "C1KmDauf2"
+     }
+    ],
+    "stacks": [
+     {
+      "name": "Brand refresh",
+      "files": "Moodboard, Brand guidelines, Logo explorations",
+      "id": "n5irGHgT3"
+     },
+     {
+      "name": "Finance",
+      "files": "Budget, Invoices Q3",
+      "id": "eIv0Fm8Jp"
+     }
+    ],
+    "scale": "0.75",
+    "startOpen": "",
+    "location": "Projects",
+    "theme": "Dark",
+    "perRow": "5",
+    "gap": "16",
+    "background": "rgb(105, 105, 105)",
+    "radius": "30",
+    "padding": "20",
+    "insetBorder": "true",
+    "borderColour": "rgba(255, 255, 255, 0.25)",
+    "menuShade": "22",
+    "fileColour": "rgb(120, 120, 120)",
+    "fileBorder": "0.5",
+    "borderColour1": "rgb(143, 143, 143)",
+    "skeleton": "rgb(128, 128, 128)",
+    "skeletonBold": "rgb(135, 135, 135)",
+    "stackNameSize": "13",
+    "nameClip": "rgb(207, 207, 207)",
+    "stackCount": "rgb(145, 145, 145)",
+    "stackCountText": "null",
+    "stackShade": "8",
+    "stackFan": "1",
+    "stackShadow": "0",
+    "clipShadow": "10",
+    "stackEdge": "9",
+    "bottomBlur": "8",
+    "scrollbar": "rgb(133, 133, 133)",
+    "typeTextTint": "45",
+    "tagStyle": "Tint",
+    "tagOpacity": "22",
+    "pdfText": "rgb(255, 156, 153)",
+    "pdfFill": "rgba(204, 48, 43, 0.22)",
+    "figText": "rgb(254, 176, 255)",
+    "figFill": "rgba(252, 69, 255, 0.22)",
+    "docxText": "rgb(120, 226, 255)",
+    "docxFill": "rgba(102, 224, 255, 0.22)",
+    "xlsxText": "rgb(120, 249, 170)",
+    "xlsxFill": "rgba(20, 255, 110, 0.22)",
+    "fileTitle": "17",
+    "selection": "rgba(132, 226, 135, 0.75)",
+    "tabSize": "24",
+    "tabSpacing": "13",
+    "headerSpacing": "22",
+    "activeTab": "rgb(255, 255, 255)",
+    "otherTabs": "rgb(168, 168, 168)",
+    "pill": "rgb(125, 125, 125)",
+    "pillText": "22",
+    "buttons": "rgb(125, 125, 125)",
+    "buttonIcon": "17.5",
+    "buttonPadding": "8",
+    "buttonHeight": "32",
+    "buttonText": "13",
+    "trashCount": "rgba(115, 5, 5, 0.4)",
+    "countText": "null",
+    "countSize": "12",
+    "countWeight": "500",
+    "countInset": "6",
+    "iconSpacing": "5",
+    "settingsJSON": "{\"selW\":1,\"selWash\":6,\"cOp\":100,\"fPt\":10,\"fIn\":16,\"fGap\":24,\"gcFs\":14,\"gcFw\":500,\"gcPx\":9,\"gcPy\":6,\"gcR\":7,\"gcLs\":0,\"gcBg\":\"#666666\",\"btFs\":13,\"btFw\":500,\"btH\":32,\"btPx\":14,\"btR\":11,\"btGap\":8,\"btIc\":14,\"btSw\":1,\"btBw\":0,\"ccOn\":\"off\",\"ccBg\":\"#3d3d3d\",\"ccPx\":5.5,\"ccPy\":3.5,\"ccR\":5,\"ccLs\":-1,\"bb\":8,\"sbW\":5,\"pb\":8,\"crFs\":22,\"dimB\":2,\"crFg\":\"#ffffff\",\"crPl\":10,\"crPr\":5,\"crPy\":2,\"crR\":10,\"dim\":14,\"fbW\":0.5,\"fbS\":\"solid\",\"stk\":5.5,\"bdSt\":\"tint\",\"bdLb\":\"dot\",\"bdFs\":13,\"bdFw\":500,\"bdR\":7,\"bdMx\":15,\"bdOn\":\"on\",\"bdPx\":7,\"bdPy\":6,\"bdLs\":0.1,\"bdTx\":17,\"tPdf\":\"#ff4e47\",\"tFig\":\"#fc4dff\",\"tDocx\":\"#66e0ff\",\"tXlsx\":\"#14ff6e\",\"fw\":400,\"padTop\":15,\"div\":\"#2b2b2b\",\"bw\":0,\"bc\":\"#f0f0f0\",\"shadow\":\"none\"}"
+   }
+  },
+  "tablet": {
+   "size": {
+    "width": "1fr",
+    "height": "275px"
+   },
+   "raw": {
+    "files": [
+     {
+      "title": "Project brief",
+      "type": "PDF",
+      "id": "h8ekvEvzd"
+     },
+     {
+      "title": "Moodboard",
+      "type": "Figma",
+      "id": "yjPvb4NpG"
+     },
+     {
+      "title": "Interview notes",
+      "type": "Doc",
+      "id": "r8BtVQjem"
+     },
+     {
+      "title": "Wireframes v2",
+      "type": "Figma",
+      "id": "X3ULWFKJv"
+     },
+     {
+      "title": "Budget",
+      "type": "Sheet",
+      "id": "RwT070uq4"
+     },
+     {
+      "title": "Brand guidelines",
+      "type": "PDF",
+      "id": "J_pC566zz"
+     },
+     {
+      "title": "Pitch deck",
+      "type": "PDF",
+      "id": "V5RVJhAYl"
+     },
+     {
+      "title": "Style tiles",
+      "type": "Figma",
+      "id": "OVZi5wdv4"
+     },
+     {
+      "title": "Meeting minutes",
+      "type": "Doc",
+      "id": "u1jtXaCWq"
+     },
+     {
+      "title": "Invoices Q3",
+      "type": "Sheet",
+      "id": "zS1R1cbx1"
+     },
+     {
+      "title": "Logo explorations",
+      "type": "Figma",
+      "id": "Qpj5kMjv4"
+     },
+     {
+      "title": "Roadmap",
+      "type": "PDF",
+      "id": "ziJ0LraI3"
+     },
+     {
+      "title": "Icon set",
+      "type": "Figma",
+      "id": "v_nes7BWg"
+     },
+     {
+      "title": "Research plan",
+      "type": "Doc",
+      "id": "ZsAmUNKFe"
+     },
+     {
+      "title": "Timeline",
+      "type": "Sheet",
+      "id": "abw3d73ta"
+     },
+     {
+      "title": "Landing page",
+      "type": "Figma",
+      "id": "ZGITZbhgR"
+     }
+    ],
+    "stacks": [
+     {
+      "name": "Brand refresh",
+      "files": "Moodboard, Brand guidelines, Logo explorations",
+      "id": "SJA_YBgDb"
+     },
+     {
+      "name": "Finance",
+      "files": "Budget, Invoices Q3",
+      "id": "izbRfbChg"
+     }
+    ],
+    "scale": "0.5",
+    "startOpen": "",
+    "location": "Projects",
+    "theme": "Dark",
+    "perRow": "4",
+    "gap": "16",
+    "background": "rgb(105, 105, 105)",
+    "radius": "30",
+    "padding": "20",
+    "insetBorder": "true",
+    "borderColour": "rgba(255, 255, 255, 0.25)",
+    "menuShade": "22",
+    "fileColour": "rgb(120, 120, 120)",
+    "fileBorder": "0.5",
+    "borderColour1": "rgb(143, 143, 143)",
+    "skeleton": "rgb(128, 128, 128)",
+    "skeletonBold": "rgb(135, 135, 135)",
+    "stackNameSize": "13",
+    "nameClip": "rgb(207, 207, 207)",
+    "stackCount": "rgb(145, 145, 145)",
+    "stackCountText": "null",
+    "stackShade": "8",
+    "stackFan": "1",
+    "stackShadow": "0",
+    "clipShadow": "10",
+    "stackEdge": "9",
+    "bottomBlur": "8",
+    "scrollbar": "rgb(133, 133, 133)",
+    "typeTextTint": "45",
+    "tagStyle": "Tint",
+    "tagOpacity": "22",
+    "pdfText": "rgb(255, 156, 153)",
+    "pdfFill": "rgba(204, 48, 43, 0.22)",
+    "figText": "rgb(254, 176, 255)",
+    "figFill": "rgba(252, 69, 255, 0.22)",
+    "docxText": "rgb(120, 226, 255)",
+    "docxFill": "rgba(102, 224, 255, 0.22)",
+    "xlsxText": "rgb(120, 249, 170)",
+    "xlsxFill": "rgba(20, 255, 110, 0.22)",
+    "fileTitle": "17",
+    "selection": "rgba(132, 226, 135, 0.75)",
+    "tabSize": "24",
+    "tabSpacing": "13",
+    "headerSpacing": "22",
+    "activeTab": "rgb(255, 255, 255)",
+    "otherTabs": "rgb(168, 168, 168)",
+    "pill": "rgb(125, 125, 125)",
+    "pillText": "22",
+    "buttons": "rgb(125, 125, 125)",
+    "buttonIcon": "17.5",
+    "buttonPadding": "8",
+    "buttonHeight": "32",
+    "buttonText": "13",
+    "trashCount": "rgba(115, 5, 5, 0.4)",
+    "countText": "null",
+    "countSize": "12",
+    "countWeight": "500",
+    "countInset": "6",
+    "iconSpacing": "5",
+    "settingsJSON": "{\"selW\":1,\"selWash\":6,\"cOp\":100,\"fPt\":10,\"fIn\":16,\"fGap\":24,\"gcFs\":14,\"gcFw\":500,\"gcPx\":9,\"gcPy\":6,\"gcR\":7,\"gcLs\":0,\"gcBg\":\"#666666\",\"btFs\":13,\"btFw\":500,\"btH\":32,\"btPx\":14,\"btR\":11,\"btGap\":8,\"btIc\":14,\"btSw\":1,\"btBw\":0,\"ccOn\":\"off\",\"ccBg\":\"#3d3d3d\",\"ccPx\":5.5,\"ccPy\":3.5,\"ccR\":5,\"ccLs\":-1,\"bb\":8,\"sbW\":5,\"pb\":8,\"crFs\":22,\"dimB\":2,\"crFg\":\"#ffffff\",\"crPl\":10,\"crPr\":5,\"crPy\":2,\"crR\":10,\"dim\":14,\"fbW\":0.5,\"fbS\":\"solid\",\"stk\":5.5,\"bdSt\":\"tint\",\"bdLb\":\"dot\",\"bdFs\":13,\"bdFw\":500,\"bdR\":7,\"bdMx\":15,\"bdOn\":\"on\",\"bdPx\":7,\"bdPy\":6,\"bdLs\":0.1,\"bdTx\":17,\"tPdf\":\"#ff4e47\",\"tFig\":\"#fc4dff\",\"tDocx\":\"#66e0ff\",\"tXlsx\":\"#14ff6e\",\"fw\":400,\"padTop\":15,\"div\":\"#2b2b2b\",\"bw\":0,\"bc\":\"#f0f0f0\",\"shadow\":\"none\"}"
+   }
+  },
+  "phone": {
+   "size": {
+    "width": "1fr",
+    "height": "211px"
+   },
+   "raw": {
+    "files": [
+     {
+      "title": "Project brief",
+      "type": "PDF",
+      "id": "a3c7lhXN4"
+     },
+     {
+      "title": "Moodboard",
+      "type": "Figma",
+      "id": "Jrd2E2Znq"
+     },
+     {
+      "title": "Interview notes",
+      "type": "Doc",
+      "id": "kR3pOdXql"
+     },
+     {
+      "title": "Wireframes v2",
+      "type": "Figma",
+      "id": "OJFupIVSi"
+     },
+     {
+      "title": "Budget",
+      "type": "Sheet",
+      "id": "Yb2yLZve4"
+     },
+     {
+      "title": "Brand guidelines",
+      "type": "PDF",
+      "id": "Az9zihAoD"
+     },
+     {
+      "title": "Pitch deck",
+      "type": "PDF",
+      "id": "sCmQYg9pS"
+     },
+     {
+      "title": "Style tiles",
+      "type": "Figma",
+      "id": "SmS6vPKw3"
+     },
+     {
+      "title": "Meeting minutes",
+      "type": "Doc",
+      "id": "LGKyNyGmk"
+     },
+     {
+      "title": "Invoices Q3",
+      "type": "Sheet",
+      "id": "Cz9Zf8pUo"
+     },
+     {
+      "title": "Logo explorations",
+      "type": "Figma",
+      "id": "b5par23rh"
+     },
+     {
+      "title": "Roadmap",
+      "type": "PDF",
+      "id": "Hz6l3DMyq"
+     },
+     {
+      "title": "Icon set",
+      "type": "Figma",
+      "id": "jW54nYwuk"
+     },
+     {
+      "title": "Research plan",
+      "type": "Doc",
+      "id": "W4pbCNNHp"
+     },
+     {
+      "title": "Timeline",
+      "type": "Sheet",
+      "id": "hBBs8N7pI"
+     },
+     {
+      "title": "Landing page",
+      "type": "Figma",
+      "id": "yYId7etGs"
+     }
+    ],
+    "stacks": [
+     {
+      "name": "Brand refresh",
+      "files": "Moodboard, Brand guidelines, Logo explorations",
+      "id": "rBJTEaxRp"
+     },
+     {
+      "name": "Finance",
+      "files": "Budget, Invoices Q3",
+      "id": "sjlvtNlTe"
+     }
+    ],
+    "scale": "0.5",
+    "startOpen": "",
+    "location": "Projects",
+    "theme": "Dark",
+    "perRow": "4",
+    "gap": "16",
+    "background": "rgb(105, 105, 105)",
+    "radius": "30",
+    "padding": "20",
+    "insetBorder": "true",
+    "borderColour": "rgba(255, 255, 255, 0.25)",
+    "menuShade": "22",
+    "fileColour": "rgb(120, 120, 120)",
+    "fileBorder": "0.5",
+    "borderColour1": "rgb(143, 143, 143)",
+    "skeleton": "rgb(128, 128, 128)",
+    "skeletonBold": "rgb(135, 135, 135)",
+    "stackNameSize": "13",
+    "nameClip": "rgb(207, 207, 207)",
+    "stackCount": "rgb(145, 145, 145)",
+    "stackCountText": "null",
+    "stackShade": "8",
+    "stackFan": "1",
+    "stackShadow": "0",
+    "clipShadow": "10",
+    "stackEdge": "9",
+    "bottomBlur": "8",
+    "scrollbar": "rgb(133, 133, 133)",
+    "typeTextTint": "45",
+    "tagStyle": "Tint",
+    "tagOpacity": "22",
+    "pdfText": "rgb(255, 156, 153)",
+    "pdfFill": "rgba(204, 48, 43, 0.22)",
+    "figText": "rgb(254, 176, 255)",
+    "figFill": "rgba(252, 69, 255, 0.22)",
+    "docxText": "rgb(120, 226, 255)",
+    "docxFill": "rgba(102, 224, 255, 0.22)",
+    "xlsxText": "rgb(120, 249, 170)",
+    "xlsxFill": "rgba(20, 255, 110, 0.22)",
+    "fileTitle": "17",
+    "selection": "rgba(132, 226, 135, 0.75)",
+    "tabSize": "18",
+    "tabSpacing": "13",
+    "headerSpacing": "10",
+    "activeTab": "rgb(255, 255, 255)",
+    "otherTabs": "rgb(168, 168, 168)",
+    "pill": "rgb(125, 125, 125)",
+    "pillText": "18",
+    "buttons": "rgb(125, 125, 125)",
+    "buttonIcon": "17.5",
+    "buttonPadding": "8",
+    "buttonHeight": "32",
+    "buttonText": "11",
+    "trashCount": "rgba(115, 5, 5, 0.4)",
+    "countText": "null",
+    "countSize": "12",
+    "countWeight": "500",
+    "countInset": "6",
+    "iconSpacing": "5",
+    "settingsJSON": "{\"selW\":1,\"selWash\":6,\"cOp\":100,\"fPt\":10,\"fIn\":16,\"fGap\":24,\"gcFs\":14,\"gcFw\":500,\"gcPx\":9,\"gcPy\":6,\"gcR\":7,\"gcLs\":0,\"gcBg\":\"#666666\",\"btFs\":13,\"btFw\":500,\"btH\":32,\"btPx\":14,\"btR\":11,\"btGap\":8,\"btIc\":14,\"btSw\":1,\"btBw\":0,\"ccOn\":\"off\",\"ccBg\":\"#3d3d3d\",\"ccPx\":5.5,\"ccPy\":3.5,\"ccR\":5,\"ccLs\":-1,\"bb\":8,\"sbW\":5,\"pb\":8,\"crFs\":22,\"dimB\":2,\"crFg\":\"#ffffff\",\"crPl\":10,\"crPr\":5,\"crPy\":2,\"crR\":10,\"dim\":14,\"fbW\":0.5,\"fbS\":\"solid\",\"stk\":5.5,\"bdSt\":\"tint\",\"bdLb\":\"dot\",\"bdFs\":13,\"bdFw\":500,\"bdR\":7,\"bdMx\":15,\"bdOn\":\"on\",\"bdPx\":7,\"bdPy\":6,\"bdLs\":0.1,\"bdTx\":17,\"tPdf\":\"#ff4e47\",\"tFig\":\"#fc4dff\",\"tDocx\":\"#66e0ff\",\"tXlsx\":\"#14ff6e\",\"fw\":400,\"padTop\":15,\"div\":\"#2b2b2b\",\"bw\":0,\"bc\":\"#f0f0f0\",\"shadow\":\"none\"}"
+   }
+  }
+ },
+ "GasFeeBar": {
+  "desktop": {
+   "size": {
+    "width": "auto",
+    "height": "auto"
+   },
+   "raw": {
+    "label": "Gas",
+    "badge": "Network busy",
+    "tiers": [
+     {
+      "label": "Standard",
+      "gwei": "12",
+      "seconds": "15",
+      "flameCycle": "1550",
+      "id": "default-item-0"
+     },
+     {
+      "label": "Fast",
+      "gwei": "25",
+      "seconds": "10",
+      "flameCycle": "700",
+      "id": "default-item-1"
+     },
+     {
+      "label": "Rapid",
+      "gwei": "43",
+      "seconds": "6",
+      "flameCycle": "500",
+      "id": "default-item-2"
+     }
+    ],
+    "selected": "0",
+    "scale": "1.5",
+    "activeWeight": "Medium",
+    "showTime": "true",
+    "showGwei": "false",
+    "unit": "gwei",
+    "eTHPrice": "2530",
+    "gasLimit": "21000",
+    "livePrices": "{\"enabled\":{\"type\":\"boolean\",\"value\":true},\"every\":{\"type\":\"number\",\"value\":4000},\"drift\":{\"type\":\"number\",\"value\":2}}",
+    "rollingPrice": "{\"duration\":{\"type\":\"number\",\"value\":500},\"motionBlur\":{\"type\":\"boolean\",\"value\":true}}",
+    "flame": "{\"playing\":{\"type\":\"boolean\",\"value\":true},\"shape\":{\"type\":\"enum\",\"value\":\"dot-breathe\"},\"pattern\":{\"type\":\"enum\",\"value\":\"diagonal\"},\"diagonal\":{\"type\":\"enum\",\"value\":\"br-tl\"},\"step\":{\"type\":\"enum\",\"value\":\"dot\"},\"startSide\":{\"type\":\"enum\",\"value\":\"left\"},\"duration\":{\"type\":\"number\",\"value\":1550},\"staggerRatio\":{\"type\":\"number\",\"value\":0.125},\"ease\":{\"type\":\"string\",\"value\":\"cubic-bezier(0.65, 0, 0.35, 1)\"},\"opacityMin\":{\"type\":\"number\",\"value\":0.2},\"opacityMax\":{\"type\":\"number\",\"value\":1},\"intro\":{\"type\":\"boolean\",\"value\":true},\"introDuration\":{\"type\":\"number\",\"value\":180},\"introStagger\":{\"type\":\"number\",\"value\":35},\"press\":{\"type\":\"boolean\",\"value\":true},\"pressScale\":{\"type\":\"number\",\"value\":0.97},\"pressIn\":{\"type\":\"number\",\"value\":60},\"pressDuration\":{\"type\":\"number\",\"value\":160},\"slide\":{\"type\":\"boolean\",\"value\":false},\"slideDuration\":{\"type\":\"number\",\"value\":250},\"flicker\":{\"type\":\"boolean\",\"value\":false},\"flickerStrength\":{\"type\":\"number\",\"value\":0.7},\"flickerPace\":{\"type\":\"number\",\"value\":1}}"
+   }
+  },
+  "tablet": {
+   "size": {
+    "width": "auto",
+    "height": "auto"
+   },
+   "raw": {
+    "label": "Gas",
+    "badge": "Network busy",
+    "tiers": [
+     {
+      "label": "Standard",
+      "gwei": "12",
+      "seconds": "15",
+      "flameCycle": "1550",
+      "id": "default-item-0"
+     },
+     {
+      "label": "Fast",
+      "gwei": "25",
+      "seconds": "10",
+      "flameCycle": "700",
+      "id": "default-item-1"
+     },
+     {
+      "label": "Rapid",
+      "gwei": "43",
+      "seconds": "6",
+      "flameCycle": "500",
+      "id": "default-item-2"
+     }
+    ],
+    "selected": "0",
+    "scale": "1.25",
+    "activeWeight": "Medium",
+    "showTime": "true",
+    "showGwei": "false",
+    "unit": "gwei",
+    "eTHPrice": "2530",
+    "gasLimit": "21000",
+    "livePrices": "{\"enabled\":{\"type\":\"boolean\",\"value\":true},\"every\":{\"type\":\"number\",\"value\":4000},\"drift\":{\"type\":\"number\",\"value\":2}}",
+    "rollingPrice": "{\"duration\":{\"type\":\"number\",\"value\":500},\"motionBlur\":{\"type\":\"boolean\",\"value\":true}}",
+    "flame": "{\"playing\":{\"type\":\"boolean\",\"value\":true},\"shape\":{\"type\":\"enum\",\"value\":\"dot-breathe\"},\"pattern\":{\"type\":\"enum\",\"value\":\"diagonal\"},\"diagonal\":{\"type\":\"enum\",\"value\":\"br-tl\"},\"step\":{\"type\":\"enum\",\"value\":\"dot\"},\"startSide\":{\"type\":\"enum\",\"value\":\"left\"},\"duration\":{\"type\":\"number\",\"value\":1550},\"staggerRatio\":{\"type\":\"number\",\"value\":0.125},\"ease\":{\"type\":\"string\",\"value\":\"cubic-bezier(0.65, 0, 0.35, 1)\"},\"opacityMin\":{\"type\":\"number\",\"value\":0.2},\"opacityMax\":{\"type\":\"number\",\"value\":1},\"intro\":{\"type\":\"boolean\",\"value\":true},\"introDuration\":{\"type\":\"number\",\"value\":180},\"introStagger\":{\"type\":\"number\",\"value\":35},\"press\":{\"type\":\"boolean\",\"value\":true},\"pressScale\":{\"type\":\"number\",\"value\":0.97},\"pressIn\":{\"type\":\"number\",\"value\":60},\"pressDuration\":{\"type\":\"number\",\"value\":160},\"slide\":{\"type\":\"boolean\",\"value\":false},\"slideDuration\":{\"type\":\"number\",\"value\":250},\"flicker\":{\"type\":\"boolean\",\"value\":false},\"flickerStrength\":{\"type\":\"number\",\"value\":0.7},\"flickerPace\":{\"type\":\"number\",\"value\":1}}"
+   }
+  },
+  "phone": {
+   "size": {
+    "width": "auto",
+    "height": "auto"
+   },
+   "raw": {
+    "label": "Gas",
+    "badge": "Network busy",
+    "tiers": [
+     {
+      "label": "Standard",
+      "gwei": "12",
+      "seconds": "15",
+      "flameCycle": "1550",
+      "id": "default-item-0"
+     },
+     {
+      "label": "Fast",
+      "gwei": "25",
+      "seconds": "10",
+      "flameCycle": "700",
+      "id": "default-item-1"
+     },
+     {
+      "label": "Rapid",
+      "gwei": "43",
+      "seconds": "6",
+      "flameCycle": "500",
+      "id": "default-item-2"
+     }
+    ],
+    "selected": "0",
+    "scale": "0.95",
+    "activeWeight": "Medium",
+    "showTime": "true",
+    "showGwei": "false",
+    "unit": "gwei",
+    "eTHPrice": "2530",
+    "gasLimit": "21000",
+    "livePrices": "{\"enabled\":{\"type\":\"boolean\",\"value\":true},\"every\":{\"type\":\"number\",\"value\":4000},\"drift\":{\"type\":\"number\",\"value\":2}}",
+    "rollingPrice": "{\"duration\":{\"type\":\"number\",\"value\":500},\"motionBlur\":{\"type\":\"boolean\",\"value\":true}}",
+    "flame": "{\"playing\":{\"type\":\"boolean\",\"value\":true},\"shape\":{\"type\":\"enum\",\"value\":\"dot-breathe\"},\"pattern\":{\"type\":\"enum\",\"value\":\"diagonal\"},\"diagonal\":{\"type\":\"enum\",\"value\":\"br-tl\"},\"step\":{\"type\":\"enum\",\"value\":\"dot\"},\"startSide\":{\"type\":\"enum\",\"value\":\"left\"},\"duration\":{\"type\":\"number\",\"value\":1550},\"staggerRatio\":{\"type\":\"number\",\"value\":0.125},\"ease\":{\"type\":\"string\",\"value\":\"cubic-bezier(0.65, 0, 0.35, 1)\"},\"opacityMin\":{\"type\":\"number\",\"value\":0.2},\"opacityMax\":{\"type\":\"number\",\"value\":1},\"intro\":{\"type\":\"boolean\",\"value\":true},\"introDuration\":{\"type\":\"number\",\"value\":180},\"introStagger\":{\"type\":\"number\",\"value\":35},\"press\":{\"type\":\"boolean\",\"value\":true},\"pressScale\":{\"type\":\"number\",\"value\":0.97},\"pressIn\":{\"type\":\"number\",\"value\":60},\"pressDuration\":{\"type\":\"number\",\"value\":160},\"slide\":{\"type\":\"boolean\",\"value\":false},\"slideDuration\":{\"type\":\"number\",\"value\":250},\"flicker\":{\"type\":\"boolean\",\"value\":false},\"flickerStrength\":{\"type\":\"number\",\"value\":0.7},\"flickerPace\":{\"type\":\"number\",\"value\":1}}"
+   }
+  }
+ },
+ "Video": {
+  "desktop": {
+   "size": {
+    "width": "1fr",
+    "height": "1fr"
+   },
+   "raw": {
+    "source": "Upload",
+    "uRL": "https://framerusercontent.com/assets/MLWPbW1dUQawJLhhun3dBwpgJak.mp4",
+    "file": "https://framerusercontent.com/assets/eMIvzVpPfEbqcEQruMiT2IAcxXs.mp4",
+    "radius": "0px",
+    "loop": "true",
+    "poster": "false",
+    "controls": "false",
+    "muted": "true",
+    "fit": "Contain",
+    "playing": "true",
+    "background": "rgba(0,0,0,0)",
+    "startTime": "0",
+    "volume": "25"
+   }
+  },
+  "tablet": {
+   "size": {
+    "width": "1fr",
+    "height": "486px"
+   },
+   "raw": {
+    "source": "Upload",
+    "uRL": "https://framerusercontent.com/assets/MLWPbW1dUQawJLhhun3dBwpgJak.mp4",
+    "file": "https://framerusercontent.com/assets/eMIvzVpPfEbqcEQruMiT2IAcxXs.mp4",
+    "radius": "0px",
+    "loop": "true",
+    "poster": "false",
+    "controls": "false",
+    "muted": "true",
+    "fit": "Contain",
+    "playing": "true",
+    "background": "rgba(0,0,0,0)",
+    "startTime": "0",
+    "volume": "25"
+   }
+  },
+  "phone": {
+   "size": {
+    "width": "1fr",
+    "height": "1fr"
+   },
+   "raw": {
+    "source": "Upload",
+    "uRL": "https://framerusercontent.com/assets/MLWPbW1dUQawJLhhun3dBwpgJak.mp4",
+    "file": "https://framerusercontent.com/assets/eMIvzVpPfEbqcEQruMiT2IAcxXs.mp4",
+    "radius": "0px",
+    "loop": "true",
+    "poster": "false",
+    "controls": "false",
+    "muted": "true",
+    "fit": "Contain",
+    "playing": "true",
+    "background": "rgba(0,0,0,0)",
+    "startTime": "0",
+    "volume": "25"
+   }
+  }
+ },
+ "SwapCard": {
+  "desktop": {
+   "size": {
+    "width": "375px",
+    "height": "auto"
+   },
+   "raw": {
+    "scale": "1",
+    "sell": "Sell",
+    "receive": "Receive",
+    "button": "Begin swap",
+    "balance": "{\"eth\":{\"type\":\"number\",\"value\":0.5},\"usdc\":{\"type\":\"number\",\"value\":1300}}",
+    "chips": "[{\"type\":\"number\",\"value\":25,\"id\":\"default-item-0\"},{\"type\":\"number\",\"value\":50,\"id\":\"default-item-1\"},{\"type\":\"number\",\"value\":75,\"id\":\"default-item-2\"},{\"type\":\"number\",\"value\":100,\"id\":\"default-item-3\"}]",
+    "selected": "0",
+    "eTHPrice": "2718",
+    "rate": "0.9967",
+    "livePrice": "{\"enabled\":{\"type\":\"boolean\",\"value\":true},\"every\":{\"type\":\"number\",\"value\":60000}}",
+    "rollingDigits": "{\"duration\":{\"type\":\"number\",\"value\":500},\"blur\":{\"type\":\"number\",\"value\":1}}",
+    "txInfo": "true",
+    "txLabel": "Transaction info"
+   }
+  },
+  "tablet": {
+   "size": {
+    "width": "375px",
+    "height": "auto"
+   },
+   "raw": {
+    "scale": "1",
+    "sell": "Sell",
+    "receive": "Receive",
+    "button": "Begin swap",
+    "balance": "{\"eth\":{\"type\":\"number\",\"value\":0.5},\"usdc\":{\"type\":\"number\",\"value\":1300}}",
+    "chips": "[{\"type\":\"number\",\"value\":25,\"id\":\"default-item-0\"},{\"type\":\"number\",\"value\":50,\"id\":\"default-item-1\"},{\"type\":\"number\",\"value\":75,\"id\":\"default-item-2\"},{\"type\":\"number\",\"value\":100,\"id\":\"default-item-3\"}]",
+    "selected": "0",
+    "eTHPrice": "2718",
+    "rate": "0.9967",
+    "livePrice": "{\"enabled\":{\"type\":\"boolean\",\"value\":true},\"every\":{\"type\":\"number\",\"value\":60000}}",
+    "rollingDigits": "{\"duration\":{\"type\":\"number\",\"value\":500},\"blur\":{\"type\":\"number\",\"value\":1}}",
+    "txInfo": "true",
+    "txLabel": "Transaction info"
+   }
+  },
+  "phone": {
+   "size": {
+    "width": "335px",
+    "height": "auto"
+   },
+   "raw": {
+    "scale": "0.9",
+    "sell": "Sell",
+    "receive": "Receive",
+    "button": "Begin swap",
+    "balance": "{\"eth\":{\"type\":\"number\",\"value\":0.5},\"usdc\":{\"type\":\"number\",\"value\":1300}}",
+    "chips": "[{\"type\":\"number\",\"value\":25,\"id\":\"default-item-0\"},{\"type\":\"number\",\"value\":50,\"id\":\"default-item-1\"},{\"type\":\"number\",\"value\":75,\"id\":\"default-item-2\"},{\"type\":\"number\",\"value\":100,\"id\":\"default-item-3\"}]",
+    "selected": "0",
+    "eTHPrice": "2718",
+    "rate": "0.9967",
+    "livePrice": "{\"enabled\":{\"type\":\"boolean\",\"value\":true},\"every\":{\"type\":\"number\",\"value\":60000}}",
+    "rollingDigits": "{\"duration\":{\"type\":\"number\",\"value\":500},\"blur\":{\"type\":\"number\",\"value\":1}}",
+    "txInfo": "true",
+    "txLabel": "Transaction info"
+   }
+  }
+ },
+ "ConvertDustCard": {
+  "tablet": {
+   "size": {
+    "width": "350px",
+    "height": "auto"
+   },
+   "raw": {
+    "title": "Clean dust",
+    "theme": "true",
+    "grabber": "false",
+    "tokenIcons": "false",
+    "fillMid": "#9462F1",
+    "fillEnd": "#F3BD1D",
+    "fillMid1": "#9C9AF0",
+    "fillEnd1": "#F0D05E",
+    "midAt": "0.56",
+    "endAt": "0.83",
+    "fillBlur": "9",
+    "checkmark": "#4FB94B",
+    "sOLRollMs": "1000",
+    "sOLSpin": "5",
+    "flourish": "Shine",
+    "flourishMs": "750",
+    "shineBlur": "12",
+    "sOLStagger": "Left to right",
+    "shimmerMs": "1500",
+    "shimmerFade": "0.9",
+    "hintShimmer": "0.7",
+    "dust": "#9E9E9E",
+    "dustCount": "34",
+    "dustSize": "0.6",
+    "dustSpread": "2",
+    "dustTime": "1300",
+    "dustOpacity": "1"
+   }
+  }
+ }
+}
