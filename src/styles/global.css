@@ -456,6 +456,14 @@ main {
     }
 }
 
+/* the email's line box (0.7em) is shorter than its letters. While fading, the label
+   is drawn as its own layer cut to its box, which clipped the text, so the label
+   gets a full-height box and the negative margin keeps the layout where it was */
+.email .swap-label {
+    line-height: 1.2em;
+    margin: -0.25em 0;
+}
+
 .swap-label.hidden {
     opacity: 0 !important;
     filter: blur(2px);
