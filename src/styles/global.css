@@ -313,7 +313,7 @@ main {
     justify-content: center;
 }
 
-/* A card plus its optional "About this" note underneath */
+/* A card plus its optional "About" note underneath */
 .work-item {
     flex: none;
     display: flex;
