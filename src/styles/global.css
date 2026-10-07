@@ -163,12 +163,18 @@ main {
     max-width: 100%;
 }
 
-/* Framer's withBlurIn: name + role together (0.45s), tagline staggered (0.6s) */
-.blur-in {
+/* Framer's withBlurIn: name + role together (0.45s), tagline staggered (0.6s).
+   Hidden until the head script adds .intro-in (after the page fade-in and the font) */
+.js .blur-in {
+    opacity: 0;
+}
+
+.intro-in .blur-in {
+    opacity: 1;
     animation: blur-in 0.45s cubic-bezier(0.44, 0, 0.56, 1) both;
 }
 
-.blur-in-late {
+.intro-in .blur-in-late {
     animation-duration: 0.6s;
     animation-delay: 0.12s;
 }
@@ -257,7 +263,7 @@ main {
 /* the cards move as one strip (translate3d, set by carousel.ts) */
 .track {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     width: max-content;
     will-change: transform;
@@ -305,6 +311,83 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* A card plus its optional "About this" note underneath */
+.work-item {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+}
+.work-note {
+    width: 100%;
+    padding-top: 10px;
+}
+.work-note-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    color: rgb(140, 140, 140);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+.work-note-btn:hover,
+.work-note.is-open .work-note-btn {
+    color: rgb(20, 20, 20);
+}
+/* plus that turns into a cross */
+.work-note-icon {
+    position: relative;
+    width: 9px;
+    height: 9px;
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.work-note-icon::before,
+.work-note-icon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 9px;
+    height: 1.25px;
+    border-radius: 1px;
+    background: currentColor;
+}
+.work-note-icon::after {
+    transform: rotate(90deg);
+}
+.work-note.is-open .work-note-icon {
+    transform: rotate(45deg);
+}
+/* The note's space is always reserved (just invisible while closed), so opening it
+   never changes the page height and the footer stays where it is. */
+.work-note-body {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, filter 0.3s ease, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.work-note.is-open .work-note-body {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    pointer-events: auto;
+}
+.work-note p {
+    max-width: 52ch;
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    color: rgb(30, 30, 30);
 }
 
 .badge-tight {
@@ -487,8 +570,10 @@ main {
 
 @media (prefers-reduced-motion: reduce) {
     body,
-    .blur-in {
+    .blur-in,
+    .intro-in .blur-in {
         animation: none;
+        opacity: 1;
     }
     .appear {
         opacity: 1;
@@ -565,11 +650,21 @@ main {
     .card-files {
         --card-pad: 0 10px;
     }
+    .card-route {
+        --card-pad: 0 20px;
+    }
+    /* the carousel sizes each item to the screen; its card fills that width */
+    .work-item > .card {
+        width: 100%;
+    }
+    .work-note p {
+        font-size: 13px;
+    }
     .card-wide-image img {
         width: 500px;
     }
     .badge {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     /* footer, phone variant: stacked */
