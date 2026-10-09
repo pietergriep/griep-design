@@ -1164,7 +1164,7 @@ function mountFileGroups(root, opts) {
         t.el.style.transform = `translate(${t.pose.x.toFixed(2)}px,${t.pose.y.toFixed(2)}px) rotate(${t.pose.r.toFixed(3)}deg) scale(${t.pose.s.toFixed(4)})`
     }
 
-    // ---------- entrance: the files deal in the first time the explorer shows ----------
+    // ---------- entrance: the files deal in the first time the explorer is seen ----------
     // Each tile (stack or loose file) fades and rises into place, in reading order; a
     // stack's paperclip drops on once its papers have landed. Uses the separate
     // translate / scale properties, so the tiles' own transform (their grid pose) is untouched.
@@ -1172,12 +1172,34 @@ function mountFileGroups(root, opts) {
     const ENTER_STAGGER = 65 // ms between tiles
     const ENTER_MS = 760 // each tile's fade + rise
     const ENTER_RISE = 14 // px each tile rises
+    const ENTER_SEEN = 0.4 // share of the explorer on screen before it plays
     function entrance() {
         if (reduced.matches) return
         const list = tiles()
         if (!list.length) return
         busy = true
+        // on a phone it waits until the explorer is actually on screen (it often loads
+        // while still off to the side or below, and would play unseen); larger screens
+        // play it right away
+        if (!matchMedia("(max-width: 599.98px)").matches) {
+            groups.forEach((g) => clipSet(g, 0, `translateY(-24px) ${CLIP_TILT}`))
+            return play(list)
+        }
+        list.forEach((t) => (t.el.style.opacity = "0"))
         groups.forEach((g) => clipSet(g, 0, `translateY(-24px) ${CLIP_TILT}`))
+        const seen = new IntersectionObserver(
+            (entries) => {
+                if (!entries.some((e) => e.isIntersecting)) return
+                seen.disconnect()
+                if (alive) play(list)
+            },
+            { threshold: ENTER_SEEN }
+        )
+        seen.observe(shell)
+        cleanups.push(() => seen.disconnect())
+    }
+    function play(list) {
+        list.forEach((t) => t.el.style.removeProperty("opacity"))
         const done = list.map((t, i) => {
             const a = t.el.animate(
                 [
