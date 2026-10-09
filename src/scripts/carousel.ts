@@ -8,7 +8,13 @@ const SNAP_AFTER_MS = 130 // quiet time after wheel input before snapping
 const RESISTANCE = 0.35 // how much the row gives past either end (touch)
 const FLING = 140 // how far a touch fling carries, in ms of velocity
 
-const PHONE = "(max-width: 809.98px)"
+const PHONE = "(max-width: 599.98px)"
+const DESKTOP = "(min-width: 600px)" // desktop-sized cards (desktop, iPad, small windows)
+// The cards keep their desktop size (up to 800 × 640px). On a short window (a 14"
+// MacBook in Safari shows ~860px) or a narrow one (an iPad) the row is scaled down so
+// the widest card, and a card's note, fit on screen.
+const NOTE_ROOM = 70 // px kept free under the cards for the "About" note
+const MIN_FIT = 0.72 // never smaller than this
 
 const row = document.querySelector<HTMLElement>("[data-carousel]")
 const track = row?.querySelector<HTMLElement>(".track")
@@ -37,6 +43,41 @@ if (row && track) {
         })
     }
     sizeCards()
+
+    // --- Fit the row to the window height (desktop) ------------------------------
+    // A transform, not CSS zoom (Safari's zoom measures differently). The row is made
+    // wider by 1/fit so after scaling it still spans the page, and the space the scale
+    // frees up below is taken back with a negative margin.
+    let fit = 1
+    const fitToHeight = () => {
+        let next = 1
+        const card = track.querySelector<HTMLElement>(".card")
+        if (matchMedia(DESKTOP).matches && card) {
+            const top = row.getBoundingClientRect().top + scrollY
+            const byHeight = (innerHeight - top - NOTE_ROOM) / card.offsetHeight
+            // the row's own width, before scaling (its parent's content box)
+            const parent = row.parentElement!
+            const pcs = getComputedStyle(parent)
+            const roomW = parent.clientWidth - parseFloat(pcs.paddingLeft) - parseFloat(pcs.paddingRight)
+            const widest = Math.max(...cards().map((c) => c.offsetWidth))
+            const byWidth = widest > 0 ? roomW / widest : 1
+            next = Math.min(1, Math.max(MIN_FIT, Math.min(byHeight, byWidth)))
+            next = Math.round(next * 1000) / 1000
+        }
+        fit = next
+        if (fit === 1) {
+            row.style.removeProperty("width")
+            row.style.removeProperty("transform")
+            row.style.removeProperty("transform-origin")
+            row.style.removeProperty("margin-bottom")
+        } else {
+            row.style.width = `calc(100% / ${fit})`
+            row.style.transform = `scale(${fit})`
+            row.style.transformOrigin = "0 0"
+            row.style.marginBottom = `${-(1 - fit) * row.offsetHeight}px`
+        }
+    }
+    fitToHeight()
 
     // --- Geometry ------------------------------------------------------------
     const maxOffset = () => Math.max(0, track.scrollWidth - row.clientWidth)
@@ -169,7 +210,7 @@ if (row && track) {
             e.preventDefault()
             e.stopPropagation()
             stop()
-            offset = clamp(offset + e.deltaX)
+            offset = clamp(offset + e.deltaX / fit)
             render()
             publish()
             snapSoon()
@@ -224,13 +265,13 @@ if (row && track) {
             if (!horizontal) return
             e.preventDefault()
             const max = maxOffset()
-            let raw = startOffset - dx
+            let raw = startOffset - dx / fit
             if (raw < 0) raw *= RESISTANCE
             else if (raw > max) raw = max + (raw - max) * RESISTANCE
             offset = raw
             const now = performance.now()
             const dt = now - lastT
-            if (dt > 0) velocity = velocity * 0.4 + ((lastX - t.clientX) / dt) * 0.6
+            if (dt > 0) velocity = velocity * 0.4 + ((lastX - t.clientX) / fit / dt) * 0.6
             lastX = t.clientX
             lastT = now
             render()
@@ -250,6 +291,7 @@ if (row && track) {
 
     // --- Resize: stay on the card that was showing ---------------------------------
     const onResize = () => {
+        fitToHeight()
         const list = cards()
         let index = 0
         let best = Infinity

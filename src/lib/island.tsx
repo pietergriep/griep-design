@@ -11,12 +11,12 @@ export type Breakpoint = "desktop" | "tablet" | "phone"
 type Size = { width?: string; height?: string }
 export type Variants = Partial<Record<Breakpoint, { size: Size; raw: Record<string, any> }>>
 
-// Same ranges as the Framer site
-const PHONE = "(max-width: 809.98px)"
-const TABLET = "(min-width: 810px) and (max-width: 1199.98px)"
+// From 600px up (iPads, small windows) every card uses its desktop settings, so it
+// looks like the desktop version (carousel.ts scales the row to fit); only phones
+// get the phone settings. The tablet set is a fallback for cards that only have one.
+const PHONE = "(max-width: 599.98px)"
 
-const current = (): Breakpoint =>
-    matchMedia(PHONE).matches ? "phone" : matchMedia(TABLET).matches ? "tablet" : "desktop"
+const current = (): Breakpoint => (matchMedia(PHONE).matches ? "phone" : "desktop")
 
 // Framer layout values -> CSS. "1fr" fills the card, "auto" sizes to content.
 const css = (v?: string) => (!v || v === "auto" ? undefined : v === "1fr" ? "100%" : v)
@@ -27,11 +27,11 @@ export function makeIsland(Component: ComponentType<any>) {
         useEffect(() => {
             const update = () => setBp(current())
             update()
-            const queries = [matchMedia(PHONE), matchMedia(TABLET)]
-            queries.forEach((q) => q.addEventListener("change", update))
-            return () => queries.forEach((q) => q.removeEventListener("change", update))
+            const q = matchMedia(PHONE)
+            q.addEventListener("change", update)
+            return () => q.removeEventListener("change", update)
         }, [])
-        const variant = bp ? variants[bp] : undefined
+        const variant = bp ? (variants[bp] ?? (bp === "desktop" ? variants.tablet : undefined)) : undefined
         const width = css(variant?.size.width)
         const height = css(variant?.size.height)
         return (

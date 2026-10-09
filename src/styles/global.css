@@ -632,23 +632,12 @@ main {
     .work {
         padding: 40px 40px 50px 40px;
     }
-    .card {
-        width: 500px;
-        height: 55vh;
-    }
-    .card-files {
-        --card-pad: 0 20px;
-    }
-    .card-image,
+    /* the cards themselves use their desktop sizes here, scaled by carousel.ts */
     .card-dust {
         width: 475px;
     }
     .card-poster {
         width: 526px;
-    }
-    /* the tablet video was set to a fixed 486px height in Framer */
-    .card-video video {
-        height: 486px;
     }
     .tablet-only {
         display: flex;
@@ -657,28 +646,9 @@ main {
 
 /* ---------- phone ---------- */
 
-@media (max-width: 809.98px) {
-    :root {
-        --gutter: 15px;
-    }
-    .nav {
-        height: 55px;
-        --nav-line: rgb(230, 230, 230);
-    }
-    main {
-        padding: 55px 0 0 15px;
-    }
-    .intro {
-        padding: 40px 0 20px 0;
-        width: 250px;
-    }
-    .tagline {
-        font-size: 14px;
-        letter-spacing: var(--track-14);
-    }
-    .work {
-        padding: 20px 15px 50px 0;
-    }
+/* Cards: from 600px up (iPads, small windows) the cards keep their desktop sizes and
+   layout and carousel.ts scales the row to fit; only real phones get one card per screen. */
+@media (max-width: 599.98px) {
     .track {
         gap: 5px;
     }
@@ -707,6 +677,30 @@ main {
     .badge {
         font-size: 11px;
         letter-spacing: var(--track-11);
+    }
+}
+
+@media (max-width: 809.98px) {
+    :root {
+        --gutter: 15px;
+    }
+    .nav {
+        height: 55px;
+        --nav-line: rgb(230, 230, 230);
+    }
+    main {
+        padding: 55px 0 0 15px;
+    }
+    .intro {
+        padding: 40px 0 20px 0;
+        width: 250px;
+    }
+    .tagline {
+        font-size: 14px;
+        letter-spacing: var(--track-14);
+    }
+    .work {
+        padding: 20px 15px 50px 0;
     }
 
     /* footer, phone variant: stacked */
