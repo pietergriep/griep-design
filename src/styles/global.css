@@ -8,6 +8,21 @@
     font-display: swap;
 }
 
+/* Inter Display (Inter 4.1, SIL OFL — license in /fonts). Only the two weights
+   the site uses; nothing on the page asks for bold. */
+@font-face {
+    font-family: "Inter Display";
+    src: url("/fonts/InterDisplay-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Inter Display";
+    src: url("/fonts/InterDisplay-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-display: swap;
+}
+
 :root {
     --ink: rgb(0, 0, 0);
     --ink-soft: rgba(0, 0, 0, 0.35);
@@ -16,6 +31,17 @@
     --badge: rgb(237, 237, 237);
     --badge-ink: rgb(74, 74, 74);
     --gutter: 40px;
+
+    /* Letter-spacing per text size, for Inter Display. The Display cut is spaced
+       for large sizes, so at these text sizes it sets 2-4.5% denser than Geist
+       did; the values below put back the rhythm the Geist tracking was tuned to.
+       Smaller text opens up a little more, the logo barely tightens. */
+    --track-logo: -0.01em;  /* 22px — was -0.03em under Geist */
+    --track-15: 0.012em;    /* intro: name, role, tagline */
+    --track-14: 0.006em;    /* work notes, footer; phone tagline */
+    --track-13: 0.008em;    /* badges, note buttons; phone notes */
+    --track-12: 0.014em;    /* copyright */
+    --track-11: 0.016em;    /* phone badges */
 }
 
 *,
@@ -34,7 +60,7 @@ body {
     margin: 0;
     background: #fff;
     color: var(--ink);
-    font-family: "Geist", "Geist Placeholder", sans-serif;
+    font-family: "Inter Display", "Geist", sans-serif;
     /* Framer's base text size; the components inherit it wherever they don't set their own */
     font-size: 12px;
     -webkit-font-smoothing: antialiased;
@@ -44,6 +70,13 @@ body {
        held opacity keeps the page as its own layer and the header's backdrop blur
        no longer sees the content scrolling underneath it */
     animation: page-in 0.2s cubic-bezier(0.27, 0, 0.51, 1) backwards;
+}
+
+/* The site is set in Inter Display, but the components keep Geist wherever
+   they inherit rather than set their own font — the body font change must not
+   reach inside them. */
+.island-root {
+    font-family: "Geist", "Geist Placeholder", sans-serif;
 }
 
 @keyframes page-in {
@@ -114,7 +147,7 @@ button {
     font-size: 22px;
     font-weight: 500;
     line-height: 1.2em;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--track-logo);
     cursor: pointer;
 }
 
@@ -143,7 +176,7 @@ main {
 .role,
 .tagline {
     font-size: 15px;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--track-15);
 }
 
 .name {
@@ -162,6 +195,7 @@ main {
     line-height: 1.3em;
     max-width: 100%;
 }
+
 
 /* Framer's withBlurIn: name + role together (0.45s), tagline staggered (0.6s).
    Hidden until the head script adds .intro-in (after the page fade-in and the font) */
@@ -299,7 +333,7 @@ main {
     font-size: 13px;
     font-weight: 500;
     line-height: 1.2em;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--track-13);
     pointer-events: none;
 }
 
@@ -334,7 +368,7 @@ main {
     font: inherit;
     font-size: 13px;
     font-weight: 500;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--track-13);
     cursor: pointer;
     transition: color 0.2s ease;
 }
@@ -386,12 +420,14 @@ main {
     margin: 6px 0 0;
     font-size: 14px;
     line-height: 1.45;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--track-14);
     color: rgb(30, 30, 30);
 }
 
+/* Carried over from the Framer file, where one "Interactive" badge was spaced
+   looser than the other. Both now share the badge spacing above. */
 .badge-tight {
-    letter-spacing: 0;
+    letter-spacing: var(--track-13);
 }
 
 .card-video video {
@@ -486,7 +522,7 @@ main {
 .label {
     font-size: 14px;
     line-height: 1.2em;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--track-14);
     color: var(--ink-soft);
 }
 
@@ -496,6 +532,7 @@ main {
     gap: 10px;
     font-size: 14px;
     line-height: 0.7em;
+    letter-spacing: var(--track-14);
 }
 
 .link span {
@@ -512,6 +549,7 @@ main {
 .barca {
     display: block;
     font-size: 14px;
+    letter-spacing: var(--track-14);
     text-align: left;
 }
 
@@ -555,6 +593,7 @@ main {
 .copyright {
     font-size: 12px;
     line-height: 0.7em;
+    letter-spacing: var(--track-12);
     color: rgba(0, 0, 0, 0.5);
 }
 
@@ -635,6 +674,7 @@ main {
     }
     .tagline {
         font-size: 14px;
+        letter-spacing: var(--track-14);
     }
     .work {
         padding: 20px 15px 50px 0;
@@ -659,12 +699,14 @@ main {
     }
     .work-note p {
         font-size: 13px;
+        letter-spacing: var(--track-13);
     }
     .card-wide-image img {
         width: 500px;
     }
     .badge {
         font-size: 11px;
+        letter-spacing: var(--track-11);
     }
 
     /* footer, phone variant: stacked */

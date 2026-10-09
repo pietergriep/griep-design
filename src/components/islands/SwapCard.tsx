@@ -6,7 +6,7 @@ import {
     useRef,
     useState,
 } from "react"
-import type { CSSProperties } from "react"
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react"
 import { addPropertyControls, ControlType, RenderTarget } from "framer"
 
 /**
@@ -116,13 +116,29 @@ const CSS = `
 
 .swap-card--static .swap-card__panel { cursor: pointer; }
 
-/* Each panel leans towards the other on hover, hinting at the exchange.
-   Suppressed mid-flip, where script owns the transform. */
-.swap-card--static:not(.swap-card--swapping) .swap-card__panel--sell:hover {
-  transform: translateX(calc(2px * var(--sc-scale))) translateZ(0);
-}
-.swap-card--static:not(.swap-card--swapping) .swap-card__panel--receive:hover {
-  transform: translateX(calc(-2px * var(--sc-scale))) translateZ(0);
+/* Hovering a panel hints that the two trade places: it slides over its partner
+   (on top, with a soft shadow and a little overshoot) while the partner stays put.
+   The lifted panel is a class set from script, not :hover, so that moving from one
+   panel to the other first lets the lifted one slide home (quick, no bounce) before
+   the other rises; its z-index drops only once it is back, so nothing pops over.
+   Mouse only (a tap would leave it stuck); suppressed mid-flip, where script owns
+   the transform. --sc-hover-* are props. */
+@media (hover: hover) and (pointer: fine) {
+  .swap-card--static:not(.swap-card--swapping) .swap-card__panel {
+    z-index: 0;
+    transition: transform var(--sc-return-ms) cubic-bezier(0.3, 0, 0.2, 1), box-shadow var(--sc-return-ms) ease, z-index 0s linear var(--sc-return-ms);
+  }
+  .swap-card--static:not(.swap-card--swapping) .swap-card__panel--lifted {
+    z-index: 2;
+    transition: transform var(--sc-hover-ms, 420ms) var(--sc-hover-ease), box-shadow 300ms ease, z-index 0s;
+    box-shadow: var(--sc-panel-ring), 0 calc(2px * var(--sc-scale)) calc(8px * var(--sc-scale)) rgba(0, 0, 0, var(--sc-hover-shadow));
+  }
+  .swap-card--static:not(.swap-card--swapping) .swap-card__panel--sell.swap-card__panel--lifted {
+    transform: translateX(calc(var(--sc-hover-shift) * var(--sc-scale))) translateZ(0);
+  }
+  .swap-card--static:not(.swap-card--swapping) .swap-card__panel--receive.swap-card__panel--lifted {
+    transform: translateX(calc(var(--sc-hover-shift) * -1 * var(--sc-scale))) translateZ(0);
+  }
 }
 
 .swap-card__panel--sell { background: #fff; }
@@ -1107,6 +1123,10 @@ interface Props {
     presets?: number[]
     selected?: number
     roll?: Partial<Roll>
+    hoverShift?: number
+    hoverBounce?: number
+    hoverShadow?: number
+    hoverReturn?: number
     onComplete?: () => void
     style?: CSSProperties
 }
@@ -1126,6 +1146,10 @@ export default function SwapCard(props: Props) {
         presets = DEFAULT_PRESETS,
         selected = 0,
         roll,
+        hoverShift = 8,
+        hoverBounce = 1.25,
+        hoverShadow = 0.035,
+        hoverReturn = 200,
         onComplete,
         style,
     } = props
@@ -1411,6 +1435,48 @@ export default function SwapCard(props: Props) {
         )
     }
 
+    /* Which panel is slid over its partner (see the hover CSS). Moving straight from
+     one panel to the other waits for the first to get home before lifting the second. */
+    type Side = "sell" | "receive"
+    const [lift, setLift] = useState<Side | null>(null)
+    const liftRef = useRef<Side | null>(null)
+    const dropped = useRef<{ side: Side; at: number } | null>(null)
+    const liftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const setLifted = (side: Side | null) => {
+        const was = liftRef.current
+        if (was && was !== side) dropped.current = { side: was, at: performance.now() }
+        liftRef.current = side
+        setLift(side)
+    }
+    /* Which side the cursor is on comes from the row's fixed midpoint, not from
+     :hover on the panels: they move under the cursor, so hit-testing them made
+     hover flip to the neighbour and back while the mouse stood still. */
+    const wantRef = useRef<Side | null>(null)
+    const hoverIn = (side: Side) => {
+        if (liftTimer.current) clearTimeout(liftTimer.current)
+        const other: Side = side === "sell" ? "receive" : "sell"
+        if (liftRef.current === other) setLifted(null)
+        const d = dropped.current
+        const wait = d && d.side === other ? hoverReturn - (performance.now() - d.at) : 0
+        if (wait > 0) liftTimer.current = setTimeout(() => setLifted(side), wait)
+        else setLifted(side)
+    }
+    const hoverMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+        if (e.pointerType !== "mouse") return
+        const r = e.currentTarget.getBoundingClientRect()
+        const side: Side = e.clientX < r.left + r.width / 2 ? "sell" : "receive"
+        if (side === wantRef.current) return
+        wantRef.current = side
+        hoverIn(side)
+    }
+    const hoverOut = (e: ReactPointerEvent) => {
+        if (e.pointerType !== "mouse") return
+        wantRef.current = null
+        if (liftTimer.current) clearTimeout(liftTimer.current)
+        setLifted(null)
+    }
+    useEffect(() => () => { if (liftTimer.current) clearTimeout(liftTimer.current) }, [])
+
     const doSwap = () => {
         /* Ignore clicks while the panels are still crossing: re-entering mid-flight
        restarts the slide from off-screen and lets a stale cleanup timer strip
@@ -1448,6 +1514,10 @@ export default function SwapCard(props: Props) {
         "--rn-duration": `${rollOptions.duration}ms`,
         "--rn-blur": rollOptions.blur,
         "--sc-scale": scale,
+        "--sc-hover-shift": `${hoverShift}px`,
+        "--sc-hover-ease": `cubic-bezier(0.34, ${hoverBounce}, 0.5, 1)`,
+        "--sc-hover-shadow": hoverShadow,
+        "--sc-return-ms": `${hoverReturn}ms`,
         ...style,
     } as CSSProperties
 
@@ -1459,10 +1529,17 @@ export default function SwapCard(props: Props) {
           Framer serves and the card never paints unstyled. */}
             <style>{CSS}</style>
 
-            <div className="swap-card__panels">
+            <div
+                className="swap-card__panels"
+                onPointerMove={hoverMove}
+                onPointerLeave={hoverOut}
+            >
                 <div
                     ref={sellRef}
-                    className="swap-card__panel swap-card__panel--sell"
+                    className={
+                        "swap-card__panel swap-card__panel--sell" +
+                        (lift === "sell" ? " swap-card__panel--lifted" : "")
+                    }
                     onClick={doSwap}
                 >
                     <div className="swap-card__panel-top">
@@ -1492,7 +1569,8 @@ export default function SwapCard(props: Props) {
                     ref={recRef}
                     className={
                         "swap-card__panel swap-card__panel--receive" +
-                        (landed ? " swap-card__panel--shimmering" : "")
+                        (landed ? " swap-card__panel--shimmering" : "") +
+                        (lift === "receive" ? " swap-card__panel--lifted" : "")
                     }
                     onClick={doSwap}
                 >
@@ -1656,6 +1734,44 @@ export default function SwapCard(props: Props) {
 SwapCard.displayName = "Swap card"
 
 addPropertyControls(SwapCard, {
+    hoverShift: {
+        type: ControlType.Number,
+        title: "Hover overlap",
+        min: 0,
+        max: 40,
+        step: 1,
+        defaultValue: 8,
+        unit: "px",
+        description: "How far a hovered panel slides over its partner, which stays put (the gap is 5px)",
+    },
+    hoverBounce: {
+        type: ControlType.Number,
+        title: "Hover bounce",
+        min: 1,
+        max: 2.6,
+        step: 0.05,
+        defaultValue: 1.25,
+        description: "1 = no overshoot; higher springs past and settles back",
+    },
+    hoverShadow: {
+        type: ControlType.Number,
+        title: "Hover shadow",
+        min: 0,
+        max: 0.2,
+        step: 0.005,
+        defaultValue: 0.035,
+        description: "Opacity of the shadow under the hovered panel (0 = none)",
+    },
+    hoverReturn: {
+        type: ControlType.Number,
+        title: "Hover return",
+        min: 80,
+        max: 600,
+        step: 10,
+        defaultValue: 200,
+        unit: "ms",
+        description: "How fast a panel slides home; moving to the other panel waits for this",
+    },
     scale: {
         type: ControlType.Number,
         title: "Scale",

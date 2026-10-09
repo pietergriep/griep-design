@@ -1164,6 +1164,44 @@ function mountFileGroups(root, opts) {
         t.el.style.transform = `translate(${t.pose.x.toFixed(2)}px,${t.pose.y.toFixed(2)}px) rotate(${t.pose.r.toFixed(3)}deg) scale(${t.pose.s.toFixed(4)})`
     }
 
+    // ---------- entrance: the files deal in the first time the explorer shows ----------
+    // Each tile (stack or loose file) fades and rises into place, in reading order; a
+    // stack's paperclip drops on once its papers have landed. Uses the separate
+    // translate / scale properties, so the tiles' own transform (their grid pose) is untouched.
+    const ENTER_DELAY = 180 // ms before the first tile
+    const ENTER_STAGGER = 65 // ms between tiles
+    const ENTER_MS = 760 // each tile's fade + rise
+    const ENTER_RISE = 14 // px each tile rises
+    function entrance() {
+        if (reduced.matches) return
+        const list = tiles()
+        if (!list.length) return
+        busy = true
+        groups.forEach((g) => clipSet(g, 0, `translateY(-24px) ${CLIP_TILT}`))
+        const done = list.map((t, i) => {
+            const a = t.el.animate(
+                [
+                    { opacity: 0, translate: `0 ${ENTER_RISE}px`, scale: "0.96" },
+                    { opacity: 1, translate: "0 0", scale: "1" },
+                ],
+                {
+                    duration: ENTER_MS * M(),
+                    delay: (ENTER_DELAY + i * ENTER_STAGGER) * M(),
+                    easing: "cubic-bezier(.2,.7,.2,1)",
+                    fill: "backwards",
+                }
+            )
+            return a.finished
+                .catch(() => {})
+                .then(() => (t.members ? clipTo(t, true, 460, "cubic-bezier(.25,.65,.3,1)") : null))
+        })
+        Promise.all(done).then(() => {
+            if (!alive) return
+            busy = false
+            renderBar()
+        })
+    }
+
     // ---------- curved travel ----------
     const active = new Set()
     let raf = null
@@ -5568,6 +5606,7 @@ function mountFileGroups(root, opts) {
     }
 
     reset()
+    entrance()
     requestAnimationFrame(syncBar)
     if (document.fonts && document.fonts.ready)
         document.fonts.ready.then(() => {
