@@ -6,6 +6,7 @@ import GasFeeBar from "../components/islands/GasFeeBarIsland.tsx"
 import SwapCard from "../components/islands/SwapCardIsland.tsx"
 import ConvertDustCard from "../components/islands/ConvertDustCardIsland.tsx"
 import RouteFinder from "../components/islands/RouteFinderIsland.tsx"
+import BusinessCard from "../components/islands/BusinessCardIsland.tsx"
 import WorkImage from "../components/WorkImage.astro"
 import WorkNote from "../components/WorkNote.astro"
 
@@ -85,6 +86,14 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
 
                 <div class="row" data-carousel>
                     <div class="track">
+                    <div class="work-item">
+                        <div class="card card-business">
+                            <span class="badge"><span class="badge-text">Interactive</span></span>
+                            <BusinessCard client:visible />
+                        </div>
+                        <WorkNote text="My business card as a component. The blocks are the Eixample, the Barcelona neighbourhood I live in, chamfered corners and the Diagonal included. It tilts with your cursor (or your phone), flips on click for a short intro, and the email on the back copies with a click." />
+                    </div>
+
                     <div class="work-item">
                         <div class="card card-route">
                             <RouteFinder client:visible />

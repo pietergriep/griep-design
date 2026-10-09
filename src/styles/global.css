@@ -660,7 +660,8 @@ main {
     .card-files {
         --card-pad: 0 10px;
     }
-    .card-route {
+    .card-route,
+    .card-business {
         --card-pad: 0 20px;
     }
     /* the carousel sizes each item to the screen; its card fills that width */
