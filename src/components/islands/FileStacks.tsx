@@ -88,6 +88,7 @@ const CSS = `
 .pcg .shell .bar .tools,.pcg .shell .bar .btn,.pcg .shell .bar .trashwrap,.pcg .shell .bar .crumb{flex-shrink:0}
 .pcg .tab{appearance:none;border:0;background:none;padding:0;cursor:pointer;white-space:nowrap;font:inherit;font-size:var(--t-size,22px);line-height:1.2;font-weight:var(--t-weight,600);letter-spacing:-.02em;color:var(--t-off,var(--tab-off,var(--ink-3)));transition:color .18s ease,opacity .18s ease}
 .pcg .crumb{display:flex;align-items:center;gap:calc(var(--t-size,22px) * .3);flex:none;white-space:nowrap;font-size:var(--t-size,22px);line-height:1.2;font-weight:var(--t-weight,600);letter-spacing:-.02em;color:var(--t-off,var(--ink-3))}
+.pcg .crumb-pill{background:none!important;padding:0!important} /* the location ("Projects") is plain text, not a pill */
 .pcg .crumb>svg{width:calc(var(--t-size,22px) * .62);height:calc(var(--t-size,22px) * .62);flex:none;opacity:.8}
 .pcg .crumb-pill{appearance:none;border:0;cursor:pointer;font:inherit;letter-spacing:inherit;font-size:var(--cr-fs,inherit);display:inline-flex;align-items:center;gap:.22em;padding:var(--cr-py,4px) var(--cr-pr,10px) var(--cr-py,4px) var(--cr-pl,10px);border-radius:var(--cr-r,10px);background:var(--cr-bg,var(--count-bg));color:var(--cr-fg,var(--cr-ink,var(--ink-2)));transition:filter .15s ease}
 .pcg .crumb-count{display:inline-flex;align-items:center;justify-content:center;font-size:.52em;font-weight:600;line-height:1.1;letter-spacing:var(--cc-ls,0px);padding:var(--cc-py,2px) calc(var(--cc-px,6px) - var(--cc-ls,0px)) var(--cc-py,2px) var(--cc-px,6px);border-radius:var(--cc-r,5px);font-variant-numeric:tabular-nums;background:var(--cc-bg,color-mix(in srgb, var(--cr-fg,var(--cr-ink,var(--ink-2))) 14%, transparent));color:var(--cc-fg,var(--cr-fg,var(--cr-ink,var(--ink-2))))}
@@ -255,6 +256,7 @@ to{transform:scale(1)}}
 .pcg .shell .bar .trash{padding:0 max(4px,calc(var(--bt-px,14px) - 6px));min-width:var(--bt-h,32px)}
 .pcg .shell .bar .btn:not(.primary):not(.danger):not(.ghost){background:var(--bt-bg,var(--btn2));color:var(--bt-fg,var(--ink))}
 .pcg .shell .bar .trash:not(.open):not(.active){background:var(--bt-bg,var(--btn2));color:var(--bt-fg,var(--ink-2))}
+.pcg .shell .bar .trash:not(.open) svg{color:var(--trash-ic,currentColor)}
 .pcg .shell .bar .trash.open{border-color:var(--danger-line)}
 .pcg .shell .bar .btn svg{width:var(--bt-ic,14px);height:var(--bt-ic,14px);flex:none}
 .pcg .shell .bar .btn svg.ico{stroke-width:var(--bt-sw,1)}
@@ -263,7 +265,7 @@ to{transform:scale(1)}}
 .pcg .shell .bar .trash{--tc-gap:var(--tcg,6px)}
 .pcg .shell .bar .trash.has{padding-right:var(--tc-gap)}
 .pcg .shell .bar .trash .count{height:calc(var(--bt-h,32px) - 2 * var(--tc-gap) - 2 * var(--bt-bw,0px));min-width:calc(var(--bt-h,32px) - 2 * var(--tc-gap) + 4px);border-radius:max(2px,calc(var(--bt-r,8px) - var(--tc-gap) - var(--bt-bw,0px)));font-size:var(--tc-fs,11px);font-weight:var(--tc-fw,var(--bd-fw,500))}
-.pcg .shell .tpop{--tp-bg:color-mix(in srgb,var(--c-bg),#000 var(--tp-shade,22%));background:var(--tp-bg);border:0;border-radius:calc(var(--bt-r,8px) + 6px);box-shadow:inset 0 0 0 var(--c-ib-w,0px) var(--c-ib-c,transparent),0 14px 36px #00000047,0 2px 8px #0000001f;color:var(--ink)}
+.pcg .shell .tpop{--tp-bg:color-mix(in srgb,var(--c-bg),#000 var(--tp-shade,22%));background:var(--tp-bg);border:0;border-radius:calc(var(--bt-r,8px) + 6px);box-shadow:inset 0 0 0 var(--tp-bw,0px) var(--tp-bc,transparent),0 14px 36px #00000047,0 2px 8px #0000001f;color:var(--ink)}
 .pcg .shell .tpop li{border-radius:max(4px,calc(var(--bt-r,8px) - 2px))}
 .pcg .shell .tpop li:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
 .pcg .shell .tpop .tpop-head .count{background:color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)}
@@ -5812,6 +5814,10 @@ export default function FileStacks(props: FileStacksProps) {
         settingsJSON,
         openOnLoad,
         insetBorder,
+        trashIconColor,
+        trashMenuBorderWidth = 0.5,
+        trashMenuBorderColor,
+        insetBorderWidth = 0.5,
         insetBorderColor,
         menuShade,
         style,
@@ -6046,8 +6052,12 @@ export default function FileStacks(props: FileStacksProps) {
                     transformOrigin: "0 0",
                     overflow: "visible",
                     // inset border on the whole container — 0.5px on screen, whatever the scale
-                    ["--c-ib-w" as any]: insetBorder ? `${0.5 / scale}px` : "0px",
+                    ["--c-ib-w" as any]: insetBorder ? `${insetBorderWidth / scale}px` : "0px",
                     ["--c-ib-c" as any]: insetBorderColor || "transparent",
+                    ["--trash-ic" as any]: trashIconColor || undefined,
+                    // the trash menu's own border (separate from the container's outer border)
+                    ["--tp-bw" as any]: `${trashMenuBorderWidth / scale}px`,
+                    ["--tp-bc" as any]: trashMenuBorderColor || "transparent",
                     // trash menu: a darker shade of the container, so it reads as a sub menu
                     ["--tp-shade" as any]: `${menuShade ?? 22}%`,
                     // per-type tag colours, passed as is so their opacity is kept
@@ -6129,6 +6139,10 @@ type FileStacksProps = {
     scale: number
     openOnLoad: string
     insetBorder: boolean
+    insetBorderWidth: number
+    trashIconColor: string
+    trashMenuBorderWidth: number
+    trashMenuBorderColor: string
     insetBorderColor: string
     menuShade: number
     style?: React.CSSProperties
@@ -6213,27 +6227,6 @@ addPropertyControls(FileStacks, {
         description:
             "Sizes everything together; the view still fills the frame.",
     },
-    openOnLoad: {
-        type: ControlType.String,
-        title: "Start open",
-        defaultValue: "",
-        placeholder: "Stack name",
-        description:
-            "Name of a stack that is already open when the page loads (not on phones). Leave empty to start closed.",
-    },
-    location: {
-        type: ControlType.String,
-        title: "Location",
-        defaultValue: "Projects",
-    },
-    theme: {
-        type: ControlType.Enum,
-        title: "Theme",
-        defaultValue: "dark",
-        options: ["dark", "light", "system"],
-        optionTitles: ["Dark", "Light", "System"],
-        displaySegmentedControl: true,
-    },
     perRow: {
         type: ControlType.Number,
         title: "Per row",
@@ -6250,6 +6243,14 @@ addPropertyControls(FileStacks, {
         min: 0,
         max: 64,
         unit: "px",
+    },
+    theme: {
+        type: ControlType.Enum,
+        title: "Theme",
+        defaultValue: "dark",
+        options: ["dark", "light", "system"],
+        optionTitles: ["Dark", "Light", "System"],
+        displaySegmentedControl: true,
     },
     background: {
         type: ControlType.Color,
@@ -6274,13 +6275,24 @@ addPropertyControls(FileStacks, {
     },
     insetBorder: {
         type: ControlType.Boolean,
-        title: "Inset border",
+        title: "Outer border",
         defaultValue: false,
-        description: "A 0.5px line just inside the edge of the whole container.",
+        description: "A line just inside the edge of the whole container.",
+    },
+    insetBorderWidth: {
+        type: ControlType.Number,
+        title: "Outer border width",
+        defaultValue: 0.5,
+        min: 0.25,
+        max: 4,
+        step: 0.25,
+        unit: "px",
+        description: "Drawn inside the edge, so it never changes the container's size.",
+        hidden: (props) => !props.insetBorder,
     },
     insetBorderColor: {
         type: ControlType.Color,
-        title: "Border colour",
+        title: "Outer border colour",
         defaultValue: "rgba(255, 255, 255, 0.12)",
         hidden: (props) => !props.insetBorder,
     },
@@ -6294,6 +6306,87 @@ addPropertyControls(FileStacks, {
         unit: "%",
         description:
             "How much darker the trash menu is than the container. 0 = same colour.",
+    },
+    bottomBlur: {
+        type: ControlType.Number,
+        title: "Bottom blur",
+        defaultValue: 8,
+        min: 0,
+        max: 24,
+        step: 1,
+        unit: "px",
+        description:
+            "The blur at the bottom edge where files scroll out of view. 0 turns it off.",
+    },
+    scrollbarColor: {
+        type: ControlType.Color,
+        title: "Scrollbar colour",
+        optional: true,
+        description: "Leave off to follow the background.",
+    },
+    openOnLoad: {
+        type: ControlType.String,
+        title: "Start open",
+        defaultValue: "",
+        placeholder: "Stack name",
+        description:
+            "Name of a stack that is already open when the page loads (not on phones). Leave empty to start closed.",
+    },
+    location: {
+        type: ControlType.String,
+        title: "Location",
+        defaultValue: "Projects",
+    },
+    pillSize: {
+        type: ControlType.Number,
+        title: "Location size",
+        defaultValue: 22,
+        min: 10,
+        max: 48,
+        step: 0.5,
+        unit: "px",
+        description: "Text size of the location (\u201cProjects\u201d).",
+    },
+    tabSize: {
+        type: ControlType.Number,
+        title: "Tab size",
+        defaultValue: 26,
+        min: 12,
+        max: 48,
+        step: 0.5,
+        unit: "px",
+        description:
+            "All files, Stacks, PDF… (phones use a slightly smaller size automatically).",
+    },
+    tabGap: {
+        type: ControlType.Number,
+        title: "Tab spacing",
+        defaultValue: 13,
+        min: 0,
+        max: 48,
+        step: 0.5,
+        unit: "px",
+        description: "Space between the tabs.",
+    },
+    headerGap: {
+        type: ControlType.Number,
+        title: "Header spacing",
+        defaultValue: 22,
+        min: 0,
+        max: 80,
+        step: 1,
+        unit: "px",
+        description: "Space between the header and the files.",
+    },
+    activeTab: {
+        type: ControlType.Color,
+        title: "Active tab",
+        defaultValue: "#FFFFFF",
+    },
+    otherTabs: {
+        type: ControlType.Color,
+        title: "Other tabs",
+        defaultValue: "#808080",
     },
     cardColor: {
         type: ControlType.Color,
@@ -6312,10 +6405,19 @@ addPropertyControls(FileStacks, {
     },
     fileBorderColor: {
         type: ControlType.Color,
-        title: "Border colour",
+        title: "File border colour",
         optional: true,
         description:
             "Leave off to follow the file colour. Sheets in a stack also get the Stack edge outline; set that to 0 to make them match.",
+    },
+    titleSize: {
+        type: ControlType.Number,
+        title: "File title size",
+        defaultValue: 16,
+        min: 9,
+        max: 22,
+        step: 0.5,
+        unit: "px",
     },
     skeletonColor: {
         type: ControlType.Color,
@@ -6331,117 +6433,10 @@ addPropertyControls(FileStacks, {
         description:
             "The stronger heading lines. Leave off to follow Skeleton.",
     },
-    stackLabelSize: {
-        type: ControlType.Number,
-        title: "Stack name size",
-        defaultValue: 12,
-        min: 8,
-        max: 24,
-        step: 0.5,
-        unit: "px",
-        description:
-            "The stack's name shown above its files: when the stack is open, and above stacked files under a type tab.",
-    },
-    labelClipColor: {
+    selectionColor: {
         type: ControlType.Color,
-        title: "Name clip",
-        optional: true,
-        description:
-            "The small paperclip next to the stack name above a file (type tabs). Leave off for the built-in grey.",
-    },
-    stackCountBg: {
-        type: ControlType.Color,
-        title: "Stack count",
-        optional: true,
-        description:
-            "Background of the number pill on a stack. Leave off to follow the file colour.",
-    },
-    stackCountText: {
-        type: ControlType.Color,
-        title: "Stack count text",
-        optional: true,
-    },
-    stackShade: {
-        type: ControlType.Number,
-        title: "Stack shade",
-        defaultValue: 12,
-        min: 0,
-        max: 30,
-        step: 0.5,
-        unit: "%",
-        description:
-            "How much darker each sheet behind the top one gets in a stack.",
-    },
-    stackFan: {
-        type: ControlType.Number,
-        title: "Stack fan",
-        defaultValue: 1.8,
-        min: 0,
-        max: 4,
-        step: 0.1,
-        displayStepper: false,
-        description:
-            "How far the sheets behind are turned, so more of them shows. 1 is the original angle.",
-    },
-    stackShadow: {
-        type: ControlType.Number,
-        title: "Stack shadow",
-        defaultValue: 42,
-        min: 0,
-        max: 100,
-        step: 1,
-        unit: "%",
-        description:
-            "Strength of the shadow under each sheet in a stack. 0 turns it off.",
-    },
-    clipShadow: {
-        type: ControlType.Number,
-        title: "Clip shadow",
-        defaultValue: 18,
-        min: 0,
-        max: 100,
-        step: 1,
-        unit: "%",
-        description: "Strength of the paperclip's shadow. 0 turns it off.",
-    },
-    stackEdge: {
-        type: ControlType.Number,
-        title: "Stack edge",
-        defaultValue: 9,
-        min: 0,
-        max: 40,
-        step: 1,
-        unit: "%",
-        description:
-            "The thin light outline around each sheet in a stack. 0 turns it off.",
-    },
-    bottomBlur: {
-        type: ControlType.Number,
-        title: "Bottom blur",
-        defaultValue: 8,
-        min: 0,
-        max: 24,
-        step: 1,
-        unit: "px",
-        description:
-            "The blur at the bottom edge where files scroll out of view. 0 turns it off.",
-    },
-    scrollbarColor: {
-        type: ControlType.Color,
-        title: "Scrollbar",
-        optional: true,
-        description: "Leave off to follow the background.",
-    },
-    tagTextTint: {
-        type: ControlType.Number,
-        title: "Type text tint",
-        defaultValue: 17,
-        min: 0,
-        max: 100,
-        step: 1,
-        unit: "%",
-        description:
-            "How far the .pdf / .fig tag text is pulled from its colour toward the file text colour (toward black with the Pill style). 0 is the pure type colour.",
+        title: "Selection colour",
+        defaultValue: "#84E287",
     },
     tagStyle: {
         type: ControlType.Enum,
@@ -6460,6 +6455,17 @@ addPropertyControls(FileStacks, {
         step: 1,
         unit: "%",
         description: "How strongly the type colour shows in the tag background.",
+    },
+    tagTextTint: {
+        type: ControlType.Number,
+        title: "Tag text tint",
+        defaultValue: 17,
+        min: 0,
+        max: 100,
+        step: 1,
+        unit: "%",
+        description:
+            "How far the .pdf / .fig tag text is pulled from its colour toward the file text colour (toward black with the Pill style). 0 is the pure type colour.",
     },
     pdfText: {
         type: ControlType.Color,
@@ -6513,79 +6519,93 @@ addPropertyControls(FileStacks, {
         optional: true,
         description: "Use the alpha slider for opacity.",
     },
-    titleSize: {
+    stackLabelSize: {
         type: ControlType.Number,
-        title: "File title",
-        defaultValue: 16,
-        min: 9,
-        max: 22,
-        step: 0.5,
-        unit: "px",
-    },
-    selectionColor: {
-        type: ControlType.Color,
-        title: "Selection",
-        defaultValue: "#84E287",
-    },
-    tabSize: {
-        type: ControlType.Number,
-        title: "Tab size",
-        defaultValue: 26,
-        min: 12,
-        max: 48,
+        title: "Stack name size",
+        defaultValue: 12,
+        min: 8,
+        max: 24,
         step: 0.5,
         unit: "px",
         description:
-            "All files, Stacks, PDF… (phones use a slightly smaller size automatically).",
+            "The stack's name shown above its files: when the stack is open, and above stacked files under a type tab.",
     },
-    tabGap: {
+    labelClipColor: {
+        type: ControlType.Color,
+        title: "Stack name clip",
+        optional: true,
+        description:
+            "The small paperclip next to the stack name above a file (type tabs). Leave off for the built-in grey.",
+    },
+    stackCountBg: {
+        type: ControlType.Color,
+        title: "Stack count",
+        optional: true,
+        description:
+            "Background of the number pill on a stack. Leave off to follow the file colour.",
+    },
+    stackCountText: {
+        type: ControlType.Color,
+        title: "Stack count text",
+        optional: true,
+    },
+    stackShade: {
         type: ControlType.Number,
-        title: "Tab spacing",
-        defaultValue: 13,
+        title: "Stack shade",
+        defaultValue: 12,
         min: 0,
-        max: 48,
+        max: 30,
         step: 0.5,
-        unit: "px",
-        description: "Space between the tabs.",
+        unit: "%",
+        description:
+            "How much darker each sheet behind the top one gets in a stack.",
     },
-    headerGap: {
+    stackFan: {
         type: ControlType.Number,
-        title: "Header spacing",
-        defaultValue: 22,
+        title: "Stack fan",
+        defaultValue: 1.8,
         min: 0,
-        max: 80,
+        max: 4,
+        step: 0.1,
+        displayStepper: false,
+        description:
+            "How far the sheets behind are turned, so more of them shows. 1 is the original angle.",
+    },
+    stackShadow: {
+        type: ControlType.Number,
+        title: "Stack shadow",
+        defaultValue: 42,
+        min: 0,
+        max: 100,
         step: 1,
-        unit: "px",
-        description: "Space between the header and the files.",
+        unit: "%",
+        description:
+            "Strength of the shadow under each sheet in a stack. 0 turns it off.",
     },
-    activeTab: {
-        type: ControlType.Color,
-        title: "Active tab",
-        defaultValue: "#FFFFFF",
-    },
-    otherTabs: {
-        type: ControlType.Color,
-        title: "Other tabs",
-        defaultValue: "#808080",
-    },
-    pillColor: {
-        type: ControlType.Color,
-        title: "Pill",
-        defaultValue: "#474747",
-    },
-    pillSize: {
+    stackEdge: {
         type: ControlType.Number,
-        title: "Pill text",
-        defaultValue: 22,
-        min: 10,
-        max: 48,
-        step: 0.5,
-        unit: "px",
-        description: "Text size of the Projects pill.",
+        title: "Stack edge",
+        defaultValue: 9,
+        min: 0,
+        max: 40,
+        step: 1,
+        unit: "%",
+        description:
+            "The thin light outline around each sheet in a stack. 0 turns it off.",
+    },
+    clipShadow: {
+        type: ControlType.Number,
+        title: "Clip shadow",
+        defaultValue: 18,
+        min: 0,
+        max: 100,
+        step: 1,
+        unit: "%",
+        description: "Strength of the paperclip's shadow. 0 turns it off.",
     },
     buttonColor: {
         type: ControlType.Color,
-        title: "Buttons",
+        title: "Button colour",
         defaultValue: "#424242",
     },
     buttonIcon: {
@@ -6624,22 +6644,52 @@ addPropertyControls(FileStacks, {
         step: 0.5,
         unit: "px",
     },
+    buttonGap: {
+        type: ControlType.Number,
+        title: "Button icon spacing",
+        defaultValue: 7,
+        min: 0,
+        max: 20,
+        step: 0.5,
+        unit: "px",
+    },
+    trashIconColor: {
+        type: ControlType.Color,
+        title: "Trash icon colour",
+        optional: true,
+        description: "Leave off to match the other buttons. It still turns red while a file is dragged over it.",
+    },
+    trashMenuBorderWidth: {
+        type: ControlType.Number,
+        title: "Trash menu border width",
+        defaultValue: 0.5,
+        min: 0,
+        max: 4,
+        step: 0.25,
+        unit: "px",
+        description: "The line around the trash menu, drawn inside its edge. 0 turns it off.",
+    },
+    trashMenuBorderColor: {
+        type: ControlType.Color,
+        title: "Trash menu border colour",
+        defaultValue: "rgba(255, 255, 255, 0.25)",
+    },
     trashCountBg: {
         type: ControlType.Color,
-        title: "Trash count",
+        title: "Trash count colour",
         optional: true,
         description:
             "Background of the number pill in the trash button. Leave off to match the .pdf tag.",
     },
     trashCountText: {
         type: ControlType.Color,
-        title: "Count text",
+        title: "Trash count text",
         optional: true,
         description: "Colour of the number. Leave off to match the .pdf tag.",
     },
     trashCountSize: {
         type: ControlType.Number,
-        title: "Count size",
+        title: "Trash count size",
         defaultValue: 11,
         min: 8,
         max: 18,
@@ -6648,14 +6698,14 @@ addPropertyControls(FileStacks, {
     },
     trashCountWeight: {
         type: ControlType.Enum,
-        title: "Count weight",
+        title: "Trash count weight",
         options: [400, 500, 600, 700],
         optionTitles: ["Regular", "Medium", "Semibold", "Bold"],
         defaultValue: 500,
     },
     trashCountInset: {
         type: ControlType.Number,
-        title: "Count inset",
+        title: "Trash count inset",
         defaultValue: 6,
         min: 2,
         max: 12,
@@ -6663,15 +6713,6 @@ addPropertyControls(FileStacks, {
         unit: "px",
         description:
             "Gap between the number pill and the trash button edge. The pill's corner follows it.",
-    },
-    buttonGap: {
-        type: ControlType.Number,
-        title: "Icon spacing",
-        defaultValue: 7,
-        min: 0,
-        max: 20,
-        step: 0.5,
-        unit: "px",
     },
     settingsJSON: {
         type: ControlType.String,

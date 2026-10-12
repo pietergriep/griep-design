@@ -25,9 +25,9 @@ type Entry = {
 const ISLAND = "FileStacks"
 const TITLE = "File Explorer"
 // shown first, in this order (saved names)
-const PINNED = ["insetBorder", "borderColour", "pdfText", "pdfFill", "figText", "figFill", "docxText", "docxFill", "xlsxText", "xlsxFill"]
+const PINNED = ["outerBorder", "outerBorderWidth", "outerBorderColour", "pdfText", "pdfFill", "figText", "figFill", "docxText", "docxFill", "xlsxText", "xlsxFill"]
 // clearer names where Framer's labels repeat (saved name -> label)
-const RENAME: Record<string, string> = { insetBorder: "Outer border", borderColour: "Outer border colour", borderColour1: "File border colour" }
+const RENAME: Record<string, string> = {} // (the File Explorer's own names are unique now)
 const SKIP = new Set(["array", "object", "file", "image", "responsiveimage", "eventhandler", "componentinstance", "font", "transition"])
 
 const CSS = `
@@ -244,7 +244,8 @@ function build(entry: Entry) {
         }
         range.addEventListener("input", () => setAll(range.value))
         num.addEventListener("input", () => setAll(num.value))
-        const firstPill = body.querySelectorAll(".tune-row")[2]
+        // just above the first type-pill row
+        const firstPill = [...body.querySelectorAll<HTMLElement>(".tune-row")].find((r) => r.querySelector("label")?.textContent?.startsWith(".")) ?? null
         body.insertBefore(row, firstPill)
         jsonRows.forEach((r) => body.insertBefore(r, row))
         rows.push({ el: row, text: "pill background opacity" })
