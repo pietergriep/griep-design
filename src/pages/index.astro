@@ -210,6 +210,8 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
 
         <script>
             import "../scripts/carousel.ts"
+            // the settings panel for tuning components: dev server only, left out of builds
+            if (import.meta.env.DEV) import("../scripts/tune.ts")
             import "../scripts/footer.ts"
             import "../scripts/cursor.ts"
             import "../scripts/appear.ts"

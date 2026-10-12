@@ -119,7 +119,7 @@ const CSS = `
 .pcg .group .paper{cursor:default}
 .pcg .sheet{--u:calc(100cqw / 235);--pill:color-mix(in srgb, var(--card), #808080 var(--mx-pill));--line1:var(--sk-strong, color-mix(in srgb, var(--card), #808080 var(--mx-l1)));--line2:var(--sk, color-mix(in srgb, var(--card), #808080 var(--mx-l2)));--img:var(--sk, color-mix(in srgb, var(--card), #808080 var(--mx-img)));position:absolute;inset:0;background:var(--card);border:var(--fb-w,1px) var(--fb-s,solid) var(--fb-c,color-mix(in srgb, var(--card), #808080 20%));border-radius:calc(var(--u) * 15);background:color-mix(in srgb,var(--card),#000 calc(var(--k, 0) * var(--stack-step, 6%)));transition:border-color .25s ease,background-color .35s ease}
 .pcg .sheet,.pcg .group>.glabel{--in:calc(var(--u) * var(--f-in,16));--pt:calc(var(--u) * var(--f-pt,10));--t-h:calc(var(--u) * var(--ft,12) * 1.2 + 2px);--p-h:calc(var(--u) * (var(--bd-fs,9) + 2 * var(--bd-py,2.5)));--c-h2:calc(var(--u) * (var(--gc-fs,9) + 2 * var(--gc-py,2.5)));--row:max(var(--t-h), var(--p-h), var(--c-h2))}
-.pcg .sheet .ttl{position:absolute;left:var(--in);right:calc(var(--in) + var(--u) * 46);top:calc(var(--pt) + (var(--row) - var(--t-h)) / 2);height:calc(var(--u) * var(--ft,12) * 1.2 + 2px);line-height:calc(var(--u) * var(--ft,12) * 1.2 + 2px);font-size:calc(var(--u) * var(--ft,12));font-weight:500;letter-spacing:-.01em;color:var(--card-ink,var(--ink));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcg .sheet .ttl{position:absolute;left:var(--in);right:calc(var(--in) + var(--u) * var(--t-room,46));top:calc(var(--pt) + (var(--row) - var(--t-h)) / 2);height:calc(var(--u) * var(--ft,12) * 1.2 + 2px);line-height:calc(var(--u) * var(--ft,12) * 1.2 + 2px);font-size:calc(var(--u) * var(--ft,12) * var(--t-fit,1));font-weight:500;letter-spacing:-.01em;color:var(--card-ink,var(--ink));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcg .sheet .type{position:absolute;right:var(--in);top:calc(var(--pt) + (var(--row) - var(--p-h)) / 2);height:calc(var(--u) * (var(--bd-fs,9) + 2 * var(--bd-py,2.5)));padding:0 calc(var(--u) * var(--bd-px,4));border-radius:calc(var(--u) * var(--bd-r,3));display:flex;align-items:center;font-size:calc(var(--u) * var(--bd-fs,9));font-weight:var(--bd-fw,500);letter-spacing:calc(var(--u) * var(--bd-ls,.1));text-transform:var(--bd-tt,none);color:var(--tt,color-mix(in srgb,var(--tc),var(--card-ink,var(--ink)) var(--bd-tx,56%)));background:var(--tb,color-mix(in srgb,var(--tc) var(--bd-mix,11%),var(--card)));transition:transform .28s cubic-bezier(.3,1.2,.5,1)}
 .pcg .paper[data-type=fig]{--tc:var(--t-fig);--tt:var(--tt-fig);--tb:var(--tb-fig)}
 .pcg .paper[data-type=pdf]{--tc:var(--t-pdf);--tt:var(--tt-pdf);--tb:var(--tb-pdf)}
@@ -1148,6 +1148,7 @@ function mountFileGroups(root, opts) {
             apply(tile)
         })
         groups.forEach(placeClip)
+        fitTitles()
         // sheets inside closed stacks take their pose again (the fan angle may have changed)
         if (!busy)
             groups.forEach((g) => {
@@ -1159,6 +1160,42 @@ function mountFileGroups(root, opts) {
                     }
                 })
             })
+    }
+    // A long file title shrinks to keep a clear gap before its type pill (never below
+    // TITLE_MIN of the set size; past that it ends in "…"). Measured in layout px and
+    // stored in card units, so it holds at any scale. Stack names are left alone.
+    const TITLE_GAP = 12 // card units between title and pill
+    const TITLE_MIN = 0.72
+    function fitTitles() {
+        const items = papers
+            .map((p) => ({ sheet: p.el.querySelector(".sheet"), t: p.el.querySelector(".ttl:not(.gttl)"), pill: p.el.querySelector(".type") }))
+            .filter((x) => x.sheet && x.t && x.pill && x.sheet.offsetWidth)
+        // measure each title at full size and natural width (right: auto shrinks the box to the text)
+        items.forEach(({ t }) => {
+            t.style.removeProperty("--t-fit")
+            t.style.right = "auto"
+        })
+        const reads = items.map(({ sheet, t, pill }) => {
+            // exact layout positions (offsetLeft / offsetWidth round to whole px, enough
+            // to cut a title off at this size): screen rects divided by the on-screen scale
+            const sw = parseFloat(getComputedStyle(sheet).width) || sheet.offsetWidth
+            const sr = sheet.getBoundingClientRect()
+            const zoom = sr.width / sw || 1
+            const u = sw / 235
+            const tl = (t.getBoundingClientRect().left - sr.left) / zoom
+            const pl = (pill.getBoundingClientRect().left - sr.left) / zoom
+            const natural = t.getBoundingClientRect().width / zoom
+            // the CSS right edge is the side padding (= the title's left offset) + room
+            const room = (sw - pl - tl) / u + TITLE_GAP
+            const avail = pl - tl - TITLE_GAP * u
+            // 2% slack: text doesn't scale perfectly linearly, and a hair over would show "…"
+            return { t, room, fit: avail > 0 && natural > 0 ? (avail / natural) * 0.98 : 1 }
+        })
+        reads.forEach(({ t, room, fit }) => {
+            t.style.removeProperty("right")
+            t.style.setProperty("--t-room", room.toFixed(2))
+            if (fit < 1) t.style.setProperty("--t-fit", Math.max(TITLE_MIN, fit).toFixed(3))
+        })
     }
     function apply(t) {
         t.el.style.transform = `translate(${t.pose.x.toFixed(2)}px,${t.pose.y.toFixed(2)}px) rotate(${t.pose.r.toFixed(3)}deg) scale(${t.pose.s.toFixed(4)})`
@@ -1495,11 +1532,11 @@ function mountFileGroups(root, opts) {
             crumbEl.className = "crumb"
             crumbEl.setAttribute("aria-label", "Location: " + LOC)
             crumbEl.innerHTML =
-                '<button type="button" class="crumb-pill" aria-haspopup="menu" aria-label="Location: ' +
+                '<button type="button" class="crumb-pill" aria-label="Location: ' +
                 esc(LOC) +
                 '"><span>' +
                 esc(LOC) +
-                '</span><span class="crumb-count"></span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5l4 4 4-4"/></svg></button><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5l4.5 4.5L6 12.5"/></svg>'
+                '</span><span class="crumb-count"></span></button><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5l4.5 4.5L6 12.5"/></svg>'
             crumbEl
                 .querySelector(".crumb-pill")
                 .addEventListener("click", (e) => e.stopPropagation())
@@ -4204,6 +4241,7 @@ function mountFileGroups(root, opts) {
     const ctl = $("ctl")
     function applyC(relay) {
         shell.style.setProperty("--ft", C.ft)
+        requestAnimationFrame(fitTitles)
         $("cFt").value = C.ft
         $("cFtV").textContent = C.ft
         ;[

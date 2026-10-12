@@ -67,7 +67,7 @@ const labelKey = (title: string) => {
 }
 
 // For each control key, where its value sits in Framer's saved data.
-const savedKeys = (controls: Record<string, Control>) => {
+export const savedKeys = (controls: Record<string, Control>) => {
     const seen: Record<string, number> = {}
     const out: Record<string, string> = {}
     for (const [key, control] of Object.entries(controls)) {

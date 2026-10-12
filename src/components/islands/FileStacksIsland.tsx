@@ -1,4 +1,4 @@
 import Component from "./FileStacks"
 import { makeIsland } from "../../lib/island"
 
-export default makeIsland(Component)
+export default makeIsland(Component, "FileStacks")
