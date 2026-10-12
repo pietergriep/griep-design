@@ -70,6 +70,10 @@ const CSS = `
 .pcg .sbar.dragging .thumb{cursor:grabbing}
 .pcg .shell .bar{position:sticky;top:calc(-1 * var(--c-pad-top));z-index:250;margin:calc(-1 * var(--c-pad-top)) calc(-1 * var(--c-pad)) var(--hd-gap,22px);padding:var(--c-pad-top) var(--c-pad) 12px;background:transparent}
 .pcg .pblur{position:absolute;left:0;right:0;top:0;height:calc(100% + var(--pb-ext,44px));z-index:-1;pointer-events:none;border-radius:max(0px,calc(var(--c-radius,24px) - var(--c-bw,0px))) max(0px,calc(var(--c-radius,24px) - var(--c-bw,0px))) 0 0;background:linear-gradient(to bottom,color-mix(in srgb,var(--c-bga) var(--pb-tint,70%),transparent) 0%,color-mix(in srgb,var(--c-bga) calc(var(--pb-tint,70%) * .6),transparent) 60%,transparent 100%)}
+/* nothing inside may show past the container's rounded edge: Chrome sometimes drew a strip
+   of the header blur (blurred files) just above it. Clipped on the frame, which is already
+   the blur's backdrop root, so the blur itself keeps working. */
+.pcg .frame{clip-path:inset(0 round var(--c-radius,24px))}
 .pcg .pblur i{position:absolute;inset:0;border-radius:inherit;-webkit-backdrop-filter:blur(var(--b));backdrop-filter:blur(var(--b));-webkit-mask-image:linear-gradient(to top,transparent var(--m0),#000 var(--m1),#000 var(--m2),transparent var(--m3));mask-image:linear-gradient(to top,transparent var(--m0),#000 var(--m1),#000 var(--m2),transparent var(--m3))}
 .pcg .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;row-gap:10px;min-height:34px;margin-bottom:22px;position:relative;box-sizing:content-box;padding-bottom:10px}
 .pcg .bar .spacer{flex:1}
@@ -88,7 +92,9 @@ const CSS = `
 .pcg .shell .bar .tools,.pcg .shell .bar .btn,.pcg .shell .bar .trashwrap,.pcg .shell .bar .crumb{flex-shrink:0}
 .pcg .tab{appearance:none;border:0;background:none;padding:0;cursor:pointer;white-space:nowrap;font:inherit;font-size:var(--t-size,22px);line-height:1.2;font-weight:var(--t-weight,600);letter-spacing:-.02em;color:var(--t-off,var(--tab-off,var(--ink-3)));transition:color .18s ease,opacity .18s ease}
 .pcg .crumb{display:flex;align-items:center;gap:calc(var(--t-size,22px) * .3);flex:none;white-space:nowrap;font-size:var(--t-size,22px);line-height:1.2;font-weight:var(--t-weight,600);letter-spacing:-.02em;color:var(--t-off,var(--ink-3))}
-.pcg .crumb-pill{background:none!important;padding:0!important} /* the location ("Projects") is plain text, not a pill */
+/* the location ("Projects"): plain text, or a pill when "Location pill" is on (its colour
+   and padding come from the settings via --loc-bg / --loc-pad) */
+.pcg .crumb-pill{background:var(--loc-bg,none)!important;padding:var(--loc-pad,0)!important}
 .pcg .crumb>svg{width:calc(var(--t-size,22px) * .62);height:calc(var(--t-size,22px) * .62);flex:none;opacity:.8}
 .pcg .crumb-pill{appearance:none;border:0;cursor:pointer;font:inherit;letter-spacing:inherit;font-size:var(--cr-fs,inherit);display:inline-flex;align-items:center;gap:.22em;padding:var(--cr-py,4px) var(--cr-pr,10px) var(--cr-py,4px) var(--cr-pl,10px);border-radius:var(--cr-r,10px);background:var(--cr-bg,var(--count-bg));color:var(--cr-fg,var(--cr-ink,var(--ink-2)));transition:filter .15s ease}
 .pcg .crumb-count{display:inline-flex;align-items:center;justify-content:center;font-size:.52em;font-weight:600;line-height:1.1;letter-spacing:var(--cc-ls,0px);padding:var(--cc-py,2px) calc(var(--cc-px,6px) - var(--cc-ls,0px)) var(--cc-py,2px) var(--cc-px,6px);border-radius:var(--cc-r,5px);font-variant-numeric:tabular-nums;background:var(--cc-bg,color-mix(in srgb, var(--cr-fg,var(--cr-ink,var(--ink-2))) 14%, transparent));color:var(--cc-fg,var(--cr-fg,var(--cr-ink,var(--ink-2))))}
@@ -5815,6 +5821,10 @@ export default function FileStacks(props: FileStacksProps) {
         openOnLoad,
         insetBorder,
         trashIconColor,
+        locationPill = false,
+        locationPillColor,
+        locationPillPaddingX = 10,
+        locationPillPaddingY = 2,
         trashMenuBorderWidth = 0.5,
         trashMenuBorderColor,
         insetBorderWidth = 0.5,
@@ -6055,6 +6065,8 @@ export default function FileStacks(props: FileStacksProps) {
                     ["--c-ib-w" as any]: insetBorder ? `${insetBorderWidth / scale}px` : "0px",
                     ["--c-ib-c" as any]: insetBorderColor || "transparent",
                     ["--trash-ic" as any]: trashIconColor || undefined,
+                    ["--loc-bg" as any]: locationPill ? locationPillColor || "#7d7d7d" : undefined,
+                    ["--loc-pad" as any]: locationPill ? `${locationPillPaddingY}px ${locationPillPaddingX}px` : undefined,
                     // the trash menu's own border (separate from the container's outer border)
                     ["--tp-bw" as any]: `${trashMenuBorderWidth / scale}px`,
                     ["--tp-bc" as any]: trashMenuBorderColor || "transparent",
@@ -6141,6 +6153,10 @@ type FileStacksProps = {
     insetBorder: boolean
     insetBorderWidth: number
     trashIconColor: string
+    locationPill: boolean
+    locationPillColor: string
+    locationPillPaddingX: number
+    locationPillPaddingY: number
     trashMenuBorderWidth: number
     trashMenuBorderColor: string
     insetBorderColor: string
@@ -6346,6 +6362,40 @@ addPropertyControls(FileStacks, {
         step: 0.5,
         unit: "px",
         description: "Text size of the location (\u201cProjects\u201d).",
+    },
+    locationPill: {
+        type: ControlType.Boolean,
+        title: "Location pill",
+        defaultValue: false,
+        description: "Show the location (\u201cProjects\u201d) as a pill instead of plain text.",
+    },
+    locationPillColor: {
+        type: ControlType.Color,
+        title: "Location pill colour",
+        defaultValue: "#7d7d7d",
+        hidden: (props) => !props.locationPill,
+    },
+    locationPillPaddingX: {
+        type: ControlType.Number,
+        title: "Location pill padding X",
+        defaultValue: 10,
+        min: 0,
+        max: 32,
+        step: 1,
+        unit: "px",
+        description: "Left and right.",
+        hidden: (props) => !props.locationPill,
+    },
+    locationPillPaddingY: {
+        type: ControlType.Number,
+        title: "Location pill padding Y",
+        defaultValue: 2,
+        min: 0,
+        max: 16,
+        step: 1,
+        unit: "px",
+        description: "Top and bottom.",
+        hidden: (props) => !props.locationPill,
     },
     tabSize: {
         type: ControlType.Number,

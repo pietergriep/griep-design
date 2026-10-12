@@ -139,7 +139,7 @@
     "docxFill": "rgba(24, 114, 160, 0.45)",
     "xlsxText": "#eef6f1",
     "xlsxFill": "rgba(15, 120, 60, 0.45)",
-    "fileTitleSize": "18",
+    "fileTitleSize": "19.5",
     "selectionColour": "rgba(132, 226, 135, 0.75)",
     "tabSize": "23",
     "tabSpacing": "13",
@@ -160,7 +160,9 @@
     "buttonIconSpacing": "5",
     "settingsJSON": "{\"selW\":1,\"selWash\":6,\"cOp\":100,\"fPt\":10,\"fIn\":16,\"fGap\":24,\"gcFs\":14,\"gcFw\":500,\"gcPx\":9,\"gcPy\":6,\"gcR\":7,\"gcLs\":0,\"gcBg\":\"#666666\",\"btFs\":13,\"btFw\":500,\"btH\":32,\"btPx\":14,\"btR\":11,\"btGap\":8,\"btIc\":14,\"btSw\":1,\"btBw\":0,\"ccOn\":\"off\",\"ccBg\":\"#3d3d3d\",\"ccPx\":5.5,\"ccPy\":3.5,\"ccR\":5,\"ccLs\":-1,\"bb\":8,\"sbW\":5,\"pb\":8,\"crFs\":22,\"dimB\":2,\"crFg\":\"#ffffff\",\"crPl\":10,\"crPr\":10,\"crPy\":2,\"crR\":10,\"dim\":14,\"fbW\":0.5,\"fbS\":\"solid\",\"stk\":5.5,\"bdSt\":\"tint\",\"bdLb\":\"dot\",\"bdFs\":13.5,\"bdFw\":500,\"bdR\":7,\"bdMx\":15,\"bdOn\":\"on\",\"bdPx\":7,\"bdPy\":6,\"bdLs\":0.1,\"bdTx\":17,\"tPdf\":\"#ff4e47\",\"tFig\":\"#fc4dff\",\"tDocx\":\"#66e0ff\",\"tXlsx\":\"#14ff6e\",\"fw\":400,\"padTop\":15,\"div\":\"#2b2b2b\",\"bw\":0,\"bc\":\"#f0f0f0\",\"shadow\":\"none\"}",
     "outerBorderWidth": "1",
-    "trashIconColour": "#c9c9c9"
+    "trashIconColour": "#c9c9c9",
+    "locationPill": "true",
+    "locationPillColour": "#8f8f8f"
    }
   },
   "tablet": {
@@ -302,7 +304,7 @@
     "docxFill": "rgba(24, 114, 160, 0.45)",
     "xlsxText": "#eef6f1",
     "xlsxFill": "rgba(15, 120, 60, 0.45)",
-    "fileTitleSize": "18",
+    "fileTitleSize": "19.5",
     "selectionColour": "rgba(132, 226, 135, 0.75)",
     "tabSize": "23",
     "tabSpacing": "13",
@@ -323,7 +325,9 @@
     "buttonIconSpacing": "5",
     "settingsJSON": "{\"selW\":1,\"selWash\":6,\"cOp\":100,\"fPt\":10,\"fIn\":16,\"fGap\":24,\"gcFs\":14,\"gcFw\":500,\"gcPx\":9,\"gcPy\":6,\"gcR\":7,\"gcLs\":0,\"gcBg\":\"#666666\",\"btFs\":13,\"btFw\":500,\"btH\":32,\"btPx\":14,\"btR\":11,\"btGap\":8,\"btIc\":14,\"btSw\":1,\"btBw\":0,\"ccOn\":\"off\",\"ccBg\":\"#3d3d3d\",\"ccPx\":5.5,\"ccPy\":3.5,\"ccR\":5,\"ccLs\":-1,\"bb\":8,\"sbW\":5,\"pb\":8,\"crFs\":22,\"dimB\":2,\"crFg\":\"#ffffff\",\"crPl\":10,\"crPr\":10,\"crPy\":2,\"crR\":10,\"dim\":14,\"fbW\":0.5,\"fbS\":\"solid\",\"stk\":5.5,\"bdSt\":\"tint\",\"bdLb\":\"dot\",\"bdFs\":13.5,\"bdFw\":500,\"bdR\":7,\"bdMx\":15,\"bdOn\":\"on\",\"bdPx\":7,\"bdPy\":6,\"bdLs\":0.1,\"bdTx\":17,\"tPdf\":\"#ff4e47\",\"tFig\":\"#fc4dff\",\"tDocx\":\"#66e0ff\",\"tXlsx\":\"#14ff6e\",\"fw\":400,\"padTop\":15,\"div\":\"#2b2b2b\",\"bw\":0,\"bc\":\"#f0f0f0\",\"shadow\":\"none\"}",
     "outerBorderWidth": "1",
-    "trashIconColour": "#c9c9c9"
+    "trashIconColour": "#c9c9c9",
+    "locationPill": "true",
+    "locationPillColour": "#8f8f8f"
    }
   },
   "phone": {
@@ -465,7 +469,7 @@
     "docxFill": "rgba(24, 114, 160, 0.45)",
     "xlsxText": "#eef6f1",
     "xlsxFill": "rgba(15, 120, 60, 0.45)",
-    "fileTitleSize": "18",
+    "fileTitleSize": "19.5",
     "selectionColour": "rgba(132, 226, 135, 0.75)",
     "tabSize": "23",
     "tabSpacing": "13",
@@ -486,7 +490,9 @@
     "buttonIconSpacing": "5",
     "settingsJSON": "{\"selW\":1,\"selWash\":6,\"cOp\":100,\"fPt\":10,\"fIn\":16,\"fGap\":24,\"gcFs\":14,\"gcFw\":500,\"gcPx\":9,\"gcPy\":6,\"gcR\":7,\"gcLs\":0,\"gcBg\":\"#666666\",\"btFs\":13,\"btFw\":500,\"btH\":32,\"btPx\":14,\"btR\":11,\"btGap\":8,\"btIc\":14,\"btSw\":1,\"btBw\":0,\"ccOn\":\"off\",\"ccBg\":\"#3d3d3d\",\"ccPx\":5.5,\"ccPy\":3.5,\"ccR\":5,\"ccLs\":-1,\"bb\":8,\"sbW\":5,\"pb\":8,\"crFs\":22,\"dimB\":2,\"crFg\":\"#ffffff\",\"crPl\":10,\"crPr\":10,\"crPy\":2,\"crR\":10,\"dim\":14,\"fbW\":0.5,\"fbS\":\"solid\",\"stk\":5.5,\"bdSt\":\"tint\",\"bdLb\":\"dot\",\"bdFs\":13.5,\"bdFw\":500,\"bdR\":7,\"bdMx\":15,\"bdOn\":\"on\",\"bdPx\":7,\"bdPy\":6,\"bdLs\":0.1,\"bdTx\":17,\"tPdf\":\"#ff4e47\",\"tFig\":\"#fc4dff\",\"tDocx\":\"#66e0ff\",\"tXlsx\":\"#14ff6e\",\"fw\":400,\"padTop\":15,\"div\":\"#2b2b2b\",\"bw\":0,\"bc\":\"#f0f0f0\",\"shadow\":\"none\"}",
     "outerBorderWidth": "1",
-    "trashIconColour": "#c9c9c9"
+    "trashIconColour": "#c9c9c9",
+    "locationPill": "true",
+    "locationPillColour": "#8f8f8f"
    }
   }
  },
