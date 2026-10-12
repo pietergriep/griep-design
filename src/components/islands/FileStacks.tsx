@@ -3775,8 +3775,13 @@ function mountFileGroups(root, opts) {
         if (!over) return
         const cs = getComputedStyle(shell),
             bw = parseFloat(cs.borderTopWidth) || 0
+        // the bar sits 5px in from the right edge: its track ends 3px above the point where
+        // the rounded bottom corner would cut into it, so it never pokes out past the curve
+        const R = parseFloat(cs.borderBottomRightRadius) || 0,
+            inset = 5,
+            clear = R > inset ? R - Math.sqrt(R * R - (R - inset) * (R - inset)) : 0
         const top = bar.offsetHeight + 10 + bw,
-            bottom = 14 + bw // track runs below the pinned header
+            bottom = Math.max(14, Math.ceil(clear) + 3) + bw // track runs below the pinned header
         const track = Math.max(
             40,
             H - top - bottom + (parseFloat(cs.borderTopWidth) || 0)
@@ -3786,7 +3791,8 @@ function mountFileGroups(root, opts) {
         const visibleShare = (H - bar.offsetHeight) / (S - bar.offsetHeight)
         const th = Math.max(28, Math.round(track * Math.min(1, visibleShare)))
         const maxScroll = S - H,
-            pos = maxScroll > 0 ? shell.scrollTop / maxScroll : 0
+            // clamped: iOS bounce scrolls past either end, which pushed the thumb off its track
+            pos = maxScroll > 0 ? Math.min(1, Math.max(0, shell.scrollTop / maxScroll)) : 0
         thumb.style.height = th + "px"
         thumb.style.top = Math.round((track - th) * pos) + "px"
     }
@@ -4280,67 +4286,12 @@ function mountFileGroups(root, opts) {
             )
         if (C.card) shell.style.setProperty("--card", C.card)
         else shell.style.removeProperty("--card")
-        // placeholder strength follows how light the chosen file colour is, not the theme
-        const MX = {
-                light: ["44%", "22%", "12%", "11%"],
-                dark: ["58%", "34%", "24%", "22%"],
-            },
-            keys = ["--mx-pill", "--mx-l1", "--mx-l2", "--mx-img"]
-        if (C.card) {
-            const h = C.card.replace("#", ""),
-                n = parseInt(
-                    h.length === 3
-                        ? h
-                              .split("")
-                              .map((c) => c + c)
-                              .join("")
-                        : h,
-                    16
-                )
-            const lum =
-                (0.2126 * ((n >> 16) & 255) +
-                    0.7152 * ((n >> 8) & 255) +
-                    0.0722 * (n & 255)) /
-                255
-            keys.forEach((k, i) =>
-                shell.style.setProperty(k, MX[lum > 0.5 ? "light" : "dark"][i])
-            )
-            shell.style.setProperty(
-                "--card-ink",
-                lum > 0.5 ? "#141414" : "#F2F2F3"
-            )
-            shell.style.setProperty(
-                "--card-rule",
-                lum > 0.5 ? "#E3E3E3" : "#38383C"
-            )
-            // type colours: the brighter set on dark files, the deeper set on light ones
-            const TC =
-                lum > 0.5
-                    ? {
-                          "--t-fig": "#39A7DB",
-                          "--t-pdf": "#E0524F",
-                          "--t-docx": "#3A5FDC",
-                          "--t-xlsx": "#3A9E5B",
-                      }
-                    : {
-                          "--t-fig": "#5CC2EE",
-                          "--t-pdf": "#FF6F6B",
-                          "--t-docx": "#93A9FF",
-                          "--t-xlsx": "#52C77F",
-                      }
-            Object.entries(TC).forEach(([k, v]) =>
-                shell.style.setProperty(k, v)
-            )
-        } else
-            [
-                ...keys,
-                "--card-ink",
-                "--card-rule",
-                "--t-fig",
-                "--t-pdf",
-                "--t-docx",
-                "--t-xlsx",
-            ].forEach((k) => shell.style.removeProperty(k))
+        // The file colour no longer drives other colours (text, placeholders, dividers and
+        // type colours used to switch to a light or dark set with it): those follow the
+        // theme or their own settings, so changing the file colour changes only the file.
+        ;["--mx-pill", "--mx-l1", "--mx-l2", "--mx-img", "--card-ink", "--card-rule"].forEach((k) =>
+            shell.style.removeProperty(k)
+        )
         const AUTO_T = getComputedStyle(shell)
         ;[
             ["tPdf", "--t-pdf", "cTPdf"],
@@ -4349,7 +4300,7 @@ function mountFileGroups(root, opts) {
             ["tXlsx", "--t-xlsx", "cTXlsx"],
         ].forEach(([k, v, id]) => {
             if (C[k]) shell.style.setProperty(v, C[k])
-            else if (!C.card) shell.style.removeProperty(v)
+            else shell.style.removeProperty(v)
             if (!C[k]) {
                 const auto = AUTO_T.getPropertyValue(v).trim()
                 if (/^#[0-9a-f]{6}$/i.test(auto)) $(id).value = auto
@@ -5905,7 +5856,7 @@ export default function FileStacks(props: FileStacksProps) {
             ft: titleSize,
             fs: tabSize,
             bg: toHex(background, host),
-            card: toHex(cardColor, host),
+            card: cardColor || "", // as given, so a transparent file colour keeps its opacity
             selC: toHex(selectionColor, host),
             ton: toHex(activeTab, host),
             toff: toHex(otherTabs, host),
