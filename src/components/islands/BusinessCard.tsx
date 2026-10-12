@@ -203,12 +203,16 @@ export interface BusinessCardProps {
     /** Idle loop on the front while not hovered: share of maxTilt (0 = off) and seconds per full loop. */
     idleTilt?: number
     idleSpeed?: number
-    /** On phones/tablets, tilt follows how the device is held (replaces hover and the idle loop). */
+    /** On phones/tablets, tilt follows how the device is held (blended with the idle loop; see deviceTakeover). */
     deviceTilt?: boolean
     /** Degrees of device tilt for a full card tilt. */
     deviceTiltRange?: number
     /** Seconds over which "level" drifts to how the device is currently held, so any grip works. */
     deviceRecenter?: number
+    /** How fast (°/s) the phone has to turn to fully take over from the idle loop. */
+    deviceTakeover?: number
+    /** Seconds for the idle loop to take back over once the phone is held still. */
+    deviceRelease?: number
     /** Spring stiffness / damping for the tilt. */
     stiffness?: number
     damping?: number
@@ -414,6 +418,8 @@ export default function BusinessCard({
     deviceTilt = true,
     deviceTiltRange = 20,
     deviceRecenter = 3,
+    deviceTakeover = 25,
+    deviceRelease = 1.2,
     stiffness = 140,
     damping = 41,
     hoverScale = 1.03,
@@ -458,7 +464,7 @@ export default function BusinessCard({
     copyFade = 0.22,
     copyBlur = 0.25,
     emailHoverOpacity = 0.5,
-    bioText = "Hi, I’m Pieter. I am a Dutch Product Designer based in Barcelona. I turn complicated things into products that feel easy, so far mostly in fintech.\n\nI learn by building: experimenting with components and interactions until they feel just right. You just flipped one. Say hola.\n",
+    bioText = "Hi, I’m Pieter. I am a Dutch Product Designer based in Barcelona.\n\nI design and build interfaces down to the last interaction, from app screens and widgets to the small components that make a product feel right. Got a project in mind? Say hola.\n",
     bioSize = 16,
     bioWeight = 400,
     bioTracking = -2,
@@ -525,8 +531,8 @@ export default function BusinessCard({
     const bioEmailRef = useRef<HTMLSpanElement>(null)
 
     // Latest props, read inside the animation loop without restarting it.
-    const cfg = useRef({ hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize })
-    cfg.current = { hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize }
+    const cfg = useRef({ deviceTakeover, deviceRelease, hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize })
+    cfg.current = { deviceTakeover, deviceRelease, hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize }
     const colors = useRef({ block: hexToRgb(blockColor), a: hexToRgb(tintA), b: hexToRgb(tintB), ripple: hexToRgb(rippleColor), trail: hexToRgb(trailColor) })
     colors.current = { block: hexToRgb(blockColor), a: hexToRgb(tintA), b: hexToRgb(tintB), ripple: hexToRgb(rippleColor), trail: hexToRgb(trailColor) }
 
@@ -545,6 +551,9 @@ export default function BusinessCard({
         device: false,
         dx: 0,
         dy: 0,
+        dw: 0,
+        motion: 0, // °/s, smoothed
+        motionAt: 0,
         // While true (cursor near the back's email), the tilt stays put so the link doesn't move away.
         holdTilt: false,
         onScreen: true,
@@ -569,18 +578,26 @@ export default function BusinessCard({
         const elapsed = Math.min(0.1, Math.max(0, (now - s.last) / 1000))
         s.last = now
 
+        // Phones: how much the device drives the tilt (0…1). Turning the phone hands the card to it
+        // quickly; holding still (whatever the angle) hands it back to the idle loop over deviceRelease.
+        const fresh = s.device && now - s.motionAt < 250
+        const moved = fresh ? clamp(s.motion / Math.max(1, c.deviceTakeover), 0, 1) : 0
+        const tau = moved > s.dw ? 0.12 : Math.max(0.05, c.deviceRelease)
+        s.dw += (moved - s.dw) * (1 - Math.exp(-elapsed / tau))
+
         // Idle loop (front only): with no cursor on the card, the tilt target circles slowly;
         // on the back it rests flat. The spring smooths every hand-over.
-        const idle = !s.hovering && !s.device && s.tf === 0 && c.idleTilt > 0 && c.idleSpeed > 0
-        if (s.device && !s.hovering) {
-            s.tx = s.dx
-            s.ty = s.dy
-        } else if (idle) {
-            const a = ((now / 1000) * 2 * Math.PI) / c.idleSpeed
-            s.tx = c.idleTilt * Math.cos(a)
-            s.ty = c.idleTilt * Math.sin(a)
-        } else if (!s.hovering) {
-            s.tx = s.ty = 0
+        const idle = !s.hovering && s.tf === 0 && c.idleTilt > 0 && c.idleSpeed > 0
+        if (!s.hovering) {
+            let ix = 0
+            let iy = 0
+            if (idle) {
+                const a = ((now / 1000) * 2 * Math.PI) / c.idleSpeed
+                ix = c.idleTilt * Math.cos(a)
+                iy = c.idleTilt * Math.sin(a)
+            }
+            s.tx = ix * (1 - s.dw) + s.dx * s.dw
+            s.ty = iy * (1 - s.dw) + s.dy * s.dw
         }
 
         // Damped springs toward the targets, in small fixed substeps so
@@ -763,12 +780,20 @@ export default function BusinessCard({
         const s = sim.current
         let base: { beta: number; gamma: number } | null = null
         let last = 0
+        let prev: { beta: number; gamma: number } | null = null
         const onOrient = (e: DeviceOrientationEvent) => {
             if (e.beta == null || e.gamma == null) return
             const now = performance.now()
             const dt = last ? (now - last) / 1000 : 0
             last = now
             if (!base) base = { beta: e.beta, gamma: e.gamma }
+            // How fast the phone is turning (°/s), smoothed: real movement hands the card to the phone.
+            if (prev && dt > 0) {
+                const speed = Math.hypot(e.beta - prev.beta, e.gamma - prev.gamma) / dt
+                s.motion = s.motion * 0.7 + speed * 0.3
+                s.motionAt = now
+            }
+            prev = { beta: e.beta, gamma: e.gamma }
             const f = Math.min(1, dt / Math.max(0.1, deviceRecenter))
             base.beta += (e.beta - base.beta) * f
             base.gamma += (e.gamma - base.gamma) * f
