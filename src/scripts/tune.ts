@@ -56,6 +56,8 @@ const CSS = `
 .tune-ctl input[type=number]{flex:none;width:58px}
 .tune-ctl input[type=range]{flex:1;min-width:0}
 .tune-ctl .a{flex:none;width:42px}
+.tune-cursor-save{justify-self:end;border:0;border-radius:7px;padding:5px 9px;font:inherit;background:#111;color:#fff}
+.tune-cursor-save:disabled{opacity:.35;cursor:default}
 .tune-msg{padding:0 12px 8px;color:#16a34a;font-size:11px}
 `
 
@@ -205,6 +207,63 @@ function build(entry: Entry) {
     const pinned = PINNED.map((s) => all.find(([k]) => entry.keys[k] === s)).filter(Boolean) as [string, Control][]
     const rest = all.filter((e) => !pinned.includes(e))
     const sep = (t: string) => Object.assign(document.createElement("div"), { className: "tune-sep", textContent: t })
+    // ---- Cursor: its own two colours, saved to src/data/cursor.json ----
+    const cursor = (window as any).__cursor
+    if (cursor) {
+        const start = cursor.get()
+        const now = { ...start }
+        const saveCursor = Object.assign(document.createElement("button"), { className: "tune-cursor-save", textContent: "Save cursor", disabled: true })
+        const colourRow = (key: "fill" | "hoverFill", labelText: string) => {
+            const row = document.createElement("div")
+            row.className = "tune-row"
+            const label = Object.assign(document.createElement("label"), { textContent: labelText })
+            const ctl = Object.assign(document.createElement("div"), { className: "tune-ctl" })
+            let [r, g, b, a] = toRgba(start[key])
+            const pick = Object.assign(document.createElement("input"), { type: "color", value: hex(r, g, b) })
+            const alpha = Object.assign(document.createElement("input"), { type: "number", min: "0", max: "100", step: "1", value: String(Math.round(a * 100)), className: "a", title: "Opacity %" })
+            const text = Object.assign(document.createElement("input"), { type: "text", value: start[key] })
+            const set = (v: string) => {
+                now[key] = v
+                cursor.set({ [key]: v })
+                const dirty = now.fill !== start.fill || now.hoverFill !== start.hoverFill
+                saveCursor.disabled = !dirty
+                row.classList.toggle("changed", v !== start[key])
+            }
+            const fromParts = () => {
+                const v = css(r, g, b, Math.min(100, Math.max(0, +alpha.value || 0)) / 100)
+                text.value = v
+                set(v)
+            }
+            pick.addEventListener("input", () => {
+                ;[r, g, b] = toRgba(pick.value)
+                if (+alpha.value === 0) alpha.value = "100"
+                fromParts()
+            })
+            alpha.addEventListener("input", fromParts)
+            text.addEventListener("change", () => {
+                ;[r, g, b, a] = toRgba(text.value)
+                pick.value = hex(r, g, b)
+                alpha.value = String(Math.round(a * 100))
+                set(text.value)
+            })
+            ctl.append(pick, alpha, text)
+            row.append(label, ctl)
+            rows.push({ el: row, text: `cursor ${labelText}`.toLowerCase() })
+            return row
+        }
+        saveCursor.addEventListener("click", async () => {
+            saveCursor.disabled = true
+            const res = await fetch("/__tune/save", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ island: "Cursor", values: now }) }).catch(() => null)
+            msg.textContent = res?.ok ? "Cursor colours saved to cursor.json." : "Couldn't save the cursor colours."
+            msg.style.color = res?.ok ? "#16a34a" : "#dc2626"
+            msg.hidden = false
+            if (res?.ok) Object.assign(start, now)
+            else saveCursor.disabled = false
+        })
+        const saveRow = Object.assign(document.createElement("div"), { className: "tune-row" })
+        saveRow.append(document.createElement("span"), saveCursor)
+        body.append(sep("Cursor"), colourRow("fill", "Cursor colour"), colourRow("hoverFill", "Cursor hover colour"), saveRow)
+    }
     body.append(sep("Border and type pills"), ...pinned.map(([k, c]) => rowFor(k, c)), sep("Everything else"), ...rest.map(([k, c]) => rowFor(k, c)))
 
     // settings packed inside "Settings JSON" (the component's own style-panel values)

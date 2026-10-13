@@ -18,7 +18,12 @@ const PREDICT_AHEAD = true
 const CLICKABLE = 'a[href], button, [role="button"], [role="link"], summary, label[for], select'
 
 // The arrow, drawn with its tip at (0,0) and turned 9° around the tip.
-const ARROW = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" viewBox="-1 -1 22 20" overflow="visible" aria-hidden="true"><g transform="rotate(9) translate(-0.09 -0.996)"><path d="M 0.09 0.996 L 8.721 14.667 C 8.871 14.902 9.161 15.031 9.456 14.994 C 9.75 14.957 9.992 14.762 10.067 14.499 L 11.643 8.138 C 11.701 7.935 11.838 7.64 12.049 7.558 L 17.554 4.005 C 17.851 3.897 18.037 3.626 18.016 3.334 C 17.994 3.042 17.768 2.797 17.458 2.727 L 0.914 0.02 C 0.631 -0.045 0.332 0.05 0.153 0.262 C -0.025 0.473 -0.05 0.761 0.09 0.996 Z" fill="rgb(36, 36, 36)" stroke="#fff" stroke-width="1.2" stroke-miterlimit="10"/></g></svg>`
+// colours, normal and over something clickable (src/data/cursor.json; tune them in the
+// dev panel's Cursor section)
+import colours from "../data/cursor.json"
+const FILL_MS = 180 // how quickly the colour changes on hover
+
+const ARROW = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" viewBox="-1 -1 22 20" overflow="visible" aria-hidden="true"><g transform="rotate(9) translate(-0.09 -0.996)"><path d="M 0.09 0.996 L 8.721 14.667 C 8.871 14.902 9.161 15.031 9.456 14.994 C 9.75 14.957 9.992 14.762 10.067 14.499 L 11.643 8.138 C 11.701 7.935 11.838 7.64 12.049 7.558 L 17.554 4.005 C 17.851 3.897 18.037 3.626 18.016 3.334 C 17.994 3.042 17.768 2.797 17.458 2.727 L 0.914 0.02 C 0.631 -0.045 0.332 0.05 0.153 0.262 C -0.025 0.473 -0.05 0.761 0.09 0.996 Z" style="fill:var(--cursor-fill);transition:fill ${FILL_MS}ms ease" stroke="#fff" stroke-width="1.2" stroke-miterlimit="10"/></g></svg>`
 
 const fine = matchMedia("(hover: hover) and (pointer: fine)")
 
@@ -41,6 +46,8 @@ function setup() {
     })
     const art = document.createElement("div")
     art.innerHTML = ARROW
+    let fill = colours.fill
+    let hoverFill = colours.hoverFill
     Object.assign(art.style, {
         lineHeight: "0",
         transformOrigin: "1px 1px", // the tip (the svg's viewBox starts at -1,-1)
@@ -96,7 +103,20 @@ function setup() {
         const ms = pressed ? PRESS_MS : hovering ? HOVER_MS : RELEASE_MS
         art.style.transition = `transform ${ms}ms ${EASE}`
         art.style.transform = `translate(-1px,-1px) scale(${scale})`
+        art.style.setProperty("--cursor-fill", hovering ? hoverFill : fill)
     }
+
+    apply()
+    // dev only: the tuning panel can try colours live
+    if (import.meta.env.DEV)
+        (window as any).__cursor = {
+            get: () => ({ fill, hoverFill }),
+            set: (v: { fill?: string; hoverFill?: string }) => {
+                if (v.fill) fill = v.fill
+                if (v.hoverFill) hoverFill = v.hoverFill
+                apply()
+            },
+        }
 
     let downAt = 0
     let releaseTimer = 0

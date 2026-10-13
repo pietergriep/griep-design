@@ -17,6 +17,13 @@ const tuneSave = {
                 try {
                     // breakpoints: which sizes to write ("all" by default)
                     const { island, values, breakpoints } = JSON.parse(body)
+                    // the cursor's colours have their own small file
+                    if (island === "Cursor") {
+                        const cf = fileURLToPath(new URL("./src/data/cursor.json", import.meta.url))
+                        const cur = JSON.parse(readFileSync(cf, "utf8"))
+                        writeFileSync(cf, JSON.stringify({ ...cur, ...values }, null, 1) + "\n")
+                        return res.end("ok")
+                    }
                     const file = fileURLToPath(new URL("./src/data/instances.json", import.meta.url))
                     const data = JSON.parse(readFileSync(file, "utf8"))
                     if (!data[island]) throw new Error("unknown island " + island)
