@@ -5790,6 +5790,10 @@ export default function FileStacks(props: FileStacksProps) {
         trashCountText,
         trashCountSize,
         trashCountWeight,
+        stackCountSize,
+        stackCountWeight,
+        tagTextSize,
+        tagTextWeight,
         trashCountInset,
         skeletonColor,
         skeletonStrong,
@@ -5920,6 +5924,10 @@ export default function FileStacks(props: FileStacksProps) {
         btn.slIc = labelClipColor ? labelClipColor : extra.slIc || ""
         btn.fbC = fileBorderColor ? fileBorderColor : extra.fbC || ""
         btn.sbC = scrollbarColor ? scrollbarColor : extra.sbC || ""
+        if (tagTextSize != null) btn.bdFs = tagTextSize
+        if (tagTextWeight != null) btn.bdFw = +tagTextWeight
+        if (stackCountSize != null) btn.gcFs = stackCountSize
+        if (stackCountWeight != null) btn.gcFw = +stackCountWeight
         if (trashCountSize != null) btn.tcFs = trashCountSize
         if (trashCountWeight != null) btn.tcFw = trashCountWeight
         if (trashCountInset != null) btn.tcGap = trashCountInset
@@ -5993,6 +6001,10 @@ export default function FileStacks(props: FileStacksProps) {
         trashCountText,
         trashCountSize,
         trashCountWeight,
+        stackCountSize,
+        stackCountWeight,
+        tagTextSize,
+        tagTextWeight,
         trashCountInset,
         skeletonColor,
         skeletonStrong,
@@ -6120,6 +6132,10 @@ type FileStacksProps = {
     trashCountText: string
     trashCountSize: number
     trashCountWeight: number
+    stackCountSize: number
+    stackCountWeight: number
+    tagTextSize: number
+    tagTextWeight: number
     trashCountInset: number
     skeletonColor: string
     skeletonStrong: string
@@ -6517,6 +6533,22 @@ addPropertyControls(FileStacks, {
         description:
             "How far the .pdf / .fig tag text is pulled from its colour toward the file text colour (toward black with the Pill style). 0 is the pure type colour.",
     },
+    tagTextSize: {
+        type: ControlType.Number,
+        title: "Tag text size",
+        defaultValue: 13,
+        min: 6,
+        max: 24,
+        step: 0.5,
+        description: "The file-type tags (.pdf, .fig\u2026), in card units like the other text sizes.",
+    },
+    tagTextWeight: {
+        type: ControlType.Enum,
+        title: "Tag text weight",
+        options: [400, 500, 600, 700],
+        optionTitles: ["Regular", "Medium", "Semibold", "Bold"],
+        defaultValue: 500,
+    },
     pdfText: {
         type: ControlType.Color,
         title: ".pdf text",
@@ -6598,6 +6630,22 @@ addPropertyControls(FileStacks, {
         type: ControlType.Color,
         title: "Stack count text",
         optional: true,
+    },
+    stackCountSize: {
+        type: ControlType.Number,
+        title: "Stack count size",
+        defaultValue: 14,
+        min: 8,
+        max: 24,
+        step: 0.5,
+        description: "The number on a stack, in card units like the other text sizes.",
+    },
+    stackCountWeight: {
+        type: ControlType.Enum,
+        title: "Stack count weight",
+        options: [400, 500, 600, 700],
+        optionTitles: ["Regular", "Medium", "Semibold", "Bold"],
+        defaultValue: 500,
     },
     stackShade: {
         type: ControlType.Number,

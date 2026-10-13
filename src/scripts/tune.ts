@@ -26,7 +26,7 @@ type Entry = {
 const ISLAND = "FileStacks"
 const TITLE = "File Explorer"
 // shown first, in this order (saved names)
-const PINNED = ["outerBorder", "outerBorderWidth", "outerBorderColour", "pdfText", "pdfFill", "figText", "figFill", "docxText", "docxFill", "xlsxText", "xlsxFill"]
+const PINNED = ["outerBorder", "outerBorderWidth", "outerBorderColour", "tagTextSize", "tagTextWeight", "pdfText", "pdfFill", "figText", "figFill", "docxText", "docxFill", "xlsxText", "xlsxFill"]
 // clearer names where Framer's labels repeat (saved name -> label)
 const RENAME: Record<string, string> = {} // (the File Explorer's own names are unique now)
 const SKIP = new Set(["array", "object", "file", "image", "responsiveimage", "eventhandler", "componentinstance", "font", "transition"])
@@ -208,7 +208,7 @@ function build(entry: Entry) {
     body.append(sep("Border and type pills"), ...pinned.map(([k, c]) => rowFor(k, c)), sep("Everything else"), ...rest.map(([k, c]) => rowFor(k, c)))
 
     // settings packed inside "Settings JSON" (the component's own style-panel values)
-    const JSON_FIELDS = [{ field: "bdFs", label: "Pill text size", min: 6, max: 18, step: 0.5 }]
+    const JSON_FIELDS: { field: string; label: string; min: number; max: number; step: number }[] = [] // (tag text size is a real setting now)
     const packed = (() => {
         try {
             return JSON.parse(raw.settingsJSON || "{}")
