@@ -19,6 +19,7 @@ type Entry = {
     controls: Record<string, Control>
     keys: Record<string, string>
     raw: () => Record<string, any>
+    breakpoint: () => "phone" | "desktop"
     set: (values: Record<string, any>) => void
 }
 
@@ -40,6 +41,9 @@ const CSS = `
 .tune-head button{border:0;border-radius:7px;padding:5px 9px;font:inherit;background:#f1f1f1;color:#111}
 .tune-head .save{background:#111;color:#fff}
 .tune-head .save:disabled{opacity:.35;cursor:default}
+.tune.min .tune-scope{display:none}
+.tune-scope{display:flex;align-items:center;gap:6px;margin:8px 10px 0;color:#666}
+.tune-scope select{flex:1;padding:4px 6px;border:.5px solid #ddd;border-radius:7px;font:inherit;background:#fff;color:#111}
 .tune-search{margin:8px 10px 2px;padding:6px 8px;border:.5px solid #ddd;border-radius:7px;font:inherit}
 .tune-body{overflow:auto;padding:4px 0 8px}
 .tune-sep{margin:8px 12px 2px;color:#999;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
@@ -78,12 +82,18 @@ function build(entry: Entry) {
     const changed: Record<string, any> = {}
     const panel = document.createElement("div")
     panel.className = "tune"
-    panel.innerHTML = `<div class="tune-head"><b>${TITLE} settings</b><button class="reset" title="Back to the saved values">Reset</button><button class="save" disabled>Save</button><button class="min" title="Collapse">–</button></div><input class="tune-search" placeholder="Search settings" /><div class="tune-msg" hidden></div><div class="tune-body"></div>`
+    panel.innerHTML = `<div class="tune-head"><b>${TITLE} settings</b><button class="reset" title="Back to the saved values">Reset</button><button class="save" disabled>Save</button><button class="min" title="Collapse">–</button></div><label class="tune-scope">Save to <select><option value="all">all sizes</option><option value="this"></option></select></label><input class="tune-search" placeholder="Search settings" /><div class="tune-msg" hidden></div><div class="tune-body"></div>`
     document.body.appendChild(panel)
     // the page's own scripts (carousel drag, custom cursor) leave the panel alone
     ;["pointerdown", "click", "wheel", "touchstart"].forEach((t) => panel.addEventListener(t, (e) => e.stopPropagation()))
 
     const body = panel.querySelector<HTMLElement>(".tune-body")!
+    // the panel shows the settings of the size on screen; Save writes them to every size,
+    // or only to this one (desktop also covers tablet widths)
+    const scope = panel.querySelector<HTMLSelectElement>(".tune-scope select")!
+    const here = entry.breakpoint()
+    scope.options[1].textContent = here === "phone" ? "phone only" : "desktop and tablet only"
+    const scopeBreakpoints = () => (scope.value === "all" ? undefined : here === "phone" ? ["phone"] : ["desktop", "tablet"])
     const save = panel.querySelector<HTMLButtonElement>(".save")!
     const msg = panel.querySelector<HTMLElement>(".tune-msg")!
     // saving rewrites instances.json, which reloads the page: say so after the reload
@@ -266,7 +276,7 @@ function build(entry: Entry) {
         const res = await fetch("/__tune/save", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ island: ISLAND, values: changed }),
+            body: JSON.stringify({ island: ISLAND, values: changed, breakpoints: scopeBreakpoints() }),
         }).catch(() => null)
         if (res?.ok) {
             try {
@@ -284,10 +294,11 @@ function build(entry: Entry) {
 }
 
 const w = window as any
+// built once the component knows its size, and rebuilt when that changes (phone <-> desktop)
 const start = () => {
     const entry = w.__tune?.[ISLAND]
-    if (!entry || w.__tuneBuilt) return
-    w.__tuneBuilt = true
+    if (!entry || w.__tuneBuiltFor === entry.breakpoint()) return
+    w.__tuneBuiltFor = entry.breakpoint()
     build(entry)
 }
 addEventListener("tune:ready", start)

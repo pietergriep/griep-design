@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from "react"
+import { useEffect, useRef, useState, type ComponentType } from "react"
 import { savedKeys, toProps } from "./controls"
 
 // One island per interactive card. Framer kept a separate copy of each card per
@@ -27,22 +27,27 @@ export function makeIsland(Component: ComponentType<any>, name?: string) {
     return function Island({ variants }: { variants: Variants }) {
         const [bp, setBp] = useState<Breakpoint | null>(null)
         const [tuned, setTuned] = useState<Record<string, any>>({})
+        const bpRef = useRef<Breakpoint | null>(null)
+        bpRef.current = bp
+        // (re)registers once the size is known, and again when it changes (phone <-> desktop)
         useEffect(() => {
-            if (!import.meta.env.DEV || !name) return
+            if (!import.meta.env.DEV || !name || !bp) return
             const w = window as any
             const registry = (w.__tune ||= {})
             const controls = (Component as any).__controls || {}
             registry[name] = {
                 controls,
                 keys: savedKeys(controls),
-                raw: () => ({ ...(variants.desktop?.raw ?? variants.tablet?.raw ?? {}) }),
+                // the settings of the size being shown (tablet widths use the desktop set)
+                raw: () => ({ ...((bpRef.current === "phone" ? variants.phone : variants.desktop ?? variants.tablet)?.raw ?? {}) }),
+                breakpoint: () => (bpRef.current === "phone" ? "phone" : "desktop"),
                 set: (values: Record<string, any>) => setTuned({ ...values }),
             }
             w.dispatchEvent(new CustomEvent("tune:ready", { detail: name }))
             return () => {
                 delete registry[name]
             }
-        }, [])
+        }, [bp])
         useEffect(() => {
             const update = () => setBp(current())
             update()

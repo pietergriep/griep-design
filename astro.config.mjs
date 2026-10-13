@@ -15,12 +15,15 @@ const tuneSave = {
             req.on("data", (c) => (body += c))
             req.on("end", () => {
                 try {
-                    const { island, values } = JSON.parse(body)
+                    // breakpoints: which sizes to write ("all" by default)
+                    const { island, values, breakpoints } = JSON.parse(body)
                     const file = fileURLToPath(new URL("./src/data/instances.json", import.meta.url))
                     const data = JSON.parse(readFileSync(file, "utf8"))
                     if (!data[island]) throw new Error("unknown island " + island)
-                    for (const variant of Object.values(data[island]))
+                    for (const [bp, variant] of Object.entries(data[island])) {
+                        if (Array.isArray(breakpoints) && !breakpoints.includes(bp)) continue
                         for (const [k, v] of Object.entries(values)) variant.raw[k] = String(v)
+                    }
                     writeFileSync(file, JSON.stringify(data, null, 1) + "\n")
                     res.end("ok")
                 } catch (e) {
