@@ -191,7 +191,7 @@ if (row && track) {
     // the logo rewinds the row to the first card
     document.querySelectorAll<HTMLElement>("[data-carousel-home]").forEach((el) =>
         el.addEventListener("click", (e) => {
-            if (location.pathname === "/") e.preventDefault()
+            if (location.pathname === new URL((el as HTMLAnchorElement).href).pathname) e.preventDefault()
             clearTimeout(snapTimer)
             stop()
             animateTo(0)
