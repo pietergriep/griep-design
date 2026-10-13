@@ -153,8 +153,14 @@ button {
 
 /* ---------- intro ---------- */
 
+/* the header (.nav) is hidden for now, so the top spacing no longer makes room for it:
+   was 100px = 65px header + 35px; phone was 55px = the 55px header */
+.nav {
+    display: none;
+}
+
 main {
-    padding: 100px 0 0 var(--gutter);
+    padding: 35px 0 0 var(--gutter);
 }
 
 .intro {
@@ -624,7 +630,7 @@ main {
 
 @media (min-width: 810px) and (max-width: 1199.98px) {
     main {
-        padding: 100px 0 0 0;
+        padding: 35px 0 0 0;
     }
     .intro {
         margin-left: 40px;
@@ -690,7 +696,7 @@ main {
         --nav-line: rgb(230, 230, 230);
     }
     main {
-        padding: 55px 0 0 15px;
+        padding: 0 0 0 15px;
     }
     .intro {
         padding: 40px 0 20px 0;
