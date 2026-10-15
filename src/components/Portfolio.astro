@@ -99,7 +99,7 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
                     <div class="track">
                     <div class="work-item">
                         <div class="card card-business">
-                            <span class="badge"><span class="badge-text">Interactive</span></span>
+                            <span class="badge"><span class="badge-text"><span class="on-mouse">Click</span><span class="on-touch">Tap</span> to flip</span></span>
                             <BusinessCard client:visible />
                         </div>
                         <WorkNote text="My business card as a component. The blocks are the Eixample, the Barcelona neighbourhood I live in, chamfered corners and the Diagonal included. It tilts with your cursor (or your phone), flips on click for a short intro, and the email on the back copies with a click." />
@@ -114,7 +114,7 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
 
                     <div class="work-item">
                         <div class="card card-files">
-                            <span class="badge"><span class="badge-text">Interactive</span></span>
+                            <span class="badge"><span class="badge-text">Drag files to stack</span></span>
                             <FileStacks client:visible variants={instances.FileStacks} />
                         </div>
                         <WorkNote text="A file view where loose files get paper-clipped into stacks. Select a few and press Stack, or drop one file onto another; click a stack to fan it open, drag anything to the trash, filter by type. The clip makes grouping feel physical instead of being yet another folder." />
@@ -122,7 +122,7 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
 
                     <div class="work-item">
                         <div class="card card-gas">
-                            <span class="badge"><span class="badge-text">Interactive</span></span>
+                            <span class="badge"><span class="badge-text">Pick a speed</span></span>
                             <GasFeeBar client:visible variants={instances.GasFeeBar} />
                         </div>
                         <WorkNote text="A gas picker with three speeds: Standard, Fast and Rapid. One highlight slides between them, the price and wait time roll to their new values, and the dots pulse faster the quicker the tier. Speed you can see, not just read." />
@@ -138,7 +138,7 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
                     <div class="work-item">
                         <div class="card card-swap">
                             <SwapCard client:visible variants={instances.SwapCard} />
-                            <span class="badge badge-tight"><span class="badge-text">Interactive</span></span>
+                            <span class="badge badge-tight"><span class="badge-text">Try a swap</span></span>
                         </div>
                         <WorkNote text="An ETH → USDC swap card on a live price. Click either side to flip the pair. Every number rolls digit by digit instead of jumping, and the button walks through each state, from quote to confirming to done, so you always know where the swap is." />
                     </div>
@@ -222,11 +222,13 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
         <script>
             import "../scripts/carousel.ts"
             // the settings panel for tuning components: dev server only, left out of builds
-            if (import.meta.env.DEV) import("../scripts/tune.ts")
+            // hidden unless the address ends in ?tune (localhost:4322/?tune, or ?tune=swap for the swap card)
+            if (import.meta.env.DEV && new URLSearchParams(location.search).has("tune")) import("../scripts/tune.ts")
             import "../scripts/footer.ts"
             import "../scripts/cursor.ts"
             import "../scripts/appear.ts"
             import "../scripts/notes.ts"
+            // import "../scripts/xray.ts" // the exploded drawing on "Learn more" (File Explorer): hidden for now
         </script>
     </body>
 </html>

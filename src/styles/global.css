@@ -332,14 +332,14 @@ main {
     top: 15px;
     right: 15px;
     z-index: 1;
-    padding: 2px 7px;
+    padding: 3px 7px;
     border-radius: 7px;
-    background: var(--badge);
+    background: #ebebeb;
     color: var(--badge-ink);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.2em;
-    letter-spacing: var(--track-13);
+    letter-spacing: 0;
     pointer-events: none;
 }
 
@@ -353,7 +353,7 @@ main {
     justify-content: center;
 }
 
-/* A card plus its optional "About" note underneath */
+/* A card plus its optional "Learn more" note underneath */
 .work-item {
     flex: none;
     display: flex;
@@ -366,45 +366,20 @@ main {
 .work-note-btn {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
     padding: 4px 0;
     border: 0;
     background: none;
     color: rgb(140, 140, 140);
     font: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: var(--track-13);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: var(--track-14);
     cursor: pointer;
     transition: color 0.2s ease;
 }
 .work-note-btn:hover,
 .work-note.is-open .work-note-btn {
     color: rgb(20, 20, 20);
-}
-/* plus that turns into a cross */
-.work-note-icon {
-    position: relative;
-    width: 9px;
-    height: 9px;
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.work-note-icon::before,
-.work-note-icon::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 4px;
-    width: 9px;
-    height: 1.25px;
-    border-radius: 1px;
-    background: currentColor;
-}
-.work-note-icon::after {
-    transform: rotate(90deg);
-}
-.work-note.is-open .work-note-icon {
-    transform: rotate(45deg);
 }
 /* The note's space is always reserved (just invisible while closed), so opening it
    never changes the page height and the footer stays where it is. */
@@ -413,7 +388,7 @@ main {
     filter: blur(3px);
     transform: translateY(-4px);
     pointer-events: none;
-    transition: opacity 0.3s ease, filter 0.3s ease, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: opacity 0.2s ease, filter 0.2s ease, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .work-note.is-open .work-note-body {
     opacity: 1;
@@ -424,16 +399,29 @@ main {
 .work-note p {
     max-width: 52ch;
     margin: 6px 0 0;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.45;
-    letter-spacing: var(--track-14);
+    letter-spacing: 0.015em;
     color: rgb(30, 30, 30);
+}
+
+/* Action labels name the gesture: "Click" with a mouse, "Tap" on touch screens */
+.on-touch {
+    display: none;
+}
+@media (hover: none) {
+    .on-mouse {
+        display: none;
+    }
+    .on-touch {
+        display: inline;
+    }
 }
 
 /* Carried over from the Framer file, where one "Interactive" badge was spaced
    looser than the other. Both now share the badge spacing above. */
 .badge-tight {
-    letter-spacing: var(--track-13);
+    letter-spacing: 0;
 }
 
 .card-video video {
@@ -542,7 +530,7 @@ main {
 }
 
 .link span {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.15s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -676,14 +664,14 @@ main {
     }
     .work-note p {
         font-size: 13px;
-        letter-spacing: var(--track-13);
+        letter-spacing: 0.015em;
     }
     .card-wide-image img {
         width: 500px;
     }
     .badge {
-        font-size: 11px;
-        letter-spacing: var(--track-11);
+        font-size: 12px;
+        letter-spacing: 0;
     }
 }
 

@@ -331,7 +331,8 @@ if (row && track) {
     const BADGE_LIFT = 0.55
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches
     const canClip = CSS.supports("-webkit-background-clip", "text") || CSS.supports("background-clip", "text")
-    if (!reduce && canClip) {
+    const BADGE_SHIMMER = false // the sweep through "Interactive" is off
+    if (BADGE_SHIMMER && !reduce && canClip) {
         row.querySelectorAll<HTMLElement>(".badge-text").forEach((label) => {
             const base = getComputedStyle(label).color
             const ch = base.match(/\d+/g) || ["48", "48", "48"]

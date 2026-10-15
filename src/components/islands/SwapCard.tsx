@@ -1,13 +1,13 @@
 import {
     useEffect,
-    useId,
     useLayoutEffect,
-    useMemo,
     useRef,
     useState,
 } from "react"
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react"
 import { addPropertyControls, ControlType, RenderTarget } from "framer"
+import { RollingNumber as LibRollingNumber } from "@kitlangton/rolling-number/react"
+import "@kitlangton/rolling-number/styles.css"
 
 /**
  * SwapCard — the ETH/USDC swap card.
@@ -20,7 +20,8 @@ import { addPropertyControls, ControlType, RenderTarget } from "framer"
  * Three things drive the card:
  *   - a phase machine (static → staggering → rolled → spinning → settling →
  *     success → done) that owns the dot animation and the button label,
- *   - rolling digits on every number, with a vertical-only motion blur,
+ *   - rolling digits on every number (@kitlangton/rolling-number, with its
+ *     motion blur),
  *   - a live ETH/USDC quote, with the set price as a fallback.
  *
  * Note: Framer's canvas does not run CSS animations, and the live price is
@@ -190,63 +191,9 @@ const CSS = `
 
 .swap-card__sub { font-size: calc(13px * var(--sc-scale)); font-weight: 500; color: #c6c6c6; }
 
-/* Rolling digits ----------------------------------------------------------
-   One column per digit, holding only the digits between the old value and the
-   new one, so it rolls through them in the direction the number moved. Each
-   column is absolutely positioned over a hidden "0", which keeps the width and
-   the baseline of ordinary text: the line around it never shifts.
-   --rn-line is the line-height the column rolls at. It is measured from the
-   element itself, so the inline-block is never taller than the line box it sits
-   in — "normal" resolves differently per font, and a hardcoded ratio would push
-   the card open by a pixel under a fallback. */
-.sc-rn { font-variant-numeric: tabular-nums; }
-
-/* The columns are decoration: a screen reader gets this instead — the plain
-   formatted number, in one piece. */
-.sc-rn__sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.sc-rn__digit {
-  position: relative;
-  display: inline-block;
-  line-height: var(--rn-line, 1.2);
-  /* Narrows the ghost and every cell by the same amount, so the column stays
-     self-consistent and nothing shifts while it rolls. */
-  letter-spacing: calc(
-    var(--rn-tracking-base, 0px) + var(--rn-tracking, -0.02em)
-  );
-}
-
-.sc-rn__ghost { visibility: hidden; }
-.sc-rn__window { position: absolute; inset: 0; overflow: hidden; }
-
-.sc-rn__strip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  transform: translateY(calc(var(--rn-o, 0) * var(--rn-line, 1.2) * -1em));
-  transition: transform var(--rn-duration, 500ms) var(--rn-ease, ease);
-  will-change: transform;
-}
-
-.sc-rn__cell {
-  display: block;
-  height: calc(var(--rn-line, 1.2) * 1em);
-  line-height: var(--rn-line, 1.2);
-}
-
-/* The motion blur is a vertical-only Gaussian, held in this hidden filter and
-   driven from script. Blurring along the axis of travel only is what makes a
-   reel read as moving; an isotropic CSS blur() just smudges the glyph. */
-.sc-rn__blur { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* Rolling numbers (@kitlangton/rolling-number): its slots are content-box (the
+   padding is room for overhang), so they're left out of the reset above */
+.swap-card .rn-slot { box-sizing: content-box; }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
@@ -257,10 +204,10 @@ const CSS = `
   justify-content: space-between;
   padding: 0 calc(1px * var(--sc-scale));
   margin-top: calc(20px * var(--sc-scale));
-  margin-bottom: calc(8px * var(--sc-scale));
+  margin-bottom: calc(14px * var(--sc-scale));
 }
 
-.swap-card__avail-label { font-size: calc(13px * var(--sc-scale)); font-weight: 500; color: rgba(37, 37, 37, 0.25); }
+.swap-card__avail-label { font-size: calc(13px * var(--sc-scale)); font-weight: 500; color: rgba(37, 37, 37, 0.75); }
 .swap-card__avail-val { font-size: calc(13px * var(--sc-scale)); font-weight: 500; color: #252525; }
 
 .swap-card__chips-wrap {
@@ -270,14 +217,93 @@ const CSS = `
   transition: height 300ms ease, opacity 240ms ease;
 }
 
-/* Once the swap starts the chips fold away, masked so they dissolve from the
-   bottom rather than being sliced off. */
-.swap-card:not(.swap-card--static) .swap-card__chips-wrap {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - calc(18px * var(--sc-scale))), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - calc(18px * var(--sc-scale))), transparent);
-  height: 0;
+/* During a swap the chips make way for the steps (same box, which grows to fit them) */
+.swap-card__chips-wrap { position: relative; }
+/* Coming back (after a swap) the chips wait for their space to open, then fade in
+   out of a blur, so the growing edge never cuts through sharp buttons */
+.swap-card__chips { transition: opacity 300ms ease 140ms, filter 380ms ease 140ms; }
+.swap-card__chips-wrap--steps { height: var(--sc-steps-h); }
+.swap-card__chips-wrap--steps .swap-card__chips,
+.swap-card__chips-wrap--away .swap-card__chips {
   opacity: 0;
+  filter: blur(calc(6px * var(--sc-scale)));
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+
+.swap-card__steps {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-step-gap);
+  /* 10 on top + the 14 under "available" = 24; 4 below + the 20 gap above the button = 24 */
+  padding: calc(10px * var(--sc-scale)) calc(1px * var(--sc-scale)) calc(4px * var(--sc-scale));
   pointer-events: none;
+}
+.swap-card__step {
+  display: flex;
+  align-items: center;
+  gap: calc(10px * var(--sc-scale));
+  height: var(--sc-step-h);
+  font-size: calc(13px * var(--sc-scale));
+  font-weight: 400;
+  color: #1a1a1a;
+  opacity: 0;
+  filter: blur(calc(4px * var(--sc-scale)));
+  transform: translateY(calc(6px * var(--sc-scale)));
+  /* leaving: quick, blurred, no stagger */
+  transition: opacity 160ms ease, filter 160ms ease, transform 160ms ease, color 320ms ease;
+}
+.swap-card__step--in {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  transition: opacity 320ms ease, transform 420ms cubic-bezier(.2,.8,.2,1), color 320ms ease, filter 320ms ease;
+}
+.swap-card__step--done { color: var(--sc-step-done); }
+
+/* The step's icon: one dot while it waits, six in a spinning ring while it runs,
+   a circle with a tick once it's done */
+.sc-step-icon { position: relative; flex: none; width: var(--sc-step-icon); height: var(--sc-step-icon); }
+.sc-step-icon__ring { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.sc-step-icon__ring--spin { animation: sc-step-spin var(--sc-step-spin) linear infinite; }
+@keyframes sc-step-spin { to { transform: rotate(360deg); } }
+.sc-step-icon__dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  background: #1a1a1a;
+}
+.sc-step-icon svg { position: absolute; inset: 0; overflow: visible; }
+.sc-step-icon__circle {
+  transform-origin: 50% 50%;
+  transform: scale(0.4);
+  opacity: 0;
+  transition: transform 440ms cubic-bezier(.34,1.4,.6,1), opacity 220ms ease;
+}
+.sc-step-icon__tick { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 420ms cubic-bezier(.65,0,.35,1) 200ms; }
+.sc-step-icon--done .sc-step-icon__circle { transform: scale(1); opacity: 1; }
+.sc-step-icon--done .sc-step-icon__tick { stroke-dashoffset: 0; }
+
+/* The chips stay put while a swap runs, they just can't be changed until it's done. */
+.swap-card:not(.swap-card--static) .swap-card__chips-wrap { pointer-events: none; }
+/* ...and fold away as the transaction info comes in, in step with it, so the card
+   keeps its height (the -5px matches the tx info's top margin) */
+.swap-card__chips-wrap--away {
+  height: 0;
+  margin-bottom: calc(-5px * var(--sc-scale));
+  opacity: 0;
+  transition: height var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), margin-bottom var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), opacity 160ms ease;
+}
+
+/* The received amount swells for a moment as the funds land */
+@keyframes sc-amount-pop {
+  0% { transform: scale(1); animation-timing-function: cubic-bezier(.2,.8,.3,1); }
+  40% { transform: scale(var(--sc-pop, 1.12)); animation-timing-function: cubic-bezier(.5,0,.3,1); }
+  100% { transform: scale(1); }
 }
 
 .swap-card__chips { display: flex; gap: calc(5px * var(--sc-scale)); }
@@ -308,19 +334,8 @@ const CSS = `
   .swap-card__txinfo:hover { background: rgba(223, 223, 223, 0.6); color: #6f6f6f; }
 }
 
-/* Progress band ------------------------------------------------------------ */
-.swap-card__band {
-  position: relative;
-  height: calc(56px * var(--sc-scale));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: height 340ms ease;
-}
-
-.swap-card--static .swap-card__band { height: calc(20px * var(--sc-scale)); }
-.swap-card__band--expanded { height: calc(74px * var(--sc-scale)); }
-.swap-card__band--collapsed { height: calc(8px * var(--sc-scale)); }
+/* The gap between the chips and the button (the progress now plays inside the button) */
+.swap-card__band { height: calc(20px * var(--sc-scale)); }
 
 .swap-card__ring { position: relative; width: 0; height: 0; }
 .swap-card__dot {
@@ -460,6 +475,28 @@ const CSS = `
   transition: opacity 200ms ease, background 300ms ease, color 300ms ease;
 }
 
+/* Its own compositing layer from the start, so the success bounce (a transform on
+   a rounded, clipped box) doesn't flip it onto a new layer mid-way, which WebKit
+   can show as a dark flash */
+.swap-card__btn { position: relative; overflow: hidden; transform: translateZ(0); }
+.swap-card__btn-label { display: inline-block; transition: opacity 200ms ease; }
+.swap-card__btn-label--hidden { opacity: 0; }
+
+/* The loader inside the button: dots pop in, roll up into a spinning ring, then
+   "Swapping" fades in and pushes the ring to the side; on completion a check. */
+.swap-card__load { position: absolute; inset: 0; pointer-events: none; }
+.swap-card__load-spin {
+  position: absolute; left: 50%; top: 50%; width: 0; height: 0;
+  transition: transform 280ms cubic-bezier(.3,.7,.2,1), opacity 240ms ease;
+}
+.swap-card__load-measure { position: absolute; visibility: hidden; white-space: nowrap; left: 0; top: 0; }
+.swap-card__load-ring { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.swap-card__load-dot { position: absolute; left: 0; top: 0; border-radius: 50%; }
+.swap-card__load-word {
+  position: absolute; left: 50%; top: 50%; white-space: nowrap; color: inherit;
+  opacity: 0; transition: opacity 240ms ease, transform 280ms cubic-bezier(.3,.7,.2,1);
+}
+
 .swap-card__btn:disabled { opacity: 0.9; cursor: default; }
 .swap-card__btn--loading { pointer-events: none; cursor: default; }
 .swap-card__btn--success { background: rgba(34, 197, 94, 0.25); color: #22c55e; }
@@ -500,7 +537,25 @@ const CSS = `
   transition: height 340ms ease, opacity 340ms ease, margin-top 340ms ease;
 }
 
-.swap-card__txinfo-wrap--show { height: calc(44px * var(--sc-scale)); margin-top: calc(5px * var(--sc-scale)); opacity: 1; }
+/* Comes in quickly, in step with the chips folding away so the card keeps its size */
+.swap-card__txinfo-wrap--show {
+  height: calc(44px * var(--sc-scale)); margin-top: calc(5px * var(--sc-scale)); opacity: 1;
+  transition: height var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), margin-top var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), opacity 120ms ease;
+}
+.swap-card__txinfo-wrap--show .swap-card__txinfo {
+  animation: sc-tx-in var(--sc-tx-ms, 520ms) both;
+}
+@keyframes sc-tx-in {
+  0% { transform: translateY(calc(10px * var(--sc-scale))); opacity: 0; animation-timing-function: cubic-bezier(.2,.8,.2,1); }
+  100% { transform: none; opacity: 1; }
+}
+
+/* The success button gives a short snappy bounce as it turns green */
+@keyframes sc-btn-bounce {
+  0% { transform: translateZ(0) scale(1); animation-timing-function: cubic-bezier(.2,.9,.3,1); }
+  40% { transform: translateZ(0) scale(var(--sc-btn-bounce, 1.04)); animation-timing-function: cubic-bezier(.4,0,.3,1); }
+  100% { transform: translateZ(0) scale(1); }
+}
 
 .swap-card__txinfo {
   width: 100%;
@@ -536,6 +591,8 @@ const CSS = `
     transparent 60%
   );
   background-size: 220% 100%;
+  /* one band: repeating, the sweep showed a second one following it */
+  background-repeat: no-repeat;
 }
 
 .swap-card__panel--shimmering .swap-card__shimmer {
@@ -543,9 +600,10 @@ const CSS = `
   animation: sc-shimmer 1.4s ease-in-out 240ms 1 both;
 }
 
+/* the band starts just off the left edge and leaves off the right */
 @keyframes sc-shimmer {
-  0% { background-position: 220% 0; }
-  100% { background-position: -220% 0; }
+  0% { background-position: 117% 0; }
+  100% { background-position: -17% 0; }
 }
 
 /* Follow the OS setting: the numbers still change, they just do not travel. */
@@ -575,302 +633,91 @@ function fmtNum(x: number, dec: number): string {
 }
 
 /* ==========================================================================
-   Motion blur
-   A vertical-only Gaussian, as an SVG filter. The peak is a fraction of the
-   text size, so a 35px amount and a 13px sub-value smear alike, and it follows
-   the easing's own speed, so the digits sharpen as the roll settles.
+   Rolling numbers: @kitlangton/rolling-number, with its motion blur
    ========================================================================== */
 
-const RN_BLUR_EM = 0.044 /* peak blur, as a fraction of the text size */
-const RN_EASE: [number, number, number, number] = [
-    0.32, 0.72, 0, 1,
-] /* matches --rn-ease */
-
-/* Speed profile of the easing curve, sampled once and normalised to 1. The
-   derivative is analytic: this curve is front-loaded and its speed peaks at
-   p = 0, which is precisely where a finite difference is least accurate. */
-const RN_SPEED: number[] = (() => {
-    const [x1, y1, x2, y2] = RN_EASE
-    const bezX = (u: number) => {
-        const v = 1 - u
-        return 3 * v * v * u * x1 + 3 * v * u * u * x2 + u * u * u
-    }
-    const dX = (u: number) => {
-        const v = 1 - u
-        return 3 * v * v * x1 + 6 * v * u * (x2 - x1) + 3 * u * u * (1 - x2)
-    }
-    const dY = (u: number) => {
-        const v = 1 - u
-        return 3 * v * v * y1 + 6 * v * u * (y2 - y1) + 3 * u * u * (1 - y2)
-    }
-    const n = 64
-    const table: number[] = []
-    for (let i = 0; i <= n; i++) {
-        const p = i / n
-        let u = p /* solve x(u) = p */
-        for (let k = 0; k < 6; k++) {
-            const d = dX(u)
-            if (Math.abs(d) < 1e-6) break
-            u = Math.max(0, Math.min(1, u - (bezX(u) - p) / d))
-        }
-        const d = dX(u)
-        table.push(d > 1e-6 ? Math.abs(dY(u) / d) : 0)
-    }
-    const peak = Math.max(...table) || 1
-    /* ramp in over the first 12%, so it arrives rather than appearing */
-    return table.map((v, i) => (v / peak) * Math.min(1, i / n / 0.12))
-})()
-
-interface BlurJob {
-    strip: HTMLElement
-    node: SVGFEGaussianBlurElement
-    peak: number
-    dur: number
-    t0: number
-}
-
-/* One driver for every rolling digit on the page, rather than a loop each. */
-let blurJobs: BlurJob[] = []
-let blurRaf: number | null = null
-
-function blurTick(now: number) {
-    blurJobs = blurJobs.filter((job) => {
-        /* rAF hands back the frame's START time, which can predate the job if it
-       was queued later in that same frame — without the clamp p goes negative
-       and the table lookup falls off the front into NaN. */
-        const p = Math.max(0, (now - job.t0) / job.dur)
-        if (p >= 1) {
-            job.strip.style.filter = ""
-            job.node.setAttribute("stdDeviation", "0 0")
-            return false
-        }
-        const i = p * (RN_SPEED.length - 1)
-        const lo = Math.max(0, Math.floor(i))
-        const hi = Math.min(lo + 1, RN_SPEED.length - 1)
-        const speed = RN_SPEED[lo] + (RN_SPEED[hi] - RN_SPEED[lo]) * (i - lo)
-        job.node.setAttribute(
-            "stdDeviation",
-            "0 " + (job.peak * speed).toFixed(3)
-        )
-        return true
-    })
-    blurRaf = blurJobs.length ? requestAnimationFrame(blurTick) : null
-}
-
-function startBlur(
-    strip: HTMLElement,
-    node: SVGFEGaussianBlurElement,
-    filterId: string
-) {
-    const styles = getComputedStyle(strip)
-    const scale = parseFloat(styles.getPropertyValue("--rn-blur"))
-    const size = parseFloat(styles.fontSize) || 0
-    const dur = parseFloat(styles.getPropertyValue("--rn-duration")) || 0
-    const peak = (isNaN(scale) ? 1 : scale) * RN_BLUR_EM * size
-    if (!(peak > 0) || !(dur > 0)) return
-    strip.style.filter = `url(#${filterId})`
-    blurJobs = blurJobs.filter((job) => job.strip !== strip)
-    blurJobs.push({ strip, node, peak, dur, t0: performance.now() })
-    if (blurRaf === null) blurRaf = requestAnimationFrame(blurTick)
-}
-
-/* ==========================================================================
-   Rolling digits
-   ========================================================================== */
-
-const mod10 = (n: number) => ((n % 10) + 10) % 10
-
-function RollingDigit({
-    digit,
-    dir,
-    blur,
-}: {
-    digit: number
-    dir: number
-    blur: boolean
-}) {
-    const stripRef = useRef<HTMLSpanElement>(null)
-    const blurRef = useRef<SVGFEGaussianBlurElement>(null)
-    /* Position on an endless 0-9 strip: position 13 and position 3 are both a
-     "3", but one is a full turn further on. Keeping a position rather than a
-     digit is what lets 9 -> 0 roll forwards instead of spinning back. */
-    const posRef = useRef(digit)
-    const [range, setRange] = useState({ from: digit, to: digit })
-
-    const rawId = useId()
-    const filterId = useMemo(
-        () => "sc-rn-" + rawId.replace(/[^a-zA-Z0-9_-]/g, ""),
-        [rawId]
-    )
-
-    useEffect(() => {
-        const from = posRef.current
-        if (mod10(from) === digit) return
-        const to =
-            dir >= 0
-                ? from + mod10(digit - mod10(from)) /* rising: roll up */
-                : from - mod10(mod10(from) - digit) /* falling: roll down */
-        posRef.current = to
-        setRange({ from, to })
-    }, [digit, dir])
-
-    const lo = Math.min(range.from, range.to)
-    const hi = Math.max(range.from, range.to)
-    const cells: number[] = []
-    for (let p = lo; p <= hi; p++) cells.push(mod10(p))
-
-    /* Place the strip at the old digit without a transition, then let it move to
-     the new one — otherwise the browser has nothing to animate from. */
-    useIsoLayoutEffect(() => {
-        const strip = stripRef.current
-        if (!strip) return
-        const { from, to } = range
-        const low = Math.min(from, to)
-        strip.style.transition = "none"
-        strip.style.setProperty("--rn-o", String(from - low))
-        strip.style.filter = ""
-        void strip.offsetHeight /* flush the lines above */
-        if (from === to) return
-        strip.style.transition = ""
-        strip.style.setProperty("--rn-o", String(to - low))
-        if (blur && blurRef.current) startBlur(strip, blurRef.current, filterId)
-    }, [range, blur, filterId])
-
-    /* Drop any in-flight job if the column is unmounted mid-roll. */
-    useEffect(() => {
-        return () => {
-            const strip = stripRef.current
-            if (strip) blurJobs = blurJobs.filter((job) => job.strip !== strip)
-        }
-    }, [])
-
-    return (
-        <span className="sc-rn__digit">
-            <span className="sc-rn__ghost" aria-hidden="true">
-                0
-            </span>
-            <span className="sc-rn__window">
-                <span ref={stripRef} className="sc-rn__strip">
-                    {cells.map((cell, i) => (
-                        <span key={i} className="sc-rn__cell">
-                            {cell}
-                        </span>
-                    ))}
-                </span>
-            </span>
-            {blur && (
-                <svg
-                    className="sc-rn__blur"
-                    aria-hidden="true"
-                    width="0"
-                    height="0"
-                >
-                    <defs>
-                        {/* room for the smear to spill past the strip before the window clips it */}
-                        <filter
-                            id={filterId}
-                            x="-5%"
-                            y="-20%"
-                            width="110%"
-                            height="140%"
-                        >
-                            <feGaussianBlur ref={blurRef} stdDeviation="0 0" />
-                        </filter>
-                    </defs>
-                </svg>
-            )}
-        </span>
-    )
-}
-
-/**
- * Takes the already-formatted string, not a number and an Intl format, so it
- * works with fmtNum's European separators and with the "~$" / " ETH" bits
- * around the digits, which render as plain characters and stay put while the
- * digits move. `value` only decides which way the columns turn.
- *
- * `jump` is a token folded into the column keys: change it and every column
- * remounts, so the new number is simply there rather than rolled to. That is
- * what the pair flip wants — the value is not drifting, it is being replaced,
- * and a reel spinning under a panel that is already sliding is two motions
- * fighting each other.
- */
+/* Formats like fmtNum (dot for thousands, comma for decimals, no trailing zeros)
+   and keeps "~$" / " ETH" around the digits as plain text, so they stay put while
+   the digits roll. `jump` remounts it: the new number is simply there instead of
+   rolled to (the pair flip, where the value is replaced, not drifting). */
 function RollingNumber({
-    text,
     value,
+    decimals,
+    prefix,
+    suffix,
     blur = true,
+    duration = 500,
     jump = 0,
     className,
     style,
 }: {
-    text: string
     value: number
+    decimals: number
+    prefix?: string
+    suffix?: string
     blur?: boolean
+    duration?: number
     jump?: string | number
     className?: string
     style?: CSSProperties
 }) {
-    const hostRef = useRef<HTMLSpanElement>(null)
-    const [line, setLine] = useState<number | null>(null)
-
-    /* Measure the element's real line box once, while it still holds ordinary
-     text. That first render is also what the server sends and what Framer's
-     canvas shows: readable text, no roll. */
-    useIsoLayoutEffect(() => {
-        if (line !== null) return
-        const el = hostRef.current
-        if (!el) return
-        const size = parseFloat(getComputedStyle(el).fontSize) || 0
-        const box = el.getBoundingClientRect().height
-        setLine(size > 0 && box > 0 ? +(box / size).toFixed(4) : 1.2)
-    }, [line])
-
-    /* Which way the number moved, so every column rolls the same way. */
-    const previous = useRef(value)
-    const dir = value >= previous.current ? 1 : -1
-    useEffect(() => {
-        previous.current = value
-    }, [value])
-
-    const vars =
-        line !== null
-            ? ({ "--rn-line": line, ...style } as CSSProperties)
-            : style
-
-    if (line === null) {
-        return (
-            <span ref={hostRef} className={className} style={vars}>
-                {text}
-            </span>
-        )
-    }
-
-    const chars = [...text]
+    const rounded = Number(value.toFixed(decimals))
     return (
-        <span
-            ref={hostRef}
-            className={[className, "sc-rn"].filter(Boolean).join(" ")}
-            style={vars}
-        >
-            <span className="sc-rn__sr">{text}</span>
-            <span aria-hidden="true">
-                {chars.map((char, i) => {
-                    /* Keyed from the right, so gaining a digit does not renumber the
-             columns that were already there: "339" -> "1.354" keeps the units
-             column rolling instead of restarting it. */
-                    const key = `${jump}-${chars.length - 1 - i}`
-                    return char >= "0" && char <= "9" ? (
-                        <RollingDigit
-                            key={key}
-                            digit={+char}
-                            dir={dir}
-                            blur={blur}
+        <span className={className} style={style}>
+            {prefix}
+            <LibRollingNumber
+                key={jump}
+                value={rounded}
+                locales="de-DE"
+                format={{ minimumFractionDigits: 0, maximumFractionDigits: decimals }}
+                duration={duration}
+                motionBlur={blur}
+                style={{ fontVariantNumeric: "tabular-nums" }}
+            />
+            {suffix}
+        </span>
+    )
+}
+
+/* One step's icon (see .sc-step-icon). `k` is --sc-scale. */
+function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: number; L: Loader }) {
+    const d = L.stepDot * k
+    const rad = L.stepRadius * k
+    return (
+        <span className={"sc-step-icon" + (state === "done" ? " sc-step-icon--done" : "")}>
+            <span className={"sc-step-icon__ring" + (state !== "pending" ? " sc-step-icon__ring--spin" : "")}>
+                {Array.from({ length: COUNT }, (_, i) => {
+                    const a = ((-90 + i * (360 / COUNT)) * Math.PI) / 180
+                    const x = state === "active" ? rad * Math.cos(a) : 0
+                    const y = state === "active" ? rad * Math.sin(a) : 0
+                    /* waiting: just the first dot, bigger; running: all six out on the
+                       ring (the big dot shrinking to size as it goes); done: they gather
+                       back in and go */
+                    const scale = state === "active" ? 1 : state === "pending" && i === 0 ? L.stepWaitDot / L.stepDot : 0
+                    return (
+                        <span
+                            key={i}
+                            className="sc-step-icon__dot"
+                            style={{
+                                width: d,
+                                height: d,
+                                marginLeft: -d / 2,
+                                marginTop: -d / 2,
+                                background: state === "done" ? L.stepDoneColour : undefined,
+                                transform: `translate(${x}px, ${y}px) scale(${scale})`,
+                                transition:
+                                    state === "active"
+                                        ? `transform ${L.stepExpand}ms cubic-bezier(.34,1.5,.5,1) ${i * 35}ms`
+                                        : "transform 320ms cubic-bezier(.55,0,1,.45)",
+                            }}
                         />
-                    ) : (
-                        <span key={key}>{char}</span>
                     )
                 })}
             </span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle className="sc-step-icon__circle" cx="8" cy="8" r="7.3" stroke={L.stepDoneColour} strokeWidth="1.1" />
+                <path className="sc-step-icon__tick" d="M5.1 8.3 L7.1 10.2 L10.9 6.2" stroke={L.stepDoneColour} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" pathLength={1} />
+            </svg>
         </span>
     )
 }
@@ -948,9 +795,8 @@ function Pill({ token, filled }: { token: "ETH" | "USDC"; filled: boolean }) {
    The component
    ========================================================================== */
 
-/* Dot choreography. SPIN is seconds per revolution; GROW is how far the
+/* Dot choreography. GROW is how far the
    surviving dot has to swell to become the success badge. */
-const SPIN = 3
 const COUNT = 6
 const RADIUS = 22
 const GAP = 17
@@ -1086,6 +932,155 @@ function dotStyle(phase: Phase, i: number, k: number): CSSProperties {
     }
 }
 
+/* The button loader: the same animation as the progress band had, at button size.
+   Dots pop in one by one, roll up into a ring that spins, gather into one point,
+   and that point swells into a green badge with a tick (px before --sc-scale). */
+/* Every value here is a setting (see "Swap loader" in the property controls) */
+type Loader = {
+    dot: number // dot size
+    gap: number // gap between dots in the row
+    radius: number // ring radius
+    colour: string // dot colour
+    popIn: number // ms each dot takes to pop in
+    popStagger: number // ms between dots popping in
+    rise: number // px a dot rises from as it comes in
+    rollAt: number // ms after the click the row rolls up into the ring
+    roll: number // ms the roll takes
+    rollStagger: number // ms between dots rolling
+    textAt: number // ms after the roll "Swapping" fades in
+    swapTime: number // ms the ring spins before the swap completes
+    spin: number // seconds per turn
+    side: "left" | "right" // where the ring / badge sits next to the text
+    textGap: number // space between the text and the ring / badge
+    push: number // how far "Swapping" slides in from
+    textFade: number // ms "Swapping" takes to fade in
+    shimmer: boolean
+    badge: number // size of the success circle
+    outline: number // line width of the circle and tick
+    tick: number // size of the tick inside the circle (1 = as drawn)
+    filled: boolean // filled circle with a white tick instead of an outline
+    successColour: string
+    successBackground: string
+    messageFade: number // ms the success message takes to fade in
+    keepCheck: boolean // the circle and tick stay after the swap
+    steps: boolean // show the swap's steps in place of the chips (the button then has no spinner)
+    step1: string // step labels; {sell} and {receive} become the tokens
+    step2: string
+    step3: string
+    stepTime: number // ms each step runs
+    stepGap: number // ms between one step finishing and the next starting
+    stepAppear: number // ms between the rows coming in
+    stepExpand: number // ms for the dot to open into the spinner
+    stepSpin: number // seconds per turn
+    stepDot: number // dot size in a step's spinner
+    stepWaitDot: number // size of the single dot a step waits on
+    stepRadius: number // that spinner's radius
+    stepDoneColour: string // finished steps: text, circle and tick
+    txDelay: number // ms after success the transaction info comes in
+    txDuration: number // ms it takes to come in
+    successBounce: number // how far the success button swells (1 = none)
+    successBounceDuration: number // ms
+    numberPop: number // how much the received amount grows when it lands (1 = none)
+    numberPopDuration: number // ms
+    numberPopDelay: number // ms after success
+}
+const DEFAULT_LOADER: Loader = {
+    dot: 2.5,
+    gap: 7,
+    radius: 6,
+    colour: "#ffffff",
+    popIn: 420,
+    popStagger: 80,
+    rise: 6,
+    rollAt: 920,
+    roll: 540,
+    rollStagger: 38,
+    textAt: 390,
+    swapTime: 3600,
+    spin: 3,
+    side: "left",
+    textGap: 6,
+    push: 8,
+    textFade: 240,
+    shimmer: true,
+    badge: 18,
+    outline: 1.6,
+    tick: 0.9,
+    filled: false,
+    successColour: "#22c55e",
+    successBackground: "rgba(34, 197, 94, 0.25)",
+    messageFade: 280,
+    keepCheck: true,
+    steps: true,
+    step1: "Approving {sell}",
+    step2: "Swapping {sell} for {receive}",
+    step3: "Confirming on-chain",
+    stepTime: 1800,
+    stepGap: 320,
+    stepAppear: 140,
+    stepExpand: 560,
+    stepSpin: 1.4,
+    stepDot: 2.6,
+    stepWaitDot: 5,
+    stepRadius: 5.5,
+    stepDoneColour: "rgba(37, 37, 37, 0.35)",
+    txDelay: 550,
+    txDuration: 520,
+    successBounce: 1.04,
+    successBounceDuration: 400,
+    numberPop: 1.12,
+    numberPopDuration: 400,
+    numberPopDelay: 0,
+}
+
+function loadDotStyle(phase: Phase, i: number, k: number, L: Loader): CSSProperties {
+    const LBADGE = L.badge
+    const LSHRINK = L.dot / L.badge
+    /* The badge's outline grows out of a white, see-through ring rather than out of
+       "none": a shadow that starts from nothing is interpolated from transparent
+       black, which some browsers paint as a dark flash on the way to green. */
+    const base: CSSProperties = { width: LBADGE * k, height: LBADGE * k, marginLeft: (-LBADGE * k) / 2, marginTop: (-LBADGE * k) / 2, boxShadow: `inset 0 0 0 ${L.outline * k}px rgba(255, 255, 255, 0)` }
+    const row = { x: (i - (COUNT - 1) / 2) * L.gap * k, y: 0 }
+    const a = ((-90 + i * (360 / COUNT)) * Math.PI) / 180
+    const ring = { x: L.radius * k * Math.cos(a), y: L.radius * k * Math.sin(a) }
+    if (phase === "static" || L.steps)
+        return { ...base, background: L.colour, opacity: 0, transform: `translate(${row.x}px, ${L.rise * k}px) scale(0)`, transition: "transform 200ms ease, opacity 200ms ease" }
+    if (phase === "staggering")
+        /* Each dot rises into its place as it grows (from a little below, just
+           past it and back), one after the other, so the line comes in as a wave */
+        return {
+            ...base,
+            background: L.colour,
+            opacity: 1,
+            transform: `translate(${row.x}px, 0px) scale(${LSHRINK})`,
+            transition: `transform ${L.popIn}ms cubic-bezier(.34,1.45,.55,1) ${i * L.popStagger}ms, opacity ${Math.min(200, L.popIn)}ms ease ${i * L.popStagger}ms`,
+        }
+    if (phase === "converging")
+        return { ...base, background: L.colour, zIndex: i === 0 ? 2 : 1, opacity: 1, transform: `translate(0px, 0px) scale(${LSHRINK})`, transition: `transform ${CONVERGE}ms cubic-bezier(.55,0,1,.45)` }
+    if (phase === "success" || phase === "done") {
+        if (i === 0) {
+            if (phase === "done" && !L.keepCheck)
+                return { ...base, background: L.filled ? L.successColour : "rgba(255, 255, 255, 0)", boxShadow: `inset 0 0 0 ${L.outline * k}px ${L.filled ? "rgba(255, 255, 255, 0)" : L.successColour}`, zIndex: 2, opacity: 0, animation: "sc-badge-leave 420ms cubic-bezier(.4,0,.2,1) both", transition: "opacity 320ms ease" }
+            /* The white dot grows into the badge: an outlined circle (its fill fades
+               as the outline comes in), or a filled one */
+            return {
+                ...base,
+                background: L.filled ? L.successColour : "rgba(255, 255, 255, 0)",
+                boxShadow: `inset 0 0 0 ${L.outline * k}px ${L.filled ? "rgba(255, 255, 255, 0)" : L.successColour}`,
+                zIndex: 2,
+                opacity: 1,
+                ["--sc-dot-rest" as any]: LSHRINK,
+                ["--sc-dot-wind" as any]: LSHRINK * WIND,
+                transform: "translate(0px, 0px) scale(1)",
+                animation: `sc-badge-grow ${GROW_MS}ms both`,
+                transition: "background 360ms ease, box-shadow 360ms ease",
+            }
+        }
+        return { ...base, background: L.colour, opacity: 0, transform: "translate(0px, 0px) scale(0)", transition: "transform 240ms ease, opacity 200ms ease" }
+    }
+    return { ...base, background: L.colour, opacity: 1, transform: `translate(${ring.x}px, ${ring.y}px) scale(${LSHRINK})`, transition: `transform ${L.roll}ms cubic-bezier(.34,1.42,.5,1) ${i * L.rollStagger}ms, opacity 200ms ease` }
+}
+
 interface Balances {
     eth: number
     usdc: number
@@ -1109,6 +1104,7 @@ const DEFAULT_LIVE: Live = { enabled: true, every: 60000 }
 const DEFAULT_ROLL: Roll = { duration: 500, blur: 1 }
 const DEFAULT_PRESETS = [25, 50, 75, 100]
 
+
 interface Props {
     scale?: number
     sellLabel?: string
@@ -1127,6 +1123,51 @@ interface Props {
     hoverBounce?: number
     hoverShadow?: number
     hoverReturn?: number
+    loaderDot?: Loader["dot"]
+    loaderGap?: Loader["gap"]
+    loaderRadius?: Loader["radius"]
+    loaderColour?: Loader["colour"]
+    loaderPopIn?: Loader["popIn"]
+    loaderRise?: number
+    loaderPopStagger?: Loader["popStagger"]
+    loaderRollAt?: Loader["rollAt"]
+    loaderRoll?: Loader["roll"]
+    loaderRollStagger?: Loader["rollStagger"]
+    loaderTextAt?: Loader["textAt"]
+    loaderSwapTime?: Loader["swapTime"]
+    loaderSpin?: Loader["spin"]
+    loaderSide?: Loader["side"]
+    loaderTextGap?: Loader["textGap"]
+    loaderPush?: Loader["push"]
+    loaderTextFade?: Loader["textFade"]
+    loaderShimmer?: Loader["shimmer"]
+    loaderBadge?: Loader["badge"]
+    loaderOutline?: Loader["outline"]
+    loaderFilled?: Loader["filled"]
+    loaderSuccessColour?: Loader["successColour"]
+    loaderSuccessBackground?: Loader["successBackground"]
+    loaderMessageFade?: Loader["messageFade"]
+    loaderTxDelay?: number
+    loaderTxDuration?: number
+    loaderSuccessBounce?: number
+    loaderSuccessBounceDuration?: number
+    loaderNumberPop?: number
+    loaderNumberPopDuration?: number
+    loaderNumberPopDelay?: number
+    loaderSteps?: boolean
+    loaderStep1?: string
+    loaderStep2?: string
+    loaderStep3?: string
+    loaderStepTime?: number
+    loaderStepGap?: number
+    loaderStepAppear?: number
+    loaderStepExpand?: number
+    loaderStepSpin?: number
+    loaderStepDot?: number
+    loaderStepWaitDot?: number
+    loaderStepRadius?: number
+    loaderStepDoneColour?: string
+    loaderKeepCheck?: Loader["keepCheck"]
     onComplete?: () => void
     style?: CSSProperties
 }
@@ -1154,6 +1195,16 @@ export default function SwapCard(props: Props) {
         style,
     } = props
 
+    const L: Loader = { ...DEFAULT_LOADER }
+    for (const k of Object.keys(DEFAULT_LOADER) as (keyof Loader)[]) {
+        const v = (props as any)["loader" + k[0].toUpperCase() + k.slice(1)]
+        if (v !== undefined && v !== null && v !== "") (L as any)[k] = v
+    }
+    const LBADGE = L.badge
+    const LDOT = L.dot
+    const LRADIUS = L.radius
+    const LWORD_GAP = L.textGap
+
     const liveOptions = { ...DEFAULT_LIVE, ...live }
     const rollOptions = { ...DEFAULT_ROLL, ...roll }
     const list = presets.length ? presets : DEFAULT_PRESETS
@@ -1168,6 +1219,12 @@ export default function SwapCard(props: Props) {
     /* Set once the stroke has finished drawing, which retires the dash pattern. */
     const [solid, setSolid] = useState(false)
     const [landed, setLanded] = useState(false)
+    /* the transaction info comes in shortly after success (the chips fold away for it) */
+    const [txIn, setTxIn] = useState(false)
+    /* the steps: how many are done, which one runs (-1: none), and whether the rows are in */
+    const [stepsDone, setStepsDone] = useState(0)
+    const [stepActive, setStepActive] = useState(-1)
+    const [stepsIn, setStepsIn] = useState(false)
     const [runId, setRunId] = useState(0)
     /* Bumped only by the pair flip, so only the flip lands without rolling. */
     const [flipGen, setFlipGen] = useState(0)
@@ -1265,8 +1322,7 @@ export default function SwapCard(props: Props) {
     const sellText = fmtNum(sellRaw, isEth ? 3 : 0)
     const recText = fmtNum(recRaw, isEth ? 0 : 3)
     const unit = isEth ? "ETH" : "USDC"
-    const remaining = phase === "done" ? bal * (1 - share) : bal
-    const availText = fmtNum(remaining, isEth ? 3 : 0) + " " + unit
+    const remaining = phase === "success" || phase === "done" ? bal * (1 - share) : bal
 
     const finished = phase === "success" || phase === "done"
     const loading = phase !== "static" && !finished
@@ -1286,7 +1342,18 @@ export default function SwapCard(props: Props) {
     const timers = useRef<ReturnType<typeof setTimeout>[]>([])
     const raf = useRef<number | null>(null)
     const rotation = useRef(0)
-    const ringRef = useRef<HTMLDivElement>(null)
+    const ringRef = useRef<HTMLSpanElement>(null)
+    const wordRef = useRef<HTMLSpanElement>(null)
+    /* both texts are measured ahead (hidden copies), so the success message lands
+       centred at once instead of sliding in from where "Swapping" sat */
+    const measureSwap = useRef<HTMLSpanElement>(null)
+    const measureDone = useRef<HTMLSpanElement>(null)
+    const [swapW, setSwapW] = useState(70)
+    const [doneW, setDoneW] = useState(200)
+    useIsoLayoutEffect(() => {
+        if (measureSwap.current) setSwapW(measureSwap.current.offsetWidth)
+        if (measureDone.current) setDoneW(measureDone.current.offsetWidth)
+    })
 
     const after = (ms: number, fn: () => void) => {
         timers.current.push(setTimeout(fn, ms))
@@ -1328,20 +1395,34 @@ export default function SwapCard(props: Props) {
          and the tick is drawn into that layer. */
             if (ringRef.current) ringRef.current.style.transform = ""
             setPhase("converging")
-            after(CONVERGE + MERGE_HOLD, () => {
-                setPhase("success")
-                setChecked(true)
-                setDrawn(true)
-                setLanded(true)
-                after(1600, () => {
-                    setPhase("done")
-                    setBand("collapsed")
-                    setChecked(false) /* fades and shrinks, but stays drawn */
-                    onComplete?.()
-                })
-            })
+            after(CONVERGE + MERGE_HOLD, succeed)
         }
         raf.current = requestAnimationFrame(anim)
+    }
+
+    const succeed = () => {
+        setPhase("success")
+        setChecked(true)
+        setDrawn(true)
+        setLanded(true)
+        after(L.txDelay, () => setTxIn(true))
+        after(1600, () => {
+            setPhase("done")
+            if (!L.keepCheck) setChecked(false) /* fades, but stays drawn */
+            onComplete?.()
+        })
+    }
+
+    /* With steps: the rows come in (each waiting on a dot), then one by one a step
+       opens into a spinner, runs, and settles into a tick; after the last, success */
+    const runStep = (n: number) => {
+        setStepActive(n)
+        after(L.stepTime, () => {
+            setStepActive(-1)
+            setStepsDone(n + 1)
+            if (n < 2) after(L.stepGap, () => runStep(n + 1))
+            else after(Math.max(L.stepGap, 640), succeed)
+        })
     }
 
     const startSpin = () => {
@@ -1350,7 +1431,7 @@ export default function SwapCard(props: Props) {
             const dt = now - last
             last = now
             rotation.current =
-                (rotation.current + (360 / (SPIN * 1000)) * dt) % 360
+                (rotation.current + (360 / (L.spin * 1000)) * dt) % 360
             if (ringRef.current)
                 ringRef.current.style.transform = `rotate(${rotation.current}deg)`
             raf.current = requestAnimationFrame(tick)
@@ -1359,14 +1440,21 @@ export default function SwapCard(props: Props) {
     }
 
     const start = () => {
+        if (L.steps) {
+            setPhase("spinning")
+            setStepsDone(0)
+            setStepActive(-1)
+            setStepsIn(true)
+            after(2 * L.stepAppear + 520, () => runStep(0))
+            return
+        }
         setPhase("staggering")
-        after(1000, () => setBand("expanded"))
-        after(1160, () => {
+        after(L.rollAt, () => {
             setPhase("rolled")
-            after(450, () => {
+            after(L.textAt, () => {
                 setPhase("spinning")
                 startSpin()
-                after(2200, complete)
+                after(L.swapTime, complete)
             })
         })
     }
@@ -1381,6 +1469,10 @@ export default function SwapCard(props: Props) {
         setDrawn(false)
         setSolid(false)
         setLanded(false)
+        setTxIn(false)
+        setStepsIn(false)
+        setStepActive(-1)
+        setStepsDone(0)
         setPhase("static")
         /* Remount the tick so its stroke animation plays again next time. */
         setRunId((n) => n + 1)
@@ -1511,8 +1603,6 @@ export default function SwapCard(props: Props) {
         .join(" ")
 
     const vars = {
-        "--rn-duration": `${rollOptions.duration}ms`,
-        "--rn-blur": rollOptions.blur,
         "--sc-scale": scale,
         "--sc-hover-shift": `${hoverShift}px`,
         "--sc-hover-ease": `cubic-bezier(0.34, ${hoverBounce}, 0.5, 1)`,
@@ -1549,16 +1639,19 @@ export default function SwapCard(props: Props) {
                     <div className="swap-card__amount-row">
                         <RollingNumber
                             className="swap-card__amount"
-                            text={sellText}
                             value={sellRaw}
+                            decimals={isEth ? 3 : 0}
+                            duration={rollOptions.duration}
                             blur={blurOn}
                             jump={flipGen}
                             style={{ opacity: preset ? 1 : 0.35 }}
                         />
                         <RollingNumber
                             className="swap-card__sub"
-                            text={"~$" + fmtNum(sellUsd, 0)}
+                            prefix="~$"
                             value={sellUsd}
+                            decimals={0}
+                            duration={rollOptions.duration}
                             blur={blurOn}
                             jump={flipGen}
                         />
@@ -1581,16 +1674,29 @@ export default function SwapCard(props: Props) {
                     <div className="swap-card__amount-row">
                         <RollingNumber
                             className="swap-card__amount"
-                            text={recText}
                             value={recRaw}
+                            decimals={isEth ? 0 : 3}
+                            duration={rollOptions.duration}
                             blur={blurOn}
                             jump={flipGen}
-                            style={{ opacity: preset ? 1 : 0.35 }}
+                            style={{
+                                opacity: preset ? 1 : 0.35,
+                                ...(landed && L.numberPop !== 1
+                                    ? {
+                                          display: "inline-block",
+                                          transformOrigin: "left 80%",
+                                          ["--sc-pop" as any]: L.numberPop,
+                                          animation: `sc-amount-pop ${L.numberPopDuration}ms ${L.numberPopDelay}ms both`,
+                                      }
+                                    : {}),
+                            }}
                         />
                         <RollingNumber
                             className="swap-card__sub"
-                            text={"~$" + fmtNum(recUsd, 0)}
+                            prefix="~$"
                             value={recUsd}
+                            decimals={0}
+                            duration={rollOptions.duration}
                             blur={blurOn}
                             jump={flipGen}
                         />
@@ -1606,13 +1712,51 @@ export default function SwapCard(props: Props) {
                     </span>
                     <RollingNumber
                         className="swap-card__avail-val"
-                        text={availText}
                         value={remaining}
+                        decimals={isEth ? 3 : 0}
+                        suffix={" " + unit}
+                        duration={rollOptions.duration}
                         blur={blurOn}
                         jump={flipGen}
                     />
                 </div>
-                <div className="swap-card__chips-wrap">
+                <div
+                    className={
+                        "swap-card__chips-wrap" +
+                        (L.steps && stepsIn ? " swap-card__chips-wrap--steps" : "") +
+                        (txIn && showTxInfo ? " swap-card__chips-wrap--away" : "")
+                    }
+                    style={{
+                        ["--sc-tx-ms" as any]: `${L.txDuration}ms`,
+                        ["--sc-step-h" as any]: `${20 * scale}px`,
+                        ["--sc-step-gap" as any]: `${8 * scale}px`,
+                        ["--sc-steps-h" as any]: `${(3 * 20 + 2 * 8 + 10 + 4) * scale}px`,
+                        ["--sc-step-icon" as any]: `${16 * scale}px`,
+                        ["--sc-step-spin" as any]: `${L.stepSpin}s`,
+                        ["--sc-step-done" as any]: L.stepDoneColour,
+                    }}
+                >
+                    {L.steps && (
+                        <div className="swap-card__steps" aria-live="polite">
+                            {[L.step1, L.step2, L.step3].map((label, n) => {
+                                const state = n < stepsDone ? "done" : n === stepActive ? "active" : "pending"
+                                return (
+                                    <div
+                                        key={n}
+                                        className={
+                                            "swap-card__step" +
+                                            (stepsIn ? " swap-card__step--in" : "") +
+                                            (state === "done" ? " swap-card__step--done" : "")
+                                        }
+                                        style={{ transitionDelay: stepsIn ? `${n * L.stepAppear}ms, ${n * L.stepAppear}ms, 0ms` : "0ms" }}
+                                    >
+                                        <StepIcon state={state} k={scale} L={L} />
+                                        {label.replace("{sell}", sellToken).replace("{receive}", recToken)}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                     <div className="swap-card__chips">
                         {list.map((value) => (
                             <button
@@ -1642,42 +1786,6 @@ export default function SwapCard(props: Props) {
                     (band === "none" ? "" : ` swap-card__band--${band}`)
                 }
             >
-                <div ref={ringRef} className="swap-card__ring">
-                    {Array.from({ length: COUNT }, (_, i) => (
-                        <div
-                            key={i}
-                            className="swap-card__dot"
-                            style={dotStyle(phase, i, scale)}
-                        />
-                    ))}
-                    <svg
-                        key={runId}
-                        className={
-                            "swap-card__check" +
-                            (drawn ? " swap-card__check--drawn" : "") +
-                            (solid ? " swap-card__check--solid" : "") +
-                            (checked ? " swap-card__check--show" : "")
-                        }
-                        width={BADGE * scale}
-                        height={BADGE * scale}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        style={{
-                            marginLeft: (-BADGE * scale) / 2,
-                            marginTop: (-BADGE * scale) / 2,
-                        }}
-                    >
-                        <path
-                            d="M7.1 12.4 L10.5 15.7 L16.9 8.6"
-                            stroke="#ffffff"
-                            strokeWidth="1.7"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            pathLength={1}
-                            onAnimationEnd={() => setSolid(true)}
-                        />
-                    </svg>
-                </div>
             </div>
 
             <button
@@ -1691,6 +1799,17 @@ export default function SwapCard(props: Props) {
                     .filter(Boolean)
                     .join(" ")}
                 disabled={needsAmount}
+                style={
+                    finished
+                        ? {
+                              background: L.successBackground,
+                              color: L.successColour,
+                              ...(L.successBounce !== 1
+                                  ? { ["--sc-btn-bounce" as any]: L.successBounce, animation: `sc-btn-bounce ${L.successBounceDuration}ms both` }
+                                  : {}),
+                          }
+                        : undefined
+                }
                 onClick={() => {
                     if (phase === "static") start()
                     else if (finished) reset()
@@ -1699,10 +1818,97 @@ export default function SwapCard(props: Props) {
                 <span
                     className={
                         "swap-card__btn-label" +
-                        (loading ? " swap-card__btn-label--shimmer" : "")
+                        (phase !== "static" ? " swap-card__btn-label--hidden" : "")
                     }
                 >
-                    {buttonLabel}
+                    {phase === "static" ? buttonLabel : actionLabel}
+                </span>
+                <span className="swap-card__load" aria-hidden="true">
+                    {(() => {
+                        /* "Swapping" (with its shimmer) fades in once the ring spins and pushes
+                           it to the side; on success the same text becomes the success message,
+                           next to the badge; when the badge leaves, the message centres */
+                        const shown = phase === "spinning" || phase === "settling" || phase === "converging" || finished
+                        const ringD = (LRADIUS * 2 + LDOT) * scale
+                        const badgeD = LBADGE * scale
+                        const gapD = LWORD_GAP * scale
+                        /* with steps the ticks are on the steps, so the message stands alone */
+                        const withBadge = !L.steps && !(phase === "done" && !L.keepCheck)
+                        const sideD = finished ? (withBadge ? badgeD : 0) : ringD
+                        const swapTotal = swapW + gapD + ringD
+                        const doneTotal = doneW + (withBadge ? gapD + badgeD : 0)
+                        const total = finished ? doneTotal : swapTotal
+                        const left = L.side === "left"
+                        /* the ring / badge sits at one end of the row, the text at the other */
+                        const ringX = shown ? (left ? -total / 2 + sideD / 2 : total / 2 - sideD / 2) : 0
+                        const swapX = L.steps ? -swapW / 2 : left ? -swapTotal / 2 + ringD + gapD : -swapTotal / 2
+                        const doneX = left ? -doneTotal / 2 + (withBadge ? badgeD + gapD : 0) : -doneTotal / 2
+                        const pushD = L.push * scale * (left ? 1 : -1)
+                        return (
+                            <>
+                                <span
+                                    ref={wordRef}
+                                    className={"swap-card__load-word" + (L.shimmer ? " swap-card__btn-label--shimmer" : "")}
+                                    style={{
+                                        transform: `translate(${swapX + (shown ? 0 : pushD)}px, -50%)`,
+                                        opacity: shown && !finished ? 1 : 0,
+                                        transition: finished
+                                            ? "opacity 160ms ease, transform 280ms cubic-bezier(.3,.7,.2,1)"
+                                            : `opacity ${L.textFade}ms ease ${phase === "spinning" ? 120 : 0}ms, transform 280ms cubic-bezier(.3,.7,.2,1) ${phase === "spinning" ? 120 : 0}ms`,
+                                    }}
+                                >
+                                    Swapping…
+                                </span>
+                                {/* The success message crossfades in where it ends up, instead of the
+                                    "Swapping" text being swapped out and sliding over */}
+                                <span
+                                    className="swap-card__load-word"
+                                    style={{
+                                        transform: `translate(${doneX}px, -50%)`,
+                                        opacity: finished ? 1 : 0,
+                                        transition: finished ? `opacity ${L.messageFade}ms ease 80ms, transform 280ms cubic-bezier(.3,.7,.2,1)` : "none",
+                                    }}
+                                >
+                                    {`${sellText} ${sellToken} swapped for ${recText} ${recToken}`}
+                                </span>
+                                <span ref={measureSwap} className="swap-card__load-measure">Swapping…</span>
+                                <span ref={measureDone} className="swap-card__load-measure">
+                                    {`${sellText} ${sellToken} swapped for ${recText} ${recToken}`}
+                                </span>
+                                <span className="swap-card__load-spin" style={{ transform: `translateX(${ringX}px)` }}>
+                                    <span ref={ringRef} className="swap-card__load-ring">
+                                        {Array.from({ length: COUNT }, (_, i) => (
+                                            <span key={i} className="swap-card__load-dot" style={loadDotStyle(phase, i, scale, L)} />
+                                        ))}
+                                        <svg
+                                            key={runId}
+                                            className={
+                                                "swap-card__check" +
+                                                (drawn ? " swap-card__check--drawn" : "") +
+                                                (solid ? " swap-card__check--solid" : "") +
+                                                (checked && !L.steps ? " swap-card__check--show" : "")
+                                            }
+                                            width={LBADGE * L.tick * scale}
+                                            height={LBADGE * L.tick * scale}
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            style={{ marginLeft: (-LBADGE * L.tick * scale) / 2, marginTop: (-LBADGE * L.tick * scale) / 2 }}
+                                        >
+                                            <path
+                                                d="M7.1 12.4 L10.5 15.7 L16.9 8.6"
+                                                stroke={L.filled ? "#ffffff" : L.successColour}
+                                                strokeWidth={L.filled ? 2.2 / L.tick : (L.outline * 24) / (LBADGE * L.tick)}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                pathLength={1}
+                                                onAnimationEnd={() => setSolid(true)}
+                                            />
+                                        </svg>
+                                    </span>
+                                </span>
+                            </>
+                        )
+                    })()}
                 </span>
             </button>
 
@@ -1710,7 +1916,7 @@ export default function SwapCard(props: Props) {
                 <div
                     className={
                         "swap-card__txinfo-wrap" +
-                        (phase === "done"
+                        (txIn
                             ? " swap-card__txinfo-wrap--show"
                             : "")
                     }
@@ -1734,6 +1940,52 @@ export default function SwapCard(props: Props) {
 SwapCard.displayName = "Swap card"
 
 addPropertyControls(SwapCard, {
+    loaderDot: { type: ControlType.Number, title: "Dot size", min: 1, max: 6, step: 0.1, defaultValue: 2.5, unit: "px" },
+    loaderGap: { type: ControlType.Number, title: "Dot spacing", min: 3, max: 16, step: 0.5, defaultValue: 7, unit: "px", description: "Between the dots as they pop in" },
+    loaderRadius: { type: ControlType.Number, title: "Ring radius", min: 3, max: 14, step: 0.5, defaultValue: 6, unit: "px" },
+    loaderColour: { type: ControlType.Color, title: "Dot colour", defaultValue: "#ffffff" },
+    loaderPopIn: { type: ControlType.Number, title: "Pop-in duration", min: 80, max: 1500, step: 10, defaultValue: 420, unit: "ms" },
+    loaderPopStagger: { type: ControlType.Number, title: "Pop-in stagger", min: 0, max: 250, step: 5, defaultValue: 80, unit: "ms" },
+    loaderRise: { type: ControlType.Number, title: "Pop-in rise", min: 0, max: 16, step: 0.5, defaultValue: 6, unit: "px", description: "How far below its place each dot comes in from; 0 = just grows" },
+    loaderRollAt: { type: ControlType.Number, title: "Roll starts", min: 100, max: 2500, step: 10, defaultValue: 920, unit: "ms", description: "After the click; give the dots time to pop in" },
+    loaderRoll: { type: ControlType.Number, title: "Roll duration", min: 100, max: 1500, step: 10, defaultValue: 540, unit: "ms" },
+    loaderRollStagger: { type: ControlType.Number, title: "Roll stagger", min: 0, max: 150, step: 2, defaultValue: 38, unit: "ms" },
+    loaderTextAt: { type: ControlType.Number, title: "Text after roll", min: 0, max: 1500, step: 10, defaultValue: 390, unit: "ms", description: "How long after the roll \"Swapping\" comes in" },
+    loaderSwapTime: { type: ControlType.Number, title: "Swap duration", min: 500, max: 10000, step: 100, defaultValue: 3600, unit: "ms", description: "How long the ring spins" },
+    loaderSpin: { type: ControlType.Number, title: "Spin per turn", min: 0.3, max: 6, step: 0.1, defaultValue: 3, unit: "s" },
+    loaderSide: { type: ControlType.Enum, title: "Loader side", options: ["left", "right"], optionTitles: ["Left", "Right"], defaultValue: "left" },
+    loaderTextGap: { type: ControlType.Number, title: "Text gap", min: 0, max: 30, step: 0.5, defaultValue: 6, unit: "px", description: "Space between the spinner / circle and the text" },
+    loaderPush: { type: ControlType.Number, title: "Text slide-in", min: 0, max: 40, step: 1, defaultValue: 8, unit: "px" },
+    loaderTextFade: { type: ControlType.Number, title: "Text fade-in", min: 0, max: 1000, step: 10, defaultValue: 240, unit: "ms" },
+    loaderShimmer: { type: ControlType.Boolean, title: "Shimmer", defaultValue: true },
+    loaderBadge: { type: ControlType.Number, title: "Circle size", min: 10, max: 32, step: 0.5, defaultValue: 18, unit: "px" },
+    loaderOutline: { type: ControlType.Number, title: "Circle line", min: 0.5, max: 4, step: 0.1, defaultValue: 1.6, unit: "px", description: "Line width of the circle and the tick" },
+    loaderTick: { type: ControlType.Number, title: "Tick size", min: 0.5, max: 1.3, step: 0.05, defaultValue: 0.9, description: "The tick inside the circle; 1 = as drawn" },
+    loaderFilled: { type: ControlType.Boolean, title: "Filled circle", defaultValue: false, description: "Filled green circle with a white tick" },
+    loaderSuccessColour: { type: ControlType.Color, title: "Success colour", defaultValue: "#22c55e" },
+    loaderSuccessBackground: { type: ControlType.Color, title: "Success background", defaultValue: "rgba(34, 197, 94, 0.25)" },
+    loaderMessageFade: { type: ControlType.Number, title: "Message fade-in", min: 0, max: 1000, step: 10, defaultValue: 280, unit: "ms" },
+    loaderTxDelay: { type: ControlType.Number, title: "Tx info delay", min: 0, max: 2000, step: 10, defaultValue: 550, unit: "ms", description: "After success" },
+    loaderTxDuration: { type: ControlType.Number, title: "Tx info duration", min: 120, max: 1200, step: 10, defaultValue: 520, unit: "ms" },
+    loaderSuccessBounce: { type: ControlType.Number, title: "Success bounce", min: 1, max: 1.15, step: 0.005, defaultValue: 1.04, description: "How much the button swells as it turns green; 1 = off" },
+    loaderSuccessBounceDuration: { type: ControlType.Number, title: "Success bounce duration", min: 120, max: 1200, step: 10, defaultValue: 400, unit: "ms" },
+    loaderNumberPop: { type: ControlType.Number, title: "Number pop", min: 1, max: 1.4, step: 0.01, defaultValue: 1.12, description: "How much the received amount grows; 1 = off" },
+    loaderNumberPopDuration: { type: ControlType.Number, title: "Number pop duration", min: 120, max: 1200, step: 10, defaultValue: 400, unit: "ms" },
+    loaderNumberPopDelay: { type: ControlType.Number, title: "Number pop delay", min: 0, max: 1500, step: 10, defaultValue: 0, unit: "ms", description: "After success" },
+    loaderSteps: { type: ControlType.Boolean, title: "Show steps", defaultValue: true, description: "The swap's steps replace the chips while it runs; the button shows no spinner then" },
+    loaderStep1: { type: ControlType.String, title: "Step 1", defaultValue: "Approving {sell}", description: "{sell} and {receive} become the tokens" },
+    loaderStep2: { type: ControlType.String, title: "Step 2", defaultValue: "Swapping {sell} for {receive}" },
+    loaderStep3: { type: ControlType.String, title: "Step 3", defaultValue: "Confirming on-chain" },
+    loaderStepTime: { type: ControlType.Number, title: "Step duration", min: 300, max: 5000, step: 50, defaultValue: 1800, unit: "ms", description: "How long each step spins" },
+    loaderStepGap: { type: ControlType.Number, title: "Step gap", min: 0, max: 1000, step: 10, defaultValue: 320, unit: "ms", description: "Between a step finishing and the next one starting" },
+    loaderStepAppear: { type: ControlType.Number, title: "Steps stagger", min: 0, max: 400, step: 5, defaultValue: 140, unit: "ms", description: "Between the rows coming in" },
+    loaderStepExpand: { type: ControlType.Number, title: "Step expand", min: 100, max: 1000, step: 10, defaultValue: 560, unit: "ms", description: "The waiting dot opening into the spinner" },
+    loaderStepSpin: { type: ControlType.Number, title: "Step spin per turn", min: 0.3, max: 4, step: 0.1, defaultValue: 1.4, unit: "s" },
+    loaderStepDot: { type: ControlType.Number, title: "Step dot size", min: 1, max: 5, step: 0.1, defaultValue: 2.6, unit: "px" },
+    loaderStepWaitDot: { type: ControlType.Number, title: "Step waiting dot", min: 1, max: 10, step: 0.1, defaultValue: 5, unit: "px", description: "The single dot a step shows before it starts" },
+    loaderStepRadius: { type: ControlType.Number, title: "Step spinner radius", min: 3, max: 9, step: 0.25, defaultValue: 5.5, unit: "px" },
+    loaderStepDoneColour: { type: ControlType.Color, title: "Step done colour", defaultValue: "rgba(37, 37, 37, 0.35)" },
+    loaderKeepCheck: { type: ControlType.Boolean, title: "Keep tick", defaultValue: true, description: "Off: the circle and tick leave after a moment" },
     hoverShift: {
         type: ControlType.Number,
         title: "Hover overlap",

@@ -23,10 +23,43 @@ type Entry = {
     set: (values: Record<string, any>) => void
 }
 
-const ISLAND = "FileStacks"
-const TITLE = "File Explorer"
-// shown first, in this order (saved names)
-const PINNED = ["outerBorder", "outerBorderWidth", "outerBorderColour", "tagTextSize", "tagTextWeight", "pdfText", "pdfFill", "figText", "figFill", "docxText", "docxFill", "xlsxText", "xlsxFill"]
+// ?tune opens the File Explorer's settings, ?tune=swap the swap card's
+type Conf = { island: string; title: string; sections: [string, string[]][]; cursor?: boolean; play?: () => void }
+const CONFS: Record<string, Conf> = {
+    files: {
+        island: "FileStacks",
+        title: "File Explorer",
+        cursor: true,
+        // shown first, in this order (saved names)
+        sections: [["Border and type pills", ["outerBorder", "outerBorderWidth", "outerBorderColour", "tagTextSize", "tagTextWeight", "pdfText", "pdfFill", "figText", "figFill", "docxText", "docxFill", "xlsxText", "xlsxFill"]]],
+    },
+    swap: {
+        island: "SwapCard",
+        title: "Swap",
+        sections: [
+            ["Steps", ["showSteps", "step1", "step2", "step3", "stepDuration", "stepGap", "stepsStagger", "stepExpand", "stepSpinPerTurn", "stepDotSize", "stepWaitingDot", "stepSpinnerRadius", "stepDoneColour"]],
+            ["Loader dots", ["dotSize", "dotSpacing", "ringRadius", "dotColour"]],
+            ["Loader timing", ["popInDuration", "popInStagger", "popInRise", "rollStarts", "rollDuration", "rollStagger", "textAfterRoll", "swapDuration", "spinPerTurn"]],
+            ["Loader text", ["loaderSide", "textGap", "textSlideIn", "textFadeIn", "shimmer"]],
+            ["Success", ["circleSize", "circleLine", "tickSize", "filledCircle", "successColour", "successBackground", "messageFadeIn", "keepTick"]],
+            ["After success", ["successBounce", "successBounceDuration", "txInfoDelay", "txInfoDuration", "numberPop", "numberPopDuration", "numberPopDelay"]],
+        ],
+        // runs the swap again (a finished swap resets on the first click)
+        play: () => {
+            const btn = document.querySelector<HTMLButtonElement>(".swap-card__btn")
+            if (!btn) return
+            if (btn.classList.contains("swap-card__btn--success")) {
+                btn.click()
+                setTimeout(() => btn.click(), 60)
+            } else if (!btn.classList.contains("swap-card__btn--loading")) btn.click()
+        },
+    },
+}
+const which = new URLSearchParams(location.search).get("tune") || "files"
+const CONF = CONFS[which] ?? CONFS[Object.keys(CONFS).find((k) => CONFS[k].island.toLowerCase() === which.toLowerCase()) ?? "files"]
+const ISLAND = CONF.island
+const TITLE = CONF.title
+const PINNED = CONF.sections.flatMap(([, keys]) => keys)
 // clearer names where Framer's labels repeat (saved name -> label)
 const RENAME: Record<string, string> = {} // (the File Explorer's own names are unique now)
 const SKIP = new Set(["array", "object", "file", "image", "responsiveimage", "eventhandler", "componentinstance", "font", "transition"])
@@ -84,7 +117,7 @@ function build(entry: Entry) {
     const changed: Record<string, any> = {}
     const panel = document.createElement("div")
     panel.className = "tune"
-    panel.innerHTML = `<div class="tune-head"><b>${TITLE} settings</b><button class="reset" title="Back to the saved values">Reset</button><button class="save" disabled>Save</button><button class="min" title="Collapse">–</button></div><label class="tune-scope">Save to <select><option value="all">all sizes</option><option value="this"></option></select></label><input class="tune-search" placeholder="Search settings" /><div class="tune-msg" hidden></div><div class="tune-body"></div>`
+    panel.innerHTML = `<div class="tune-head"><b>${TITLE} settings</b>${CONF.play ? '<button class="play" title="Run the animation">Play</button>' : ""}<button class="reset" title="Back to the saved values">Reset</button><button class="save" disabled>Save</button><button class="min" title="Collapse">–</button></div><label class="tune-scope">Save to <select><option value="all">all sizes</option><option value="this"></option></select></label><input class="tune-search" placeholder="Search settings" /><div class="tune-msg" hidden></div><div class="tune-body"></div>`
     document.body.appendChild(panel)
     // the page's own scripts (carousel drag, custom cursor) leave the panel alone
     ;["pointerdown", "click", "wheel", "touchstart"].forEach((t) => panel.addEventListener(t, (e) => e.stopPropagation()))
@@ -209,7 +242,7 @@ function build(entry: Entry) {
     const sep = (t: string) => Object.assign(document.createElement("div"), { className: "tune-sep", textContent: t })
     // ---- Cursor: its own two colours, saved to src/data/cursor.json ----
     const cursor = (window as any).__cursor
-    if (cursor) {
+    if (cursor && CONF.cursor) {
         const start = cursor.get()
         const now = { ...start }
         const saveCursor = Object.assign(document.createElement("button"), { className: "tune-cursor-save", textContent: "Save cursor", disabled: true })
@@ -264,7 +297,11 @@ function build(entry: Entry) {
         saveRow.append(document.createElement("span"), saveCursor)
         body.append(sep("Cursor"), colourRow("fill", "Cursor colour"), colourRow("hoverFill", "Cursor hover colour"), saveRow)
     }
-    body.append(sep("Border and type pills"), ...pinned.map(([k, c]) => rowFor(k, c)), sep("Everything else"), ...rest.map(([k, c]) => rowFor(k, c)))
+    for (const [title, keys] of CONF.sections) {
+        const inSection = pinned.filter(([k]) => keys.includes(entry.keys[k]))
+        if (inSection.length) body.append(sep(title), ...inSection.map(([k, c]) => rowFor(k, c)))
+    }
+    body.append(sep("Everything else"), ...rest.map(([k, c]) => rowFor(k, c)))
 
     // settings packed inside "Settings JSON" (the component's own style-panel values)
     const JSON_FIELDS: { field: string; label: string; min: number; max: number; step: number }[] = [] // (tag text size is a real setting now)
@@ -330,6 +367,7 @@ function build(entry: Entry) {
         ;(e.target as HTMLElement).textContent = panel.classList.contains("min") ? "+" : "–"
     })
     panel.querySelector(".reset")!.addEventListener("click", () => location.reload())
+    panel.querySelector(".play")?.addEventListener("click", () => CONF.play?.())
     save.addEventListener("click", async () => {
         save.disabled = true
         const res = await fetch("/__tune/save", {

@@ -1,5 +1,5 @@
 ---
-// "About" under a carousel card: a small button that unfolds a short note about the work.
+// "Learn more" under a carousel card: a small button that unfolds a short note about the work.
 // Renders nothing when there's no text, so cards without a note show no button.
 interface Props {
     text?: string
@@ -11,8 +11,7 @@ const { text } = Astro.props
     text && (
         <div class="work-note">
             <button class="work-note-btn" type="button" aria-expanded="false" data-work-note>
-                <span class="work-note-icon" aria-hidden="true" />
-                <span class="work-note-label">About</span>
+                <span class="work-note-label">Learn more</span>
             </button>
             <div class="work-note-body">
                 <div class="work-note-inner">

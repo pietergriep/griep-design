@@ -1,4 +1,4 @@
 import Component from "./SwapCard"
 import { makeIsland } from "../../lib/island"
 
-export default makeIsland(Component)
+export default makeIsland(Component, "SwapCard")
