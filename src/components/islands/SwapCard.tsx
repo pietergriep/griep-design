@@ -194,6 +194,13 @@ const CSS = `
 /* Rolling numbers (@kitlangton/rolling-number): its slots are content-box (the
    padding is room for overhang), so they're left out of the reset above */
 .swap-card .rn-slot { box-sizing: content-box; }
+/* Proportional digits (a "1" is narrow): fixed-width digits spread them out.
+   */
+.swap-card .rn-root { font-variant-numeric: normal; }
+/* ...plus a hair of air between the digits */
+.swap-card__amount .rn-root { letter-spacing: calc(-1px * var(--sc-scale) + 0.015em); }
+.swap-card__sub .rn-root,
+.swap-card__avail-val .rn-root { letter-spacing: 0.01em; }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
@@ -553,6 +560,13 @@ const CSS = `
     sc-tx-fade calc(var(--sc-tx-ms, 520ms) * 0.45) ease-out both;
   will-change: transform, opacity;
 }
+/* No hairline borders on the buttons on phones (the success one is set inline,
+   hence the !important) */
+@media (max-width: 599.98px) {
+  .swap-card .swap-card__btn--success,
+  .swap-card .swap-card__txinfo { box-shadow: none !important; }
+}
+
 /* A slight spring: one continuous curve (a damped spring sampled into linear(),
    ~8% overshoot), so it rises a touch past its place and settles without any
    hitch; the fade runs separately, as opacity can't overshoot */
@@ -689,7 +703,6 @@ function RollingNumber({
                 format={{ minimumFractionDigits: 0, maximumFractionDigits: decimals }}
                 duration={duration}
                 motionBlur={blur}
-                style={{ fontVariantNumeric: "tabular-nums" }}
             />
             {suffix}
         </span>
