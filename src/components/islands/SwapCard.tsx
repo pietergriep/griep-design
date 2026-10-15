@@ -542,14 +542,27 @@ const CSS = `
 /* Comes in quickly, in step with the chips folding away so the card keeps its size */
 .swap-card__txinfo-wrap--show {
   height: calc(44px * var(--sc-scale)); margin-top: calc(5px * var(--sc-scale)); opacity: 1;
+  /* room for the spring to overshoot up and sideways; still hidden below until it's in */
+  overflow: visible;
+  clip-path: inset(calc(-8px * var(--sc-scale)) calc(-12px * var(--sc-scale)) 0 calc(-12px * var(--sc-scale)));
   transition: height var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), margin-top var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), opacity 120ms ease;
 }
 .swap-card__txinfo-wrap--show .swap-card__txinfo {
-  animation: sc-tx-in var(--sc-tx-ms, 520ms) both;
+  animation:
+    sc-tx-in calc(var(--sc-tx-ms, 520ms) * 1.25) linear(0, 0.044, 0.1526, 0.2958, 0.4506, 0.6004, 0.7344, 0.8468, 0.9352, 1.0003, 1.0441, 1.0701, 1.0818, 1.0829, 1.0769, 1.0664, 1.0539, 1.041, 1.0289, 1.0184, 1.0097, 1.0031, 0.9984, 0.9953, 0.9936, 0.993, 0.9932, 0.9939, 0.9948, 0.9959, 0.997, 0.9979, 0.9988, 0.9994, 0.9999, 1.0002, 1) both,
+    sc-tx-fade calc(var(--sc-tx-ms, 520ms) * 0.45) ease-out both;
+  will-change: transform, opacity;
 }
+/* A slight spring: one continuous curve (a damped spring sampled into linear(),
+   ~8% overshoot), so it rises a touch past its place and settles without any
+   hitch; the fade runs separately, as opacity can't overshoot */
 @keyframes sc-tx-in {
-  0% { transform: translateY(calc(10px * var(--sc-scale))); opacity: 0; animation-timing-function: cubic-bezier(.2,.8,.2,1); }
-  100% { transform: none; opacity: 1; }
+  from { transform: translateY(calc(14px * var(--sc-scale))) scale(0.96); }
+  to { transform: none; }
+}
+@keyframes sc-tx-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* The success button gives a short snappy bounce as it turns green */
