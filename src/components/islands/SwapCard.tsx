@@ -501,7 +501,7 @@ const CSS = `
 
 .swap-card__btn:disabled { opacity: 0.9; cursor: default; }
 .swap-card__btn--loading { pointer-events: none; cursor: default; }
-.swap-card__btn--success { background: rgba(34, 197, 94, 0.25); color: #22c55e; }
+.swap-card__btn--success { background: rgba(34, 197, 94, 0.2125); color: #22c55e; }
 .swap-card__btn--needamt {
   background: rgba(37, 37, 37, 0.1);
   color: rgba(37, 37, 37, 0.4);
@@ -1012,7 +1012,7 @@ const DEFAULT_LOADER: Loader = {
     tick: 0.9,
     filled: false,
     successColour: "#22c55e",
-    successBackground: "rgba(34, 197, 94, 0.25)",
+    successBackground: "rgba(34, 197, 94, 0.2125)",
     messageFade: 280,
     keepCheck: true,
     steps: true,
@@ -1968,7 +1968,7 @@ addPropertyControls(SwapCard, {
     loaderTick: { type: ControlType.Number, title: "Tick size", min: 0.5, max: 1.3, step: 0.05, defaultValue: 0.9, description: "The tick inside the circle; 1 = as drawn" },
     loaderFilled: { type: ControlType.Boolean, title: "Filled circle", defaultValue: false, description: "Filled green circle with a white tick" },
     loaderSuccessColour: { type: ControlType.Color, title: "Success colour", defaultValue: "#22c55e" },
-    loaderSuccessBackground: { type: ControlType.Color, title: "Success background", defaultValue: "rgba(34, 197, 94, 0.25)" },
+    loaderSuccessBackground: { type: ControlType.Color, title: "Success background", defaultValue: "rgba(34, 197, 94, 0.2125)" },
     loaderMessageFade: { type: ControlType.Number, title: "Message fade-in", min: 0, max: 1000, step: 10, defaultValue: 280, unit: "ms" },
     loaderTxDelay: { type: ControlType.Number, title: "Tx info delay", min: 0, max: 2000, step: 10, defaultValue: 550, unit: "ms", description: "After success" },
     loaderTxDuration: { type: ControlType.Number, title: "Tx info duration", min: 120, max: 1200, step: 10, defaultValue: 520, unit: "ms" },
