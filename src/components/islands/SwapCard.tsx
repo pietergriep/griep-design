@@ -472,7 +472,9 @@ const CSS = `
   font-weight: 500;
   font-family: var(--sc-font);
   cursor: pointer;
-  transition: opacity 200ms ease, background 300ms ease, color 300ms ease;
+  /* see-through to start with, so the success border fades in from it, not from black */
+  box-shadow: inset 0 0 0 0.1px rgba(255, 255, 255, 0);
+  transition: opacity 200ms ease, background 300ms ease, color 300ms ease, box-shadow 300ms ease;
 }
 
 /* Its own compositing layer from the start, so the success bounce (a transform on
@@ -572,7 +574,9 @@ const CSS = `
   align-items: center;
   justify-content: center;
   gap: calc(6px * var(--sc-scale));
-  transition: background 160ms ease, color 160ms ease;
+  /* the same hairline as the success button, in its own text grey (follows it on hover) */
+  box-shadow: inset 0 0 0 0.1px currentColor;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
 .swap-card__txinfo svg { display: block; }
@@ -1804,6 +1808,7 @@ export default function SwapCard(props: Props) {
                         ? {
                               background: L.successBackground,
                               color: L.successColour,
+                              boxShadow: `inset 0 0 0 0.1px ${L.successColour}`,
                               ...(L.successBounce !== 1
                                   ? { ["--sc-btn-bounce" as any]: L.successBounce, animation: `sc-btn-bounce ${L.successBounceDuration}ms both` }
                                   : {}),

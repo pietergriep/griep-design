@@ -1220,6 +1220,15 @@ function mountFileGroups(root, opts) {
     const ENTER_SEEN = 0.4 // share of the explorer on screen before it plays
     function entrance() {
         if (reduced.matches) return
+        // the dark frame itself fades in out of a blur (it used to appear at once when
+        // the component loaded, a dark flash among cards that all fade in softly)
+        shell.animate(
+            [
+                { opacity: 0, filter: "blur(8px)" },
+                { opacity: 1, filter: "blur(0px)" },
+            ],
+            { duration: 420, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" }
+        )
         const list = tiles()
         if (!list.length) return
         busy = true
