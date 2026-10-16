@@ -248,6 +248,7 @@ main {
     height: 30px;
     border-radius: 8px;
     background: var(--card); /* same as the cards */
+    box-shadow: inset 0 0 0 0.5px var(--card-line); /* and the same edge */
     display: flex;
     align-items: center;
     justify-content: center;
