@@ -203,6 +203,16 @@ const CSS = `
 .swap-card__amount .rn-root { letter-spacing: calc(-1px * var(--sc-scale) - 0.025em); }
 .swap-card__sub .rn-root,
 .swap-card__avail-val .rn-root { letter-spacing: -0.025em; }
+/* The comma and dot sit at one side of their space: in the big amounts they want
+   a little more room after them, in the small values a little less. Only the drawn
+   glyph moves (\`translate\`), never the library's measured layout, which it would
+   take for a resize and snap the roll. */
+.swap-card__amount .rn-slot[data-rn-key^="decimal"] .rn-face { translate: -0.05em 0; }
+.swap-card__amount .rn-slot[data-rn-key^="group"] .rn-face { translate: -0.07em 0; }
+.swap-card__sub .rn-slot[data-rn-key^="decimal"] .rn-face,
+.swap-card__sub .rn-slot[data-rn-key^="group"] .rn-face,
+.swap-card__avail-val .rn-slot[data-rn-key^="decimal"] .rn-face,
+.swap-card__avail-val .rn-slot[data-rn-key^="group"] .rn-face { translate: 0.07em 0; }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
@@ -692,7 +702,6 @@ function RollingNumber({
     blur = true,
     duration = 500,
     jump = 0,
-    spacing,
     className,
     style,
 }: {
@@ -703,37 +712,12 @@ function RollingNumber({
     blur?: boolean
     duration?: number
     jump?: string | number
-    /* Extra space (em) before / after particular characters, like a small kerning
-       table. Tabular digits sit evenly, except that a "1" carries a lot of air and
-       the comma and dot keep their own spacing. The library places each digit from
-       a hidden measuring copy, so the margins go on that copy and every digit
-       after an adjusted one follows. */
-    spacing?: Record<string, [number, number]>
     className?: string
     style?: CSSProperties
 }) {
     const rounded = Number(value.toFixed(decimals))
-    const hostRef = useRef<HTMLSpanElement>(null)
-    useIsoLayoutEffect(() => {
-        const host = hostRef.current
-        if (!host || !spacing) return
-        const tighten = () =>
-            host.querySelectorAll<HTMLElement>(".rn-measure .rn-token").forEach((t) => {
-                const [before, after] = spacing[t.textContent || ""] ?? [0, 0]
-                const ml = before ? `${before}em` : ""
-                const mr = after ? `${after}em` : ""
-                if (t.style.marginLeft !== ml) t.style.marginLeft = ml
-                if (t.style.marginRight !== mr) t.style.marginRight = mr
-            })
-        tighten()
-        /* the library adds and reuses measuring tokens as the number changes; this
-           runs (as a microtask) before it next measures, which waits for a frame */
-        const watch = new MutationObserver(tighten)
-        watch.observe(host, { childList: true, subtree: true, characterData: true })
-        return () => watch.disconnect()
-    }, [jump, spacing])
     return (
-        <span ref={hostRef} className={className} style={style}>
+        <span className={className} style={style}>
             {prefix}
             <LibRollingNumber
                 key={jump}
@@ -747,10 +731,6 @@ function RollingNumber({
         </span>
     )
 }
-
-/* [before, after] in em, per character (see RollingNumber's `spacing`) */
-const BIG_SPACING: Record<string, [number, number]> = { "1": [-0.06, -0.06], ",": [0, 0.05], ".": [0.01, 0.07] }
-const SMALL_SPACING: Record<string, [number, number]> = { "1": [-0.07, -0.07], ",": [0, -0.02], ".": [0, 0.03] }
 
 /* One step's icon (see .sc-step-icon). `k` is --sc-scale. */
 function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: number; L: Loader }) {
@@ -1712,7 +1692,6 @@ export default function SwapCard(props: Props) {
                     <div className="swap-card__amount-row">
                         <RollingNumber
                             className="swap-card__amount"
-                            spacing={BIG_SPACING}
                             value={sellRaw}
                             decimals={isEth ? 3 : 0}
                             duration={rollOptions.duration}
@@ -1723,7 +1702,6 @@ export default function SwapCard(props: Props) {
                         <RollingNumber
                             className="swap-card__sub"
                             prefix="~$"
-                            spacing={SMALL_SPACING}
                             value={sellUsd}
                             decimals={0}
                             duration={rollOptions.duration}
@@ -1749,7 +1727,6 @@ export default function SwapCard(props: Props) {
                     <div className="swap-card__amount-row">
                         <RollingNumber
                             className="swap-card__amount"
-                            spacing={BIG_SPACING}
                             value={recRaw}
                             decimals={isEth ? 0 : 3}
                             duration={rollOptions.duration}
@@ -1770,7 +1747,6 @@ export default function SwapCard(props: Props) {
                         <RollingNumber
                             className="swap-card__sub"
                             prefix="~$"
-                            spacing={SMALL_SPACING}
                             value={recUsd}
                             decimals={0}
                             duration={rollOptions.duration}
@@ -1792,7 +1768,6 @@ export default function SwapCard(props: Props) {
                         value={remaining}
                         decimals={isEth ? 3 : 0}
                         suffix={" " + unit}
-                        spacing={SMALL_SPACING}
                         duration={rollOptions.duration}
                         blur={blurOn}
                         jump={flipGen}
