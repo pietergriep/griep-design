@@ -202,7 +202,7 @@ const CSS = `
 .swap-card .rn-root { font-variant-numeric: tabular-nums; }
 .swap-card__amount .rn-root { letter-spacing: calc(-1px * var(--sc-scale) - 0.025em); }
 .swap-card__sub .rn-root,
-.swap-card__avail-val .rn-root { letter-spacing: -0.01em; }
+.swap-card__avail-val .rn-root { letter-spacing: -0.025em; }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
@@ -692,7 +692,7 @@ function RollingNumber({
     blur = true,
     duration = 500,
     jump = 0,
-    tightSeparators,
+    spacing,
     className,
     style,
 }: {
@@ -703,11 +703,12 @@ function RollingNumber({
     blur?: boolean
     duration?: number
     jump?: string | number
-    /* em to pull the digit after a "," or "." closer. At small sizes the comma keeps
-       its own spacing and a tabular "1" adds more, leaving a hole ("0, 125"). The
-       library places each digit from a hidden measuring copy, so the separator is
-       tightened there and every digit after it follows. */
-    tightSeparators?: number
+    /* Extra space (em) before / after particular characters, like a small kerning
+       table. Tabular digits sit evenly, except that a "1" carries a lot of air and
+       the comma and dot keep their own spacing. The library places each digit from
+       a hidden measuring copy, so the margins go on that copy and every digit
+       after an adjusted one follows. */
+    spacing?: Record<string, [number, number]>
     className?: string
     style?: CSSProperties
 }) {
@@ -715,11 +716,14 @@ function RollingNumber({
     const hostRef = useRef<HTMLSpanElement>(null)
     useIsoLayoutEffect(() => {
         const host = hostRef.current
-        if (!host || !tightSeparators) return
+        if (!host || !spacing) return
         const tighten = () =>
             host.querySelectorAll<HTMLElement>(".rn-measure .rn-token").forEach((t) => {
-                const sep = t.textContent === "," || t.textContent === "."
-                t.style.marginRight = sep ? `${-tightSeparators}em` : ""
+                const [before, after] = spacing[t.textContent || ""] ?? [0, 0]
+                const ml = before ? `${before}em` : ""
+                const mr = after ? `${after}em` : ""
+                if (t.style.marginLeft !== ml) t.style.marginLeft = ml
+                if (t.style.marginRight !== mr) t.style.marginRight = mr
             })
         tighten()
         /* the library adds and reuses measuring tokens as the number changes; this
@@ -727,7 +731,7 @@ function RollingNumber({
         const watch = new MutationObserver(tighten)
         watch.observe(host, { childList: true, subtree: true, characterData: true })
         return () => watch.disconnect()
-    }, [jump, tightSeparators])
+    }, [jump, spacing])
     return (
         <span ref={hostRef} className={className} style={style}>
             {prefix}
@@ -743,6 +747,10 @@ function RollingNumber({
         </span>
     )
 }
+
+/* [before, after] in em, per character (see RollingNumber's `spacing`) */
+const BIG_SPACING: Record<string, [number, number]> = { "1": [-0.06, -0.06], ",": [0, 0.05], ".": [0.01, 0.07] }
+const SMALL_SPACING: Record<string, [number, number]> = { "1": [-0.07, -0.07], ",": [0, -0.02], ".": [0, 0.03] }
 
 /* One step's icon (see .sc-step-icon). `k` is --sc-scale. */
 function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: number; L: Loader }) {
@@ -1704,6 +1712,7 @@ export default function SwapCard(props: Props) {
                     <div className="swap-card__amount-row">
                         <RollingNumber
                             className="swap-card__amount"
+                            spacing={BIG_SPACING}
                             value={sellRaw}
                             decimals={isEth ? 3 : 0}
                             duration={rollOptions.duration}
@@ -1714,7 +1723,7 @@ export default function SwapCard(props: Props) {
                         <RollingNumber
                             className="swap-card__sub"
                             prefix="~$"
-                            tightSeparators={0.08}
+                            spacing={SMALL_SPACING}
                             value={sellUsd}
                             decimals={0}
                             duration={rollOptions.duration}
@@ -1740,6 +1749,7 @@ export default function SwapCard(props: Props) {
                     <div className="swap-card__amount-row">
                         <RollingNumber
                             className="swap-card__amount"
+                            spacing={BIG_SPACING}
                             value={recRaw}
                             decimals={isEth ? 0 : 3}
                             duration={rollOptions.duration}
@@ -1760,7 +1770,7 @@ export default function SwapCard(props: Props) {
                         <RollingNumber
                             className="swap-card__sub"
                             prefix="~$"
-                            tightSeparators={0.08}
+                            spacing={SMALL_SPACING}
                             value={recUsd}
                             decimals={0}
                             duration={rollOptions.duration}
@@ -1782,7 +1792,7 @@ export default function SwapCard(props: Props) {
                         value={remaining}
                         decimals={isEth ? 3 : 0}
                         suffix={" " + unit}
-                        tightSeparators={0.08}
+                        spacing={SMALL_SPACING}
                         duration={rollOptions.duration}
                         blur={blurOn}
                         jump={flipGen}
