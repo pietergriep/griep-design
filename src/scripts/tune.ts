@@ -42,7 +42,7 @@ const CONFS: Record<string, Conf> = {
             ["Loader timing", ["popInDuration", "popInStagger", "popInRise", "rollStarts", "rollDuration", "rollStagger", "textAfterRoll", "swapDuration", "spinPerTurn"]],
             ["Loader text", ["loaderSide", "textGap", "textSlideIn", "textFadeIn", "shimmer"]],
             ["Success", ["circleSize", "circleLine", "tickSize", "filledCircle", "successColour", "successBackground", "messageFadeIn", "keepTick"]],
-            ["After success", ["successBounce", "successBounceDuration", "txInfoDelay", "txInfoDuration", "numberPop", "numberPopDuration", "numberPopDelay"]],
+            ["After success", ["cardPop", "cardPopDuration", "cardPopDelay", "successBounce", "successBounceDuration", "txInfoDelay", "txInfoDuration", "numberPop", "numberPopDuration", "numberPopDelay"]],
         ],
         // runs the swap again (a finished swap resets on the first click)
         play: () => {

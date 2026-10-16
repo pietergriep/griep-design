@@ -330,6 +330,14 @@ const CSS = `
   transition: height var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), margin-bottom var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), opacity 160ms ease;
 }
 
+/* The whole card gives a short pop the moment the swap lands */
+.swap-card--popped { animation: sc-card-pop var(--sc-card-pop-ms, 380ms) var(--sc-card-pop-delay, 0ms) both; }
+@keyframes sc-card-pop {
+  0% { transform: scale(1); animation-timing-function: cubic-bezier(.2,.8,.3,1); }
+  35% { transform: scale(var(--sc-card-pop, 1.02)); animation-timing-function: cubic-bezier(.45,0,.3,1); }
+  100% { transform: scale(1); }
+}
+
 /* The received amount swells for a moment as the funds land */
 @keyframes sc-amount-pop {
   0% { transform: scale(1); animation-timing-function: cubic-bezier(.2,.8,.3,1); }
@@ -1073,6 +1081,9 @@ type Loader = {
     txDelay: number // ms after success the transaction info comes in
     txDuration: number // ms it takes to come in
     successBounce: number // how far the success button swells (1 = none)
+    cardPop: number // how far the whole card swells when the swap lands (1 = none)
+    cardPopDuration: number // ms
+    cardPopDelay: number // ms after success
     successBounceDuration: number // ms
     numberPop: number // how much the received amount grows when it lands (1 = none)
     numberPopDuration: number // ms
@@ -1121,6 +1132,9 @@ const DEFAULT_LOADER: Loader = {
     txDelay: 550,
     txDuration: 520,
     successBounce: 1.04,
+    cardPop: 1.02,
+    cardPopDuration: 380,
+    cardPopDelay: 0,
     successBounceDuration: 400,
     numberPop: 1.12,
     numberPopDuration: 400,
@@ -1244,6 +1258,9 @@ interface Props {
     loaderTxDelay?: number
     loaderTxDuration?: number
     loaderSuccessBounce?: number
+    loaderCardPop?: number
+    loaderCardPopDuration?: number
+    loaderCardPopDelay?: number
     loaderSuccessBounceDuration?: number
     loaderNumberPop?: number
     loaderNumberPopDuration?: number
@@ -1692,11 +1709,15 @@ export default function SwapCard(props: Props) {
         "swap-card",
         phase === "static" ? "swap-card--static" : "",
         swapping ? "swap-card--swapping" : "",
+        landed && L.cardPop !== 1 ? "swap-card--popped" : "",
     ]
         .filter(Boolean)
         .join(" ")
 
     const vars = {
+        "--sc-card-pop": L.cardPop,
+        "--sc-card-pop-ms": `${L.cardPopDuration}ms`,
+        "--sc-card-pop-delay": `${L.cardPopDelay}ms`,
         "--sc-scale": scale,
         "--sc-hover-shift": `${hoverShift}px`,
         "--sc-hover-ease": `cubic-bezier(0.34, ${hoverBounce}, 0.5, 1)`,
@@ -2063,6 +2084,9 @@ addPropertyControls(SwapCard, {
     loaderMessageFade: { type: ControlType.Number, title: "Message fade-in", min: 0, max: 1000, step: 10, defaultValue: 280, unit: "ms" },
     loaderTxDelay: { type: ControlType.Number, title: "Tx info delay", min: 0, max: 2000, step: 10, defaultValue: 550, unit: "ms", description: "After success" },
     loaderTxDuration: { type: ControlType.Number, title: "Tx info duration", min: 120, max: 1200, step: 10, defaultValue: 520, unit: "ms" },
+    loaderCardPop: { type: ControlType.Number, title: "Card pop", min: 1, max: 1.08, step: 0.0025, defaultValue: 1.02, description: "How much the whole card grows for a moment when the swap lands; 1 = off" },
+    loaderCardPopDuration: { type: ControlType.Number, title: "Card pop duration", min: 120, max: 1000, step: 10, defaultValue: 380, unit: "ms" },
+    loaderCardPopDelay: { type: ControlType.Number, title: "Card pop delay", min: 0, max: 1000, step: 10, defaultValue: 0, unit: "ms", description: "After success" },
     loaderSuccessBounce: { type: ControlType.Number, title: "Success bounce", min: 1, max: 1.15, step: 0.005, defaultValue: 1.04, description: "How much the button swells as it turns green; 1 = off" },
     loaderSuccessBounceDuration: { type: ControlType.Number, title: "Success bounce duration", min: 120, max: 1200, step: 10, defaultValue: 400, unit: "ms" },
     loaderNumberPop: { type: ControlType.Number, title: "Number pop", min: 1, max: 1.4, step: 0.01, defaultValue: 1.12, description: "How much the received amount grows; 1 = off" },
