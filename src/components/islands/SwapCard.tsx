@@ -586,7 +586,16 @@ const CSS = `
   clip-path: inset(calc(-8px * var(--sc-scale)) calc(-12px * var(--sc-scale)) 0 calc(-12px * var(--sc-scale)));
   transition: height var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), margin-top var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), opacity 120ms ease;
 }
+/* Plain: it slides up and fades in */
 .swap-card__txinfo-wrap--show .swap-card__txinfo {
+  animation: sc-tx-plain var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes sc-tx-plain {
+  from { transform: translateY(calc(10px * var(--sc-scale))); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+/* With "Tx info spring" on: the slight spring below (off for now) */
+.swap-card__txinfo-wrap--show.swap-card__txinfo-wrap--spring .swap-card__txinfo {
   animation:
     sc-tx-in calc(var(--sc-tx-ms, 520ms) * 1.25) linear(0, 0.044, 0.1526, 0.2958, 0.4506, 0.6004, 0.7344, 0.8468, 0.9352, 1.0003, 1.0441, 1.0701, 1.0818, 1.0829, 1.0769, 1.0664, 1.0539, 1.041, 1.0289, 1.0184, 1.0097, 1.0031, 0.9984, 0.9953, 0.9936, 0.993, 0.9932, 0.9939, 0.9948, 0.9959, 0.997, 0.9979, 0.9988, 0.9994, 0.9999, 1.0002, 1) both,
     sc-tx-fade calc(var(--sc-tx-ms, 520ms) * 0.45) ease-out both;
@@ -1080,6 +1089,7 @@ type Loader = {
     stepDoneColour: string // finished steps: text, circle and tick
     txDelay: number // ms after success the transaction info comes in
     txDuration: number // ms it takes to come in
+    txSpring: boolean // a slight spring as it comes in (off: a plain slide)
     successBounce: number // how far the success button swells (1 = none)
     cardPop: number // how far the whole card swells when the swap lands (1 = none)
     cardPopDuration: number // ms
@@ -1131,6 +1141,7 @@ const DEFAULT_LOADER: Loader = {
     stepDoneColour: "rgba(37, 37, 37, 0.35)",
     txDelay: 550,
     txDuration: 520,
+    txSpring: false,
     successBounce: 1.04,
     cardPop: 1.02,
     cardPopDuration: 380,
@@ -1257,6 +1268,7 @@ interface Props {
     loaderMessageFade?: Loader["messageFade"]
     loaderTxDelay?: number
     loaderTxDuration?: number
+    loaderTxSpring?: boolean
     loaderSuccessBounce?: number
     loaderCardPop?: number
     loaderCardPopDuration?: number
@@ -2033,6 +2045,7 @@ export default function SwapCard(props: Props) {
                 <div
                     className={
                         "swap-card__txinfo-wrap" +
+                        (L.txSpring ? " swap-card__txinfo-wrap--spring" : "") +
                         (txIn
                             ? " swap-card__txinfo-wrap--show"
                             : "")
@@ -2083,6 +2096,7 @@ addPropertyControls(SwapCard, {
     loaderSuccessBackground: { type: ControlType.Color, title: "Success background", defaultValue: "rgba(34, 197, 94, 0.2125)" },
     loaderMessageFade: { type: ControlType.Number, title: "Message fade-in", min: 0, max: 1000, step: 10, defaultValue: 280, unit: "ms" },
     loaderTxDelay: { type: ControlType.Number, title: "Tx info delay", min: 0, max: 2000, step: 10, defaultValue: 550, unit: "ms", description: "After success" },
+    loaderTxSpring: { type: ControlType.Boolean, title: "Tx info spring", defaultValue: false, description: "A slight spring as it comes in; off is a plain slide" },
     loaderTxDuration: { type: ControlType.Number, title: "Tx info duration", min: 120, max: 1200, step: 10, defaultValue: 520, unit: "ms" },
     loaderCardPop: { type: ControlType.Number, title: "Card pop", min: 1, max: 1.08, step: 0.0025, defaultValue: 1.02, description: "How much the whole card grows for a moment when the swap lands; 1 = off" },
     loaderCardPopDuration: { type: ControlType.Number, title: "Card pop duration", min: 120, max: 1000, step: 10, defaultValue: 380, unit: "ms" },
