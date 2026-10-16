@@ -194,13 +194,15 @@ const CSS = `
 /* Rolling numbers (@kitlangton/rolling-number): its slots are content-box (the
    padding is room for overhang), so they're left out of the reset above */
 .swap-card .rn-slot { box-sizing: content-box; }
-/* Proportional digits (a "1" is narrow): fixed-width digits spread them out.
-   */
-.swap-card .rn-root { font-variant-numeric: normal; }
-/* ...plus a hair of air between the digits */
-.swap-card__amount .rn-root { letter-spacing: calc(-1px * var(--sc-scale) + 0.015em); }
+/* Tabular digits: the library draws every digit on its own, so the pair spacing a
+   font applies in normal text never happens. Proportional digits then look uneven
+   on iPhone (its system font leans on that pair spacing; the 7 crowds the 3 and
+   leaves a gap before a 5), while tabular ones are made to sit evenly alone.
+   Tightened so the numbers are about as wide as the proportional ones were. */
+.swap-card .rn-root { font-variant-numeric: tabular-nums; }
+.swap-card__amount .rn-root { letter-spacing: calc(-1px * var(--sc-scale) - 0.025em); }
 .swap-card__sub .rn-root,
-.swap-card__avail-val .rn-root { letter-spacing: 0.01em; }
+.swap-card__avail-val .rn-root { letter-spacing: -0.01em; }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
