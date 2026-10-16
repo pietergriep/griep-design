@@ -26,7 +26,7 @@
 :root {
     --ink: rgb(0, 0, 0);
     --ink-soft: rgba(0, 0, 0, 0.35);
-    --card: rgb(250, 250, 250);
+    --card: rgb(246, 246, 246);
     --card-image: rgb(246, 246, 246);
     --badge: rgb(237, 237, 237);
     --badge-ink: rgb(74, 74, 74);
@@ -332,9 +332,9 @@ main {
     top: 15px;
     right: 15px;
     z-index: 1;
-    padding: 3px 7px;
+    padding: 4px 7px;
     border-radius: 7px;
-    background: #ebebeb;
+    background: #e5e5e5;
     color: var(--badge-ink);
     font-size: 13px;
     font-weight: 500;

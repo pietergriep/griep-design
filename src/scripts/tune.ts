@@ -33,6 +33,15 @@ const CONFS: Record<string, Conf> = {
         // shown first, in this order (saved names)
         sections: [["Border and type pills", ["outerBorder", "outerBorderWidth", "outerBorderColour", "tagTextSize", "tagTextWeight", "pdfText", "pdfFill", "figText", "figFill", "docxText", "docxFill", "xlsxText", "xlsxFill"]]],
     },
+    dca: {
+        island: "DCAFlow",
+        title: "DCA auto-buy",
+        sections: [
+            ["View", ["sheetOnly", "sheetSize", "phoneLine", "background"]],
+            ["Type", ["font", "titleSize", "labelSize", "valueSize", "valueLetterSpacing", "valueWeight", "disclaimerSize", "buttonTextSize", "buttonRadius", "summarySize", "summaryLetterSpacing", "footnoteSize", "finishButtonTextSize"]],
+            ["Colours", ["accentColour", "textColour", "labelColour", "sheetColour", "backSheetColour", "backSheetShade", "sheetTopShadow", "sheetTopShadowBlur", "backButtonColour"]],
+        ],
+    },
     swap: {
         island: "SwapCard",
         title: "Swap",

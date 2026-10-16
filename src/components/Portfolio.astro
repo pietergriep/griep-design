@@ -7,6 +7,7 @@ import SwapCard from "./islands/SwapCardIsland.tsx"
 import ConvertDustCard from "./islands/ConvertDustCardIsland.tsx"
 import RouteFinder from "./islands/RouteFinderIsland.tsx"
 import BusinessCard from "./islands/BusinessCardIsland.tsx"
+import DCAFlow from "./islands/DCAFlowIsland.tsx"
 import WorkImage from "./WorkImage.astro"
 import WorkNote from "./WorkNote.astro"
 
@@ -21,7 +22,6 @@ const HOME = review ? "/dive/" : "/"
 
 const TITLE = "griep.design"
 const DESCRIPTION = "Product designer building clear, considered digital experiences. From concept to interface."
-const video = instances.Video.desktop.raw.file.replace("https://framerusercontent.com/assets/", "/media/")
 
 ---
 
@@ -129,8 +129,9 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
                     </div>
 
                     <div class="work-item">
-                        <div class="card card-video">
-                            <video src={video} autoplay muted loop playsinline preload="metadata"></video>
+                        <div class="card card-dca">
+                            <span class="badge"><span class="badge-text">Hold to confirm</span></span>
+                            <DCAFlow client:visible variants={instances.DCAFlow} />
                         </div>
                         <WorkNote text="Setting up a recurring crypto buy. The summary repeats every choice in plain words, and a hold-to-confirm button makes committing money a deliberate gesture rather than a single tap. Once confirmed, the key details stay on screen as the receipt." />
                     </div>

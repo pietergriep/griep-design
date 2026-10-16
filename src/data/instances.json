@@ -814,5 +814,55 @@
     "dustOpacity": "1"
    }
   }
+ },
+ "DCAFlow": {
+  "desktop": {
+   "size": {
+    "width": "1fr",
+    "height": "min(570px, calc(100% - 40px))"
+   },
+   "raw": {
+    "sheetOnly": "true",
+    "titleSize": "20.5",
+    "labelSize": "15",
+    "disclaimerSize": "12",
+    "footnoteSize": "13.5",
+    "finishButtonTextSize": "16",
+    "sheetTopShadow": "0.03",
+    "backSheetColour": "#ffffff"
+   }
+  },
+  "tablet": {
+   "size": {
+    "width": "1fr",
+    "height": "min(570px, calc(100% - 40px))"
+   },
+   "raw": {
+    "sheetOnly": "true",
+    "titleSize": "20.5",
+    "labelSize": "15",
+    "disclaimerSize": "12",
+    "footnoteSize": "13.5",
+    "finishButtonTextSize": "16",
+    "sheetTopShadow": "0.03",
+    "backSheetColour": "#ffffff"
+   }
+  },
+  "phone": {
+   "size": {
+    "width": "1fr",
+    "height": "min(570px, calc(100% - 40px))"
+   },
+   "raw": {
+    "sheetOnly": "true",
+    "titleSize": "20.5",
+    "labelSize": "15",
+    "disclaimerSize": "12",
+    "footnoteSize": "13.5",
+    "finishButtonTextSize": "16",
+    "sheetTopShadow": "0.03",
+    "backSheetColour": "#ffffff"
+   }
+  }
  }
 }
