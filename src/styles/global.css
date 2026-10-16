@@ -28,7 +28,8 @@
     --ink-soft: rgba(0, 0, 0, 0.35);
     --card: rgb(246, 246, 246);
     --card-image: rgb(246, 246, 246);
-    --card-line: #ebebeb; /* the cards' 0.5px edge, a touch darker than their fill */
+    /* the cards' (and carousel buttons') 0.5px edge: hidden for now; #ebebeb brings it back */
+    --card-line: transparent;
     --badge: rgb(237, 237, 237);
     --badge-ink: rgb(74, 74, 74);
     --gutter: 40px;
