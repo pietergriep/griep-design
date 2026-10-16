@@ -34,7 +34,7 @@ const DEFAULTS = {
     "chatPad": 16,
     "chatH": 0,
     "chatGap": 20,
-    "bubbleColor": "#ebebeb",
+    "bubbleColor": "#ededed",
     "rBubble": 18,
     "asCard": false,
     "divider": false,
