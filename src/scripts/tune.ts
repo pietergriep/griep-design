@@ -37,7 +37,7 @@ const CONFS: Record<string, Conf> = {
         island: "DCAFlow",
         title: "DCA auto-buy",
         sections: [
-            ["View", ["sheetOnly", "sheetSize", "phoneLine", "background"]],
+            ["View", ["sheetOnly", "sheetSize", "dropBeforeExpanding", "phoneLine", "background"]],
             ["Type", ["font", "titleSize", "labelSize", "valueSize", "valueLetterSpacing", "valueWeight", "disclaimerSize", "buttonTextSize", "buttonRadius", "summarySize", "summaryLetterSpacing", "footnoteSize", "finishButtonTextSize"]],
             ["Colours", ["accentColour", "textColour", "labelColour", "sheetColour", "backSheetColour", "backSheetShade", "sheetTopShadow", "sheetTopShadowBlur", "backButtonColour"]],
         ],

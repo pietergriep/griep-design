@@ -240,6 +240,7 @@ type Props = {
     finishSize: number
     backSheetShade: number
     topShadow: number
+    dropDuration: number
     topShadowBlur: number
     accent: string
     ink: string
@@ -281,6 +282,7 @@ DCAFlow.defaultProps = {
     finishSize: 14,
     backSheetShade: 0,
     topShadow: 0.06,
+    dropDuration: 480,
     topShadowBlur: 14,
     accent: "#3236ff",
     ink: "#000000",
@@ -305,6 +307,7 @@ DCAFlow.defaultProps = {
 
 addPropertyControls(DCAFlow, {
     sheetOnly: { type: ControlType.Boolean, title: "Sheet only", defaultValue: false, description: "Just the bottom sheet, without the phone around it" },
+    dropDuration: { type: ControlType.Number, title: "Drop before expanding", defaultValue: 480, min: 0, max: 800, step: 10, unit: "ms", description: "Sheet only: it first drops to the bottom, then grows upwards", hidden: (p: Props) => !p.sheetOnly },
     sheetZoom: { type: ControlType.Number, title: "Sheet size", min: 0.8, max: 1.6, step: 0.01, defaultValue: 1.2, description: "How big the sheet shows at rest (Sheet only); it returns to 1 as it expands", hidden: (p: Props) => !p.sheetOnly },
     background: { type: ControlType.Color, title: "Background", defaultValue: "transparent" },
     hairline: { type: ControlType.Boolean, title: "Phone line", defaultValue: true },
@@ -397,8 +400,11 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
     ;(root as any).__dcaPlace = () => place()
     // At rest it also shows a little bigger (Sheet size); expanding returns it to the
     // fitted size as it grows.
+    // `dropped`: the sheet has moved down to where its bottom will rest (and back to
+    // the fitted size), before growing upwards from there.
+    let dropped = false
     const place = () => {
-        const resting = P().sheetOnly && !sheet.classList.contains("is-full")
+        const resting = P().sheetOnly && !dropped && !sheet.classList.contains("is-full")
         const dy = resting ? -lift : 0
         const zoom = resting ? P().sheetZoom || 1 : 1
         fit.style.transform = `translate(-50%, -50%) scale(${scale * zoom}) translateY(${dy}px)`
@@ -446,6 +452,21 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
     function run() {
         confirmBtn.disabled = true
         root.classList.add("dca--active") // from a successful hold until the reset
+        qa(".fades-out").forEach((el) => el.classList.add("is-gone"))
+        sheetBack.classList.add("is-gone")
+        // Sheet only: first a quick drop to the bottom (and back to the fitted size),
+        // then it grows upwards from there
+        const drop = P().sheetOnly ? Math.round(P().dropDuration ?? 480) : 0
+        if (drop) {
+            dropped = true
+            fit.style.transition = `transform ${drop}ms cubic-bezier(0.45, 0, 0.2, 1)`
+            place()
+            after(drop, expand)
+        } else expand()
+        after(drop + 1148, morph)
+    }
+
+    function expand() {
         const dur = Math.round(P().sheetDuration)
 
         // Freeze the flexible spacer, then grow it alongside the sheet so the
@@ -456,8 +477,6 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
         spacer.style.transition = `height ${dur}ms ${EASE}`
         requestAnimationFrame(() => (spacer.style.height = REST_TOP + "px"))
 
-        qa(".fades-out").forEach((el) => el.classList.add("is-gone"))
-        sheetBack.classList.add("is-gone")
         sheet.style.transition = `height ${dur}ms ${EASE}, border-radius ${dur}ms ${EASE}`
         requestAnimationFrame(() => {
             sheet.classList.add("is-full")
@@ -466,8 +485,6 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
             fit.style.transition = `transform ${dur}ms ${EASE}`
             place()
         })
-
-        after(1148, morph)
     }
 
     /* ---- 2: values fly into pills ---- */
@@ -556,13 +573,18 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
             el.style.opacity = "0"
         })
         root.classList.remove("dca--full")
+        const drop = Math.round(P().dropDuration ?? 480)
         after(240, () => {
             stopWash()
             sheet.style.transition = `height ${dur}ms ${EASE}, border-radius ${dur}ms ${EASE}`
             sheet.classList.remove("is-full")
             sheet.style.height = NATURAL + "px"
-            fit.style.transition = `transform ${dur}ms ${EASE}`
-            place()
+            // still dropped: it shrinks down onto the bottom, then lifts back up
+            after(dur * 0.85, () => {
+                dropped = false
+                fit.style.transition = `transform ${drop + 120}ms ${EASE}`
+                place()
+            })
             spacer.style.transition = `height ${dur}ms ${EASE}`
             spacer.style.height = spacerRest + "px"
             sheetBack.classList.remove("is-gone")
@@ -571,7 +593,7 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
                 rows.style.opacity = ""
                 qa(".fades-out").forEach((el) => el.classList.remove("is-gone"))
             })
-            after(dur + 60, () => {
+            after(dur * 0.85 + drop + 180, () => {
                 // everything now looks as at rest; put the rest of the state back
                 ;[summary, footnote, finishBtn, shader].forEach((el) => {
                     el.style.transition = "none"
@@ -617,6 +639,7 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
         clearTimers()
         qa(".drop-clone").forEach((el) => el.remove())
         sheet.classList.remove("is-full")
+        dropped = false
         root.classList.remove("dca--full", "dca--active")
         sheet.style.transition = ""
         sheet.style.height = NATURAL + "px"
