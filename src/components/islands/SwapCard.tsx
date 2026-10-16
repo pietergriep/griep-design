@@ -692,6 +692,7 @@ function RollingNumber({
     blur = true,
     duration = 500,
     jump = 0,
+    tightSeparators,
     className,
     style,
 }: {
@@ -702,12 +703,33 @@ function RollingNumber({
     blur?: boolean
     duration?: number
     jump?: string | number
+    /* em to pull the digit after a "," or "." closer. At small sizes the comma keeps
+       its own spacing and a tabular "1" adds more, leaving a hole ("0, 125"). The
+       library places each digit from a hidden measuring copy, so the separator is
+       tightened there and every digit after it follows. */
+    tightSeparators?: number
     className?: string
     style?: CSSProperties
 }) {
     const rounded = Number(value.toFixed(decimals))
+    const hostRef = useRef<HTMLSpanElement>(null)
+    useIsoLayoutEffect(() => {
+        const host = hostRef.current
+        if (!host || !tightSeparators) return
+        const tighten = () =>
+            host.querySelectorAll<HTMLElement>(".rn-measure .rn-token").forEach((t) => {
+                const sep = t.textContent === "," || t.textContent === "."
+                t.style.marginRight = sep ? `${-tightSeparators}em` : ""
+            })
+        tighten()
+        /* the library adds and reuses measuring tokens as the number changes; this
+           runs (as a microtask) before it next measures, which waits for a frame */
+        const watch = new MutationObserver(tighten)
+        watch.observe(host, { childList: true, subtree: true, characterData: true })
+        return () => watch.disconnect()
+    }, [jump, tightSeparators])
     return (
-        <span className={className} style={style}>
+        <span ref={hostRef} className={className} style={style}>
             {prefix}
             <LibRollingNumber
                 key={jump}
@@ -1692,6 +1714,7 @@ export default function SwapCard(props: Props) {
                         <RollingNumber
                             className="swap-card__sub"
                             prefix="~$"
+                            tightSeparators={0.08}
                             value={sellUsd}
                             decimals={0}
                             duration={rollOptions.duration}
@@ -1737,6 +1760,7 @@ export default function SwapCard(props: Props) {
                         <RollingNumber
                             className="swap-card__sub"
                             prefix="~$"
+                            tightSeparators={0.08}
                             value={recUsd}
                             decimals={0}
                             duration={rollOptions.duration}
@@ -1758,6 +1782,7 @@ export default function SwapCard(props: Props) {
                         value={remaining}
                         decimals={isEth ? 3 : 0}
                         suffix={" " + unit}
+                        tightSeparators={0.08}
                         duration={rollOptions.duration}
                         blur={blurOn}
                         jump={flipGen}
