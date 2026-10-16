@@ -229,7 +229,8 @@ main {
 /* ---------- work ---------- */
 
 .work {
-    padding: 40px 10px 100px 0;
+    /* no right padding: the cards run on under the screen edge */
+    padding: 40px 0 100px 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -302,6 +303,8 @@ main {
 
 /* the cards move as one strip (translate3d, set by carousel.ts) */
 .track {
+    /* once scrolled to the end, the last card keeps the page's margin to the edge */
+    padding-right: var(--gutter);
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -633,7 +636,7 @@ main {
         margin-left: 40px;
     }
     .work {
-        padding: 40px 40px 50px 40px;
+        padding: 40px 0 50px 40px;
     }
     /* the cards themselves use their desktop sizes here, scaled by carousel.ts */
     .card-dust {
@@ -708,7 +711,7 @@ main {
         letter-spacing: var(--track-14);
     }
     .work {
-        padding: 20px 15px 50px 0;
+        padding: 20px 0 50px 0;
     }
 
     /* footer, phone variant: stacked */
@@ -745,5 +748,16 @@ main {
     }
     .copyright {
         display: block;
+    }
+}
+
+/* Phones show one card per screen, sized to the row, so they keep their right margin
+   (after the 809px block, which would otherwise take it off) */
+@media (max-width: 599.98px) {
+    .work {
+        padding-right: 15px;
+    }
+    .track {
+        padding-right: 0;
     }
 }
