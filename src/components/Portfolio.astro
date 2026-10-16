@@ -228,6 +228,8 @@ const video = instances.Video.desktop.raw.file.replace("https://frameruserconten
             import "../scripts/cursor.ts"
             import "../scripts/appear.ts"
             import "../scripts/notes.ts"
+            // TEMPORARY: iPhone digit-gap diagnostic, only with ?rndebug (remove after)
+            if (new URLSearchParams(location.search).has("rndebug")) import("../scripts/rndebug.ts")
             // import "../scripts/xray.ts" // the exploded drawing on "Learn more" (File Explorer): hidden for now
         </script>
     </body>

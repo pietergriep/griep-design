@@ -291,9 +291,20 @@ const CSS = `
   opacity: 0;
   transition: transform 440ms cubic-bezier(.34,1.4,.6,1), opacity 220ms ease;
 }
-.sc-step-icon__tick { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 420ms cubic-bezier(.65,0,.35,1) 200ms; }
+/* Hidden (stroke-opacity 0) until it starts drawing: an undrawn tick is a
+   zero-length dash, and WebKit paints that as a dot (Blink paints nothing) */
+.sc-step-icon__tick {
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1;
+  stroke-opacity: 0;
+  transition: stroke-dashoffset 420ms cubic-bezier(.65,0,.35,1) 200ms, stroke-opacity 0ms linear 0ms;
+}
 .sc-step-icon--done .sc-step-icon__circle { transform: scale(1); opacity: 1; }
-.sc-step-icon--done .sc-step-icon__tick { stroke-dashoffset: 0; }
+.sc-step-icon--done .sc-step-icon__tick {
+  stroke-dashoffset: 0;
+  stroke-opacity: 1;
+  transition: stroke-dashoffset 420ms cubic-bezier(.65,0,.35,1) 200ms, stroke-opacity 0ms linear 230ms;
+}
 
 /* The chips stay put while a swap runs, they just can't be changed until it's done. */
 .swap-card:not(.swap-card--static) .swap-card__chips-wrap { pointer-events: none; }
