@@ -445,6 +445,7 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
     let spacerRest = 0
     function run() {
         confirmBtn.disabled = true
+        root.classList.add("dca--active") // from a successful hold until the reset
         const dur = Math.round(P().sheetDuration)
 
         // Freeze the flexible spacer, then grow it alongside the sheet so the
@@ -616,7 +617,7 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
         clearTimers()
         qa(".drop-clone").forEach((el) => el.remove())
         sheet.classList.remove("is-full")
-        root.classList.remove("dca--full")
+        root.classList.remove("dca--full", "dca--active")
         sheet.style.transition = ""
         sheet.style.height = NATURAL + "px"
         fit.style.transition = "none"
