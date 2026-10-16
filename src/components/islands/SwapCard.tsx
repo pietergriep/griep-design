@@ -194,6 +194,10 @@ const CSS = `
 /* Rolling numbers (@kitlangton/rolling-number): its slots are content-box (the
    padding is room for overhang), so they're left out of the reset above */
 .swap-card .rn-slot { box-sizing: content-box; }
+/* The balance's character spacing (RollingNumber's \`spacing\`) lands once a roll
+   has settled, and the library then re-places its digits instantly; this turns that
+   into a short glide. Its own roll animations override it, so rolls are as before. */
+.swap-card__avail-val .rn-slot { transition: transform 260ms cubic-bezier(.2,.8,.2,1); }
 /* Tabular digits: the library draws every digit on its own, so the pair spacing a
    font applies in normal text never happens. Proportional digits then look uneven
    on iPhone (its system font leans on that pair spacing; the 7 crowds the 3 and
@@ -204,15 +208,12 @@ const CSS = `
 .swap-card__sub .rn-root,
 .swap-card__avail-val .rn-root { letter-spacing: -0.025em; }
 /* The comma and dot sit at one side of their space: in the big amounts they want
-   a little more room after them, in the small values a little less. Only the drawn
-   glyph moves (\`translate\`), never the library's measured layout, which it would
-   take for a resize and snap the roll. */
+   a little more room after them, in the ~$ values a little less. Only the drawn
+   glyph moves (\`translate\`), never the library's measured layout. */
 .swap-card__amount .rn-slot[data-rn-key^="decimal"] .rn-face { translate: -0.05em 0; }
 .swap-card__amount .rn-slot[data-rn-key^="group"] .rn-face { translate: -0.07em 0; }
 .swap-card__sub .rn-slot[data-rn-key^="decimal"] .rn-face,
-.swap-card__sub .rn-slot[data-rn-key^="group"] .rn-face,
-.swap-card__avail-val .rn-slot[data-rn-key^="decimal"] .rn-face,
-.swap-card__avail-val .rn-slot[data-rn-key^="group"] .rn-face { translate: 0.07em 0; }
+.swap-card__sub .rn-slot[data-rn-key^="group"] .rn-face { translate: 0.07em 0; }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
@@ -702,6 +703,7 @@ function RollingNumber({
     blur = true,
     duration = 500,
     jump = 0,
+    spacing,
     className,
     style,
 }: {
@@ -712,12 +714,48 @@ function RollingNumber({
     blur?: boolean
     duration?: number
     jump?: string | number
+    /* Extra space (em) before / after particular characters, like a small kerning
+       table: tabular digits sit evenly, except that a "1" carries a lot of air and
+       the comma and dot keep their own spacing. The library places each digit from
+       a hidden measuring copy, so the margins go on that copy. They're only changed
+       while the number is at rest: the library takes a change in the copy's size
+       for a resize and re-lays out at once, which mid-roll would snap the roll. */
+    spacing?: Record<string, [number, number]>
     className?: string
     style?: CSSProperties
 }) {
     const rounded = Number(value.toFixed(decimals))
+    const hostRef = useRef<HTMLSpanElement>(null)
+    useEffect(() => {
+        const host = hostRef.current
+        if (!host || !spacing) return
+        const apply = () =>
+            host.querySelectorAll<HTMLElement>(".rn-measure .rn-token").forEach((t) => {
+                const [before, after] = spacing[t.textContent || ""] ?? [0, 0]
+                const ml = before ? `${before}em` : ""
+                const mr = after ? `${after}em` : ""
+                if (t.style.marginLeft !== ml) t.style.marginLeft = ml
+                if (t.style.marginRight !== mr) t.style.marginRight = mr
+            })
+        let timer = 0
+        // apply as soon as nothing in the number is animating any more
+        const settle = () => {
+            clearTimeout(timer)
+            timer = window.setTimeout(() => {
+                if (host.getAnimations({ subtree: true }).length) settle()
+                else apply()
+            }, 60)
+        }
+        settle()
+        const watch = new MutationObserver(settle)
+        watch.observe(host, { childList: true, subtree: true, characterData: true })
+        return () => {
+            clearTimeout(timer)
+            watch.disconnect()
+        }
+    }, [jump, spacing])
     return (
-        <span className={className} style={style}>
+        <span ref={hostRef} className={className} style={style}>
             {prefix}
             <LibRollingNumber
                 key={jump}
@@ -731,6 +769,9 @@ function RollingNumber({
         </span>
     )
 }
+
+/* [before, after] in em, per character (see RollingNumber's `spacing`) */
+const AVAIL_SPACING: Record<string, [number, number]> = { "1": [-0.04, -0.04], ",": [-0.03, -0.02], ".": [-0.03, -0.02] }
 
 /* One step's icon (see .sc-step-icon). `k` is --sc-scale. */
 function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: number; L: Loader }) {
@@ -1073,9 +1114,9 @@ const DEFAULT_LOADER: Loader = {
     stepAppear: 140,
     stepExpand: 560,
     stepSpin: 1.4,
-    stepDot: 2.6,
+    stepDot: 2.5,
     stepWaitDot: 5,
-    stepRadius: 5.5,
+    stepRadius: 6.25,
     stepDoneColour: "rgba(37, 37, 37, 0.35)",
     txDelay: 550,
     txDuration: 520,
@@ -1768,6 +1809,7 @@ export default function SwapCard(props: Props) {
                         value={remaining}
                         decimals={isEth ? 3 : 0}
                         suffix={" " + unit}
+                        spacing={AVAIL_SPACING}
                         duration={rollOptions.duration}
                         blur={blurOn}
                         jump={flipGen}
@@ -2035,9 +2077,9 @@ addPropertyControls(SwapCard, {
     loaderStepAppear: { type: ControlType.Number, title: "Steps stagger", min: 0, max: 400, step: 5, defaultValue: 140, unit: "ms", description: "Between the rows coming in" },
     loaderStepExpand: { type: ControlType.Number, title: "Step expand", min: 100, max: 1000, step: 10, defaultValue: 560, unit: "ms", description: "The waiting dot opening into the spinner" },
     loaderStepSpin: { type: ControlType.Number, title: "Step spin per turn", min: 0.3, max: 4, step: 0.1, defaultValue: 1.4, unit: "s" },
-    loaderStepDot: { type: ControlType.Number, title: "Step dot size", min: 1, max: 5, step: 0.1, defaultValue: 2.6, unit: "px" },
+    loaderStepDot: { type: ControlType.Number, title: "Step dot size", min: 1, max: 5, step: 0.1, defaultValue: 2.5, unit: "px" },
     loaderStepWaitDot: { type: ControlType.Number, title: "Step waiting dot", min: 1, max: 10, step: 0.1, defaultValue: 5, unit: "px", description: "The single dot a step shows before it starts" },
-    loaderStepRadius: { type: ControlType.Number, title: "Step spinner radius", min: 3, max: 9, step: 0.25, defaultValue: 5.5, unit: "px" },
+    loaderStepRadius: { type: ControlType.Number, title: "Step spinner radius", min: 3, max: 9, step: 0.25, defaultValue: 6.25, unit: "px" },
     loaderStepDoneColour: { type: ControlType.Color, title: "Step done colour", defaultValue: "rgba(37, 37, 37, 0.35)" },
     loaderKeepCheck: { type: ControlType.Boolean, title: "Keep tick", defaultValue: true, description: "Off: the circle and tick leave after a moment" },
     hoverShift: {
