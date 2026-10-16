@@ -325,7 +325,9 @@ const CSS = `
    keeps its height (the -5px matches the tx info's top margin) */
 .swap-card__chips-wrap--away {
   height: 0;
-  margin-bottom: calc(-5px * var(--sc-scale));
+  /* -20: the button then sits 14px under the balance (its own 20px gap, less 6), the
+     same space as under the balance before; the card ends a little shorter */
+  margin-bottom: calc(-20px * var(--sc-scale));
   opacity: 0;
   transition: height var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), margin-bottom var(--sc-tx-ms, 520ms) cubic-bezier(.2,.8,.2,1), opacity 160ms ease;
 }
