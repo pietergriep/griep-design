@@ -15,7 +15,7 @@ const MANIFEST = "src/data/images.json"
 
 // the box each image is shown in on desktop (the largest), in CSS pixels
 const BOX = {
-    "wallet-home-hq": [405, 570],
+    "wallet-home-v3": [405, 570],
     SZB8MGBYtuMoqpmrvEvFoBevFxc: [405, 570],
     POSwVU7ZYAKsBv8prb5yQe4nE3k: [405, 570],
     LWyU3Kwt63ukHhi1DEkQvMJm5Y: [575, 570],

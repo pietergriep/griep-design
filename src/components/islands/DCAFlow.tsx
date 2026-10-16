@@ -760,49 +760,66 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
     let washT0 = 0
     let washOK = false
 
-    try {
-        gl = wash.getContext("webgl", { alpha: false, antialias: false, depth: false })
-        if (gl) {
+    // Safari reclaims WebGL contexts when graphics memory runs low (and then paints a
+    // sad-face placeholder where the canvas was). So: build the program in a function
+    // that can run again, rebuild when Safari hands the context back, and hide the
+    // canvas behind a CSS stand-in of the wash while it's gone.
+    const initGL = () => {
+        washOK = false
+        try {
+            gl = wash.getContext("webgl", { alpha: false, antialias: false, depth: false })
+            if (!gl || gl.isContextLost()) return
             const g = gl
             const sh = (type: number, src: string) => {
                 const o = g.createShader(type)!
                 g.shaderSource(o, src)
                 g.compileShader(o)
-                if (!g.getShaderParameter(o, g.COMPILE_STATUS)) {
-                    console.error(g.getShaderInfoLog(o))
-                    return null
-                }
+                if (!g.getShaderParameter(o, g.COMPILE_STATUS)) return null
                 return o
             }
             const vs = sh(g.VERTEX_SHADER, VERT)
             const fs = sh(g.FRAGMENT_SHADER, WASH_FRAG)
-            if (vs && fs) {
-                const prog = g.createProgram()!
-                g.attachShader(prog, vs)
-                g.attachShader(prog, fs)
-                g.linkProgram(prog)
-                if (g.getProgramParameter(prog, g.LINK_STATUS)) {
-                    g.useProgram(prog)
-                    const buf = g.createBuffer()
-                    g.bindBuffer(g.ARRAY_BUFFER, buf)
-                    g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW)
-                    const loc = g.getAttribLocation(prog, "aPos")
-                    g.enableVertexAttribArray(loc)
-                    g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0)
-                    ;["uRes", "uTime", "uEnter", "uDistort", "uSwirl", "uTint", "uDepth", "uHue"].forEach(
-                        (k) => (uni[k] = g.getUniformLocation(prog, k))
-                    )
-                    const d = Math.min(window.devicePixelRatio || 1, 1.75)
-                    wash.width = Math.round(W * d)
-                    wash.height = Math.round(H * d)
-                    g.viewport(0, 0, wash.width, wash.height)
-                    washOK = true
-                }
-            }
+            if (!vs || !fs) return
+            const prog = g.createProgram()!
+            g.attachShader(prog, vs)
+            g.attachShader(prog, fs)
+            g.linkProgram(prog)
+            if (!g.getProgramParameter(prog, g.LINK_STATUS)) return
+            g.useProgram(prog)
+            const buf = g.createBuffer()
+            g.bindBuffer(g.ARRAY_BUFFER, buf)
+            g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW)
+            const loc = g.getAttribLocation(prog, "aPos")
+            g.enableVertexAttribArray(loc)
+            g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0)
+            ;["uRes", "uTime", "uEnter", "uDistort", "uSwirl", "uTint", "uDepth", "uHue"].forEach(
+                (k) => (uni[k] = g.getUniformLocation(prog, k))
+            )
+            const d = Math.min(window.devicePixelRatio || 1, 1.75)
+            wash.width = Math.round(W * d)
+            wash.height = Math.round(H * d)
+            g.viewport(0, 0, wash.width, wash.height)
+            washOK = true
+        } catch {
+            washOK = false
+        } finally {
+            shader.classList.toggle("is-lost", !washOK)
         }
-    } catch {
-        washOK = false
     }
+    initGL()
+    const onLost = (e: Event) => {
+        e.preventDefault() // lets the browser restore it later
+        washOK = false
+        if (washRaf) cancelAnimationFrame(washRaf)
+        washRaf = 0
+        shader.classList.add("is-lost")
+    }
+    const onRestored = () => {
+        initGL()
+        if (washOK && shader.classList.contains("is-in")) startWash()
+    }
+    wash.addEventListener("webglcontextlost", onLost)
+    wash.addEventListener("webglcontextrestored", onRestored)
 
     const WASH_ENTER = 1700
     function washFrame(t: number) {
@@ -824,6 +841,10 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
         } catch {
             washOK = false
         }
+        if (!washOK || gl.isContextLost()) {
+            washOK = false
+            shader.classList.add("is-lost")
+        }
         washRaf = washOK ? requestAnimationFrame(washFrame) : 0
     }
     function startWash() {
@@ -843,6 +864,8 @@ function mount(root: HTMLDivElement, P: () => Props): () => void {
         clearTimeout(holdTimer)
         stopWash()
         ro.disconnect()
+        wash.removeEventListener("webglcontextlost", onLost)
+        wash.removeEventListener("webglcontextrestored", onRestored)
         root.removeEventListener("pointerdown", onPointerDown, true)
         root.removeEventListener("mousedown", onMouseDown, true)
         root.removeEventListener("click", onClick, true)
@@ -1000,6 +1023,14 @@ const CSS = `
   transition: opacity 240ms linear, transform 1800ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .dca .shader canvas { display: block; width: 100%; height: 100%; }
+/* WebGL unavailable or lost: no canvas (Safari would show a sad face), a soft CSS
+   version of the wash instead */
+.dca .shader.is-lost canvas { display: none; }
+.dca .shader.is-lost {
+  background:
+    radial-gradient(ellipse 62% 40% at 50% 46%, #ffffff 0%, #ffffff 45%, rgba(255,255,255,0) 75%),
+    radial-gradient(ellipse 120% 85% at 50% 46%, #ffffff 30%, #e3edff 62%, #d5dcff 82%, #eef1ff 100%);
+}
 
 .dca .sheet__handle {
   position: absolute; top: 13.5px; left: 50%; transform: translateX(-50%);
@@ -1116,7 +1147,9 @@ const CSS = `
   transition: opacity 308ms ease-out;
 }
 
-.dca .finish-wrap { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 44px; }
+/* lets the pointer through to the buttons below until "Finish setup" itself is in
+   (it turns its own pointer-events on), so the custom cursor sees those buttons */
+.dca .finish-wrap { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 44px; pointer-events: none; }
 .dca .footnote {
   margin-bottom: 26px; font-size: var(--dca-footnote-size, 13px); font-weight: 400; line-height: 1.46;
   letter-spacing: -0.1px; color: #252525; opacity: 0;
