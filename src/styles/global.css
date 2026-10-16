@@ -671,6 +671,10 @@ main {
     .work-item > .card {
         width: 100%;
     }
+    .work-note-btn {
+        font-size: 13px;
+        letter-spacing: var(--track-13);
+    }
     .work-note p {
         font-size: 13px;
         letter-spacing: 0.015em;
