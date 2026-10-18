@@ -12,6 +12,7 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
     const bar = note.querySelector<HTMLElement>(".wn-bar")
     const close = note.querySelector<HTMLButtonElement>(".wn-close")
     const head = note.querySelector<HTMLElement>(".wn-head")
+    const panel = note.querySelector<HTMLElement>(".wn-panel")
     let active = 0
 
     // the closed pill: the first tab plus the head's padding either side of it
@@ -19,8 +20,15 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         const first = tabs[0]
         if (!first || !head) return
         const left = first.getBoundingClientRect().left - head.getBoundingClientRect().left
-        note.style.setProperty("--pill-w", `${left * 2 + first.offsetWidth}px`)
-        note.style.setProperty("--pill-h", `${head.offsetHeight}px`)
+        const pillW = left * 2 + first.offsetWidth
+        const pillH = head.offsetHeight
+        note.style.setProperty("--pill-w", `${pillW}px`)
+        note.style.setProperty("--pill-h", `${pillH}px`)
+        // the closed clip as plain pixels: how much of the panel to hide right and below
+        if (panel) {
+            note.style.setProperty("--wn-r", `${panel.offsetWidth - pillW}px`)
+            note.style.setProperty("--wn-b", `${panel.offsetHeight - pillH}px`)
+        }
         placeBar()
     }
     const placeBar = () => {
@@ -58,7 +66,6 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
     )
     close?.addEventListener("click", () => setOpen(false))
     // the closed pill presses in while held, like the carousel buttons (carousel.ts)
-    const panel = note.querySelector<HTMLElement>(".wn-panel")
     tabs[0].addEventListener("pointerdown", () => {
         if (!panel || note.classList.contains("is-open")) return
         panel.classList.add("pressed")

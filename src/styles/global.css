@@ -414,21 +414,22 @@ main {
 /* its rounding comes from the clip alone: 20px like the cards, closed as a pill and open */
 .wn-panel {
     background: var(--card);
-    clip-path: inset(0 calc(100% - var(--pill-w, 100px)) calc(100% - var(--pill-h, 40px)) 0 round 20px);
+    /* pixel insets (set by notes.ts), which every browser animates smoothly */
+    clip-path: inset(0 var(--wn-r, calc(100% - 100px)) var(--wn-b, calc(100% - 40px)) 0 round 20px);
     /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
     transform-origin: calc(var(--pill-w, 100px) / 2) calc(var(--pill-h, 40px) / 2);
     /* closing: quick and even, so the emptied box doesn't linger next to one that's opening */
-    transition: clip-path 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.16s ease-out, filter 0.16s ease-out;
+    transition: clip-path 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.16s ease-out, background-color 0.16s ease-out;
 }
 .wn-panel.pressed {
-    filter: brightness(0.96);
+    background-color: rgb(236, 236, 236); /* the card colour, 4% darker */
     transform: scale(0.94);
     transition-duration: 0.3s, 60ms, 60ms;
 }
 /* opening: the slower, springier grow */
 .work-note.is-open .wn-panel {
     clip-path: inset(0 0 0 0 round 20px);
-    transition: clip-path 0.45s var(--wn-ease), transform 0.16s ease-out, filter 0.16s ease-out;
+    transition: clip-path 0.45s var(--wn-ease), transform 0.16s ease-out, background-color 0.16s ease-out;
 }
 .wn-head {
     position: relative;
@@ -529,15 +530,13 @@ main {
 }
 .wn-page p {
     opacity: 0;
-    filter: blur(2px);
     transform: translateY(4px);
-    transition: opacity 0.15s ease, filter 0.15s ease, transform 0.15s ease;
+    transition: opacity 0.15s ease, transform 0.15s ease;
 }
 .work-note.is-open .wn-page p {
     opacity: 1;
-    filter: none;
     transform: none;
-    transition: opacity 0.35s ease 0.28s, filter 0.35s ease 0.28s, transform 0.45s var(--wn-ease) 0.28s;
+    transition: opacity 0.35s ease 0.28s, transform 0.45s var(--wn-ease) 0.28s;
 }
 .work-note p {
     max-width: 90%;
