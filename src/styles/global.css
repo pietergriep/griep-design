@@ -511,23 +511,6 @@ main {
     max-width: 405px;
 }
 
-.tablet-only {
-    display: none;
-}
-
-.card-poster {
-    padding: 35px;
-}
-
-.card-poster img {
-    flex: none;
-    width: 110%;
-    /* Framer lets the 0.8 aspect ratio win over the 571px height it also had */
-    height: auto;
-    aspect-ratio: 0.8;
-    object-fit: contain;
-}
-
 /* ---------- footer ---------- */
 
 .footer {
@@ -678,9 +661,6 @@ main {
         padding: 40px 0 50px 40px;
     }
     /* the cards themselves use their desktop sizes here, scaled by carousel.ts */
-    .tablet-only {
-        display: flex;
-    }
 }
 
 /* ---------- phone ---------- */

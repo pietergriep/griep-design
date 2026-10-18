@@ -4,7 +4,6 @@ import instances from "../data/instances.json"
 import FileStacks from "./islands/FileStacksIsland.tsx"
 import GasFeeBar from "./islands/GasFeeBarIsland.tsx"
 import SwapCard from "./islands/SwapCardIsland.tsx"
-import ConvertDustCard from "./islands/ConvertDustCardIsland.tsx"
 import RouteFinder from "./islands/RouteFinderIsland.tsx"
 import BusinessCard from "./islands/BusinessCardIsland.tsx"
 import DCAFlow from "./islands/DCAFlowIsland.tsx"
@@ -170,21 +169,6 @@ const DESCRIPTION = "Product designer building clear, considered digital experie
                             <WorkImage name="h7fAIMpsN8qqOrXqoJHIz7HGvcQ" />
                         </div>
                         <WorkNote text="A portfolio widget whose gradient follows the time of day, so it looks different every time you open it. Today's value and change sit up top, with a slider showing where it is between its 24-hour low and high." />
-                    </div>
-
-                    <!-- tablet only -->
-                    <div class="work-item tablet-only">
-                        <div class="card card-dust">
-                            <ConvertDustCard client:visible variants={instances.ConvertDustCard} />
-                        </div>
-                        <WorkNote text="Converting dust: the tiny balances too small to trade. Pick the tokens and sweep them into one; each swept token settles as a faded label, so you can still see what went in." />
-                    </div>
-
-                    <div class="work-item tablet-only">
-                        <div class="card card-poster">
-                            <WorkImage name="R7s3lREuP7ucRDajhSF9q2dNM" />
-                        </div>
-                        <WorkNote text="A token overview: what's trending on Solana up top, your holdings below, with a quick toggle to hide your balance when someone's looking over your shoulder." />
                     </div>
                     </div>
                 </div>
