@@ -502,7 +502,7 @@ main {
     content: "";
     position: absolute;
     inset: 0 0 auto;
-    height: 0.5px;
+    height: 1px; /* the same as the bar, which sits exactly on it */
     background: var(--wn-line);
     opacity: 0;
     transition: opacity 0.15s ease;
