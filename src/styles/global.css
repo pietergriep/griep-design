@@ -409,9 +409,9 @@ main {
     width: 100%;
     padding-top: 10px;
 }
+/* its rounding comes from the clip alone (12px as a pill, 20px open, like the cards) */
 .wn-panel {
     background: var(--card);
-    border-radius: 20px;
     clip-path: inset(0 calc(100% - var(--pill-w, 100px)) calc(100% - var(--pill-h, 40px)) 0 round 12px);
     /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
     transform-origin: calc(var(--pill-w, 100px) / 2) calc(var(--pill-h, 40px) / 2);
@@ -443,6 +443,7 @@ main {
 .wn-tab,
 .wn-close {
     height: 100%;
+    --wn-delay: 0s;
     padding: 0;
     border: 0;
     background: none;
@@ -451,23 +452,36 @@ main {
     letter-spacing: var(--track-14);
     cursor: pointer;
     color: var(--wn-muted);
-    transition: color 0.2s ease, opacity 0.25s ease;
+    transition: color 0.2s ease, opacity 0.15s ease, transform 0.15s ease;
 }
 .wn-tab.is-active,
 .wn-tab:hover,
 .wn-close:hover {
     color: var(--wn-ink);
 }
-/* only "Learn more" shows in the closed pill */
+/* Only "Learn more" shows in the closed pill. Opening, the rest comes in one after
+   another (Details, Close, the line, the bar, the text); closing, it all goes at once. */
 .work-note:not(.is-open) .wn-tab:not(:first-child),
 .work-note:not(.is-open) .wn-close {
     opacity: 0;
+    transform: translateY(3px);
+}
+.work-note.is-open .wn-tab:not(:first-child),
+.work-note.is-open .wn-close {
+    transition: color 0.2s ease, opacity 0.3s ease var(--wn-delay), transform 0.4s var(--wn-ease) var(--wn-delay);
+}
+.work-note.is-open .wn-tab:nth-child(2) {
+    --wn-delay: 0.08s;
+}
+.work-note.is-open .wn-close {
+    --wn-delay: 0.14s;
 }
 /* sits on the divider, as wide as the active tab's label */
 .wn-bar {
     position: absolute;
     left: 0;
     bottom: -1px;
+    z-index: 1; /* above the divider it sits on */
     height: 1px;
     background: var(--wn-bar);
     opacity: 0;
@@ -475,11 +489,25 @@ main {
 }
 .work-note.is-open .wn-bar {
     opacity: 1;
-    transition-delay: 0s, 0s, 0.15s;
+    transition: transform 0.35s var(--wn-ease), width 0.35s var(--wn-ease), opacity 0.3s ease 0.24s;
 }
 .wn-pages {
+    position: relative;
     display: grid;
-    border-top: 0.5px solid var(--wn-line);
+}
+/* the divider */
+.wn-pages::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 0.5px;
+    background: var(--wn-line);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+.work-note.is-open .wn-pages::before {
+    opacity: 1;
+    transition: opacity 0.3s ease 0.18s;
 }
 /* both pages share one cell, so the panel is as tall as the longer one and never jumps */
 .wn-page {
@@ -494,6 +522,18 @@ main {
     visibility: visible;
     transition: opacity 0.25s ease 0.05s, visibility 0s;
 }
+.wn-page p {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(4px);
+    transition: opacity 0.15s ease, filter 0.15s ease, transform 0.15s ease;
+}
+.work-note.is-open .wn-page p {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: opacity 0.35s ease 0.28s, filter 0.35s ease 0.28s, transform 0.45s var(--wn-ease) 0.28s;
+}
 .work-note p {
     max-width: 52ch;
     margin: 0;
@@ -505,8 +545,12 @@ main {
 @media (prefers-reduced-motion: reduce) {
     .wn-panel,
     .wn-bar,
-    .wn-page {
-        transition: none;
+    .wn-page,
+    .wn-page p,
+    .wn-pages::before,
+    .wn-tab,
+    .wn-close {
+        transition: none !important;
     }
 }
 
