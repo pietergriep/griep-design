@@ -518,6 +518,17 @@ main {
 .work-note.is-open .wn-close {
     --wn-delay: 0.36s;
 }
+/* the close cross: a comfortable hit area around a 12px icon, ending at the panel's padding */
+.wn-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    margin-right: -8px;
+}
+.wn-close svg {
+    display: block;
+}
 /* sits on the divider, as wide as the active tab's label */
 .wn-bar {
     position: absolute;
