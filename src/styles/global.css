@@ -569,7 +569,7 @@ main {
 .wn-page {
     grid-area: 1 / 1;
     align-self: start;
-    padding: 16px var(--wn-pad) 20px;
+    padding: 26px var(--wn-pad) 20px;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0s linear 0.2s;

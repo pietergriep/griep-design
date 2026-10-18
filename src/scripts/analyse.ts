@@ -125,10 +125,11 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
 
         const w = (el as HTMLElement).offsetWidth / k
         const h = (el as HTMLElement).offsetHeight / k
-        const rows: [string, string][] = [["Size", `${round(w)} × ${round(h)}`]]
+        const px = (n: number) => `${round(n)}px`
+        const rows: [string, string][] = [["Size", `${px(w)} × ${px(h)}`]]
         if (layer.text) {
             const family = cs.fontFamily.split(",").map((f) => f.trim().replace(/["']/g, "")).find((f) => f !== "Inter Punct") ?? ""
-            rows.push(["Type", `${family} ${WEIGHTS[cs.fontWeight] ?? cs.fontWeight} · ${round(parseFloat(cs.fontSize) / k)}`])
+            rows.push(["Type", `${family} ${WEIGHTS[cs.fontWeight] ?? cs.fontWeight} · ${px(parseFloat(cs.fontSize) / k)}`])
         }
         const swatch = (c: ReturnType<typeof describeColour>) =>
             c ? `<span class="an-sw" style="background:${c.css}"></span>${c.name ? `<b>${c.name}</b> ` : ""}${c.hex}` : ""
@@ -139,14 +140,15 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
             if (ink) rows.push(["Text", swatch(ink)])
         }
         const radius = parseFloat(cs.borderTopLeftRadius) / k
-        if (radius) rows.push(["Radius", `${round(radius)}`])
+        if (radius) rows.push(["Radius", px(radius)])
         if (p.some(Boolean)) {
             const v = p.map((x) => round(x / k))
-            const short = v.every((x) => x === v[0]) ? `${v[0]}` : v[0] === v[2] && v[1] === v[3] ? `${v[0]} ${v[1]}` : v.join(" ")
+            const list = v.every((x) => x === v[0]) ? [v[0]] : v[0] === v[2] && v[1] === v[3] ? [v[0], v[1]] : v
+            const short = list.map((x) => `${x}px`).join(" ")
             rows.push(["Padding", short])
         }
         const gap = parseFloat(cs.columnGap || cs.gap) / k
-        if (gap && cs.display.includes("flex")) rows.push(["Gap", `${round(gap)}`])
+        if (gap && cs.display.includes("flex")) rows.push(["Gap", px(gap)])
 
         panel.innerHTML =
             `<p class="an-path">${names.map((n, i) => (i === names.length - 1 ? `<b>${n}</b>` : n)).join(" › ")}</p>` +
