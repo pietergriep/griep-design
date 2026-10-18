@@ -24,17 +24,20 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         const pillH = head.offsetHeight
         note.style.setProperty("--pill-w", `${pillW}px`)
         note.style.setProperty("--pill-h", `${pillH}px`)
-        // the open panel's size: as wide as the note, as tall as its content
+        // the open panel's size: as wide as the note, as tall as the tab being shown;
+        // the space below the card is kept for the tallest tab, so the page never moves
         const inner = note.querySelector<HTMLElement>(".wn-inner")
         if (inner) {
-            const w = note.clientWidth
-            note.style.setProperty("--wn-w", `${w}px`)
-            const h = inner.offsetHeight
-            note.style.setProperty("--wn-h", `${h}px`)
-            note.style.setProperty("--wn-note-h", `${h + 10}px`) // + the gap above (see .wn-panel)
+            note.style.setProperty("--wn-w", `${note.clientWidth}px`)
+            note.style.setProperty("--wn-note-h", `${inner.offsetHeight + 10}px`) // + the gap above (see .wn-panel)
             note.classList.add("wn-ready")
         }
+        sizeToTab()
         placeBar()
+    }
+    const sizeToTab = () => {
+        const page = pages[active]
+        if (head && page) note.style.setProperty("--wn-h", `${head.offsetHeight + page.offsetHeight}px`)
     }
     const placeBar = () => {
         const tab = tabs[active]
@@ -44,11 +47,13 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
     }
     const select = (i: number) => {
         active = i
+        note.dataset.tab = String(i) // shows the tab's own actions (Analyse on Details)
         tabs.forEach((t, j) => {
             t.classList.toggle("is-active", j === i)
             t.setAttribute("aria-selected", String(j === i))
         })
         pages.forEach((p, j) => p.classList.toggle("is-active", j === i))
+        sizeToTab()
         placeBar()
     }
     // while closed, only the pill can be reached (by mouse, keyboard or screen reader)
@@ -61,6 +66,7 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         pages.forEach((p) => p.toggleAttribute("inert", !open))
         if (!open) select(0)
         if (changed) note.closest(".work-item")?.querySelector(".card")?.dispatchEvent(new CustomEvent("xray", { detail: { open } }))
+        if (changed && !open) note.dispatchEvent(new CustomEvent("note:close")) // ends Analyse (analyse.ts)
     }
 
     tabs.forEach((tab, i) =>
