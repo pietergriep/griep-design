@@ -38,11 +38,11 @@ const analyse = spec ? JSON.stringify(spec) : undefined
                         </div>
                         <div class="wn-page" role="tabpanel">
                             {analyse ? (
-                                <p>
-                                    <span class="on-mouse">Hover</span>
-                                    <span class="on-touch">Tap</span> a part of the component to see how it's built: its size, type,
-                                    colours and spacing, named by the tokens behind it.
-                                </p>
+                                <div class="an-panel" data-analyse-panel>
+                                    <p class="an-hint">
+                                        <span class="on-mouse">Hover</span><span class="on-touch">Tap</span> a part of the component to inspect it.
+                                    </p>
+                                </div>
                             ) : (
                                 <p>Analyse for this component is coming soon.</p>
                             )}

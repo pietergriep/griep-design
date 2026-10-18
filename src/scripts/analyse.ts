@@ -1,7 +1,8 @@
 // The "Analyse" tab under a card: while it's showing, the live component on the
-// card becomes an inspector, like Figma's dev mode. Every named layer (data/specs.ts) gets a faint outline; the one
-// under the pointer (or tapped) is outlined with its padding shaded, its path shown
-// above the component and its size, type, colours, radius and padding below it.
+// card becomes an inspector, like Figma's dev mode. Every named layer (data/specs.ts)
+// gets a faint outline; the one under the pointer (or tapped) is outlined with its
+// padding shaded, and its path, size, type, colours, radius and padding are listed
+// in the Analyse tab itself. The card carries no text of its own.
 // Values are read from the page as it is, divided back to the design scale, and
 // colours are named by the card's tokens where they match.
 // Runs while the Analyse tab is showing in an open note (notes.ts tells us).
@@ -35,6 +36,8 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
 
     let overlay: HTMLElement | null = null
     let selected: Element | null = null
+    const panel = note.querySelector<HTMLElement>("[data-analyse-panel]")
+    const hint = panel?.innerHTML ?? ""
 
     const tokenFor = (c: number[]) => colours.find((t) => same(rgba(t.swatch!) ?? [], c))?.name
     const describeColour = (value: string) => {
@@ -91,12 +94,10 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
         selected = el
         const focus = overlay.querySelector<HTMLElement>(".an-focus")!
         const pad = overlay.querySelector<HTMLElement>(".an-pad")!
-        const path = overlay.querySelector<HTMLElement>(".an-path")!
-        const info = overlay.querySelector<HTMLElement>(".an-info")!
         overlay.classList.toggle("has-focus", !!el)
+        if (!panel) return
         if (!el) {
-            path.textContent = ""
-            info.innerHTML = `<p class="an-hint">Hover a part of the component${matchMedia("(hover: none)").matches ? " (tap)" : ""} to inspect it.</p>`
+            panel.innerHTML = hint
             return
         }
         const layer = layerOf(el)!
@@ -104,7 +105,6 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
         const k = scaleOf(el)
         const b = boxOf(el)
         Object.assign(focus.style, { left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`, height: `${b.h}px` })
-        focus.dataset.label = layer.name
 
         const p = ["Top", "Right", "Bottom", "Left"].map((s) => parseFloat(cs.getPropertyValue(`padding-${s.toLowerCase()}`)) || 0)
         const z = b.w / ((el as HTMLElement).offsetWidth || b.w) // the carousel's scale, if any
@@ -122,7 +122,6 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
             const l = layerOf(n)
             if (l) names.unshift(l.name)
         }
-        path.textContent = names.join("  ›  ")
 
         const w = (el as HTMLElement).offsetWidth / k
         const h = (el as HTMLElement).offsetHeight / k
@@ -149,8 +148,8 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
         const gap = parseFloat(cs.columnGap || cs.gap) / k
         if (gap && cs.display.includes("flex")) rows.push(["Gap", `${round(gap)}`])
 
-        info.innerHTML =
-            `<p class="an-name">${layer.name}</p>` +
+        panel.innerHTML =
+            `<p class="an-path">${names.map((n, i) => (i === names.length - 1 ? `<b>${n}</b>` : n)).join(" › ")}</p>` +
             `<dl>${rows.map(([t, v]) => `<div><dt>${t}</dt><dd>${v}</dd></div>`).join("")}</dl>`
     }
 
@@ -170,8 +169,6 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
         make("an-outlines", overlay)
         make("an-pad", overlay)
         make("an-focus", overlay)
-        make("an-path", overlay)
-        make("an-info", overlay)
         selected = undefined as any
         show(null)
         outlineAll()
@@ -179,11 +176,11 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
         requestAnimationFrame(() => overlay?.classList.add("is-in"))
 
         overlay.addEventListener("pointermove", (e) => {
-            if (e.pointerType === "mouse") show(pick(e.clientX, e.clientY))
+            if (e.pointerType !== "mouse") return
+            const el = pick(e.clientX, e.clientY)
+            if (el) show(el)
         })
-        overlay.addEventListener("pointerleave", (e) => {
-            if (e.pointerType === "mouse") show(null)
-        })
+        // leaving the card keeps the last layer listed, so its values can be read
         overlay.addEventListener("click", (e) => show(pick(e.clientX, e.clientY)))
         addEventListener("resize", outlineAll)
     }
@@ -193,6 +190,7 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
         overlay = null
         old.classList.remove("is-in")
         setTimeout(() => old.remove(), 200)
+        if (panel) panel.innerHTML = hint
         card.classList.remove("is-analysing")
         removeEventListener("resize", outlineAll)
     }

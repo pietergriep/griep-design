@@ -628,21 +628,6 @@ main {
     opacity: 0;
     transition: opacity 0.12s ease;
 }
-/* the layer's name, on the outline like a Figma selection */
-.an-focus::before {
-    content: attr(data-label);
-    position: absolute;
-    left: -1px;
-    bottom: 100%;
-    margin-bottom: 4px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--an);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 500;
-    white-space: nowrap;
-}
 /* the padding, shaded (its borders are the padding) */
 .an-pad {
     border-style: solid;
@@ -654,57 +639,54 @@ main {
 .has-focus .an-pad {
     opacity: 1;
 }
-.an-path {
-    position: absolute;
-    top: 18px;
-    left: 18px;
-    right: 18px;
-    color: var(--wn-muted, #959595);
-    font-size: 12px;
+/* the Analyse tab: the hint, then the hovered layer's path and values. Its height is
+   fixed so the panel doesn't jump as different layers are hovered */
+.an-panel {
+    min-height: 112px;
+}
+.wn-page .an-hint {
+    margin: 0;
+}
+.an-panel .an-path {
+    margin: 0 0 10px;
+    max-width: none;
+    font-size: 13px;
+    color: var(--wn-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.an-info {
-    position: absolute;
-    left: 18px;
-    right: 18px;
-    bottom: 18px;
-    color: rgb(30, 30, 30);
-}
-.an-hint {
-    margin: 0;
-    color: var(--wn-muted, #959595);
-}
-.an-name {
-    margin: 0 0 8px;
-    font-size: 13px;
+.an-panel .an-path b {
     font-weight: 500;
+    color: var(--wn-ink);
 }
-.an-info dl {
+/* each value as wide as it needs, wrapping onto a second row when it must */
+.an-panel dl {
     margin: 0;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 32px;
 }
-.an-info dl > div {
+.an-panel dl > div {
     min-width: 0;
 }
-.an-info dt {
-    color: var(--wn-muted, #959595);
-    font-size: 11px;
+.an-panel dt {
+    font-size: 12px;
+    color: var(--wn-muted);
 }
-.an-info dd {
-    margin: 0;
+.an-panel dd {
+    margin: 2px 0 0;
     display: flex;
     align-items: center;
     gap: 6px;
+    font-size: 14px;
+    color: rgb(30, 30, 30);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-variant-numeric: tabular-nums;
 }
-.an-info dd b {
+.an-panel dd b {
     font-weight: 500;
 }
 .an-sw {
@@ -719,8 +701,11 @@ main {
     opacity: 0;
 }
 @media (max-width: 599.98px) {
-    .an-info dl {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .an-panel {
+        min-height: 176px;
+    }
+    .an-panel dl {
+        gap: 10px 24px;
     }
 }
 
