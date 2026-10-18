@@ -417,15 +417,18 @@ main {
     clip-path: inset(0 calc(100% - var(--pill-w, 100px)) calc(100% - var(--pill-h, 40px)) 0 round 20px);
     /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
     transform-origin: calc(var(--pill-w, 100px) / 2) calc(var(--pill-h, 40px) / 2);
-    transition: clip-path 0.45s var(--wn-ease), transform 0.16s ease-out, filter 0.16s ease-out;
+    /* closing: quick and even, so the emptied box doesn't linger next to one that's opening */
+    transition: clip-path 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.16s ease-out, filter 0.16s ease-out;
 }
 .wn-panel.pressed {
     filter: brightness(0.96);
     transform: scale(0.94);
-    transition-duration: 0.45s, 60ms, 60ms;
+    transition-duration: 0.3s, 60ms, 60ms;
 }
+/* opening: the slower, springier grow */
 .work-note.is-open .wn-panel {
     clip-path: inset(0 0 0 0 round 20px);
+    transition: clip-path 0.45s var(--wn-ease), transform 0.16s ease-out, filter 0.16s ease-out;
 }
 .wn-head {
     position: relative;
