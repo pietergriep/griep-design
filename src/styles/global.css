@@ -411,10 +411,10 @@ main {
     min-width: 100%;
     padding-top: 10px;
 }
-/* its rounding comes from the clip alone (12px as a pill, 20px open, like the cards) */
+/* its rounding comes from the clip alone: 20px like the cards, closed as a pill and open */
 .wn-panel {
     background: var(--card);
-    clip-path: inset(0 calc(100% - var(--pill-w, 100px)) calc(100% - var(--pill-h, 40px)) 0 round 12px);
+    clip-path: inset(0 calc(100% - var(--pill-w, 100px)) calc(100% - var(--pill-h, 40px)) 0 round 20px);
     /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
     transform-origin: calc(var(--pill-w, 100px) / 2) calc(var(--pill-h, 40px) / 2);
     transition: clip-path 0.45s var(--wn-ease), transform 0.16s ease-out, filter 0.16s ease-out;
