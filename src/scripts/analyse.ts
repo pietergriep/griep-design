@@ -192,7 +192,7 @@ document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) =
         overlay = null
         old.classList.remove("is-in")
         setTimeout(() => old.remove(), 200)
-        if (panel) panel.innerHTML = hint
+        // the tab keeps showing the last layer while it fades out; start() puts the hint back
         card.classList.remove("is-analysing")
         removeEventListener("resize", outlineAll)
     }
