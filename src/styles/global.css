@@ -706,7 +706,6 @@ main {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-variant-numeric: tabular-nums;
 }
 .an-panel dd b {
     font-weight: 500;
