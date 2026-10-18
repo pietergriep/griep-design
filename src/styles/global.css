@@ -406,7 +406,9 @@ main {
     --wn-bar: #272525;
     --wn-pad: 15px;
     --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
-    width: 100%;
+    /* exactly as wide as the card above: the text wraps to it instead of widening it */
+    width: 0;
+    min-width: 100%;
     padding-top: 10px;
 }
 /* its rounding comes from the clip alone (12px as a pill, 20px open, like the cards) */
@@ -535,7 +537,6 @@ main {
     transition: opacity 0.35s ease 0.28s, filter 0.35s ease 0.28s, transform 0.45s var(--wn-ease) 0.28s;
 }
 .work-note p {
-    max-width: 52ch;
     margin: 0;
     font-size: 15px;
     line-height: 1.45;
