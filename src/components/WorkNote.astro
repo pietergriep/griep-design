@@ -13,6 +13,7 @@ const { text, details = "Details about this project are coming soon." } = Astro.
     text && (
         <div class="work-note">
             <div class="wn-panel">
+                <div class="wn-inner">
                 <div class="wn-head">
                     <div class="wn-tabs" role="tablist">
                         <button class="wn-tab is-active" type="button" role="tab" aria-selected="true" aria-expanded="false" data-tab="0">
@@ -32,6 +33,7 @@ const { text, details = "Details about this project are coming soon." } = Astro.
                     <div class="wn-page" role="tabpanel">
                         <p>{details}</p>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

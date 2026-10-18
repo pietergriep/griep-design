@@ -1,5 +1,5 @@
 // The note under each carousel card. Closed, it's a "Learn more" pill: the panel
-// clipped down to its first tab. Clicking it grows the clip to the whole panel,
+// sized down to its first tab. Clicking it grows the panel to its full size,
 // revealing the Details tab, Close and the text. The dark bar under the tabs is as
 // wide as the active tab's label and slides to whichever one is picked. The card
 // is told when the note opens or closes (some cards come apart then, see xray.ts).
@@ -24,10 +24,15 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         const pillH = head.offsetHeight
         note.style.setProperty("--pill-w", `${pillW}px`)
         note.style.setProperty("--pill-h", `${pillH}px`)
-        // the closed clip as plain pixels: how much of the panel to hide right and below
-        if (panel) {
-            note.style.setProperty("--wn-r", `${panel.offsetWidth - pillW}px`)
-            note.style.setProperty("--wn-b", `${panel.offsetHeight - pillH}px`)
+        // the open panel's size: as wide as the note, as tall as its content
+        const inner = note.querySelector<HTMLElement>(".wn-inner")
+        if (inner) {
+            const w = note.clientWidth
+            note.style.setProperty("--wn-w", `${w}px`)
+            const h = inner.offsetHeight
+            note.style.setProperty("--wn-h", `${h}px`)
+            note.style.setProperty("--wn-note-h", `${h + 10}px`) // + the gap above (see .wn-panel)
+            note.classList.add("wn-ready")
         }
         placeBar()
     }

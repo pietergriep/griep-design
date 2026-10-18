@@ -411,25 +411,49 @@ main {
     min-width: 100%;
     padding-top: 10px;
 }
-/* its rounding comes from the clip alone: 20px like the cards, closed as a pill and open */
+/* Before notes.ts has measured, the panel sits in the flow at full size (reserving
+   its space) and a static clip shows just the pill. Once measured (.wn-ready), the
+   panel is a box of its own whose width and height grow from the pill to the full
+   panel, its 20px rounding hiding the rest. Animating size rather than the clip
+   keeps Safari (and the Claude app) from flashing the whole panel for a frame. */
 .wn-panel {
     background: var(--card);
-    /* pixel insets (set by notes.ts), which every browser animates smoothly */
-    clip-path: inset(0 var(--wn-r, calc(100% - 100px)) var(--wn-b, calc(100% - 40px)) 0 round 20px);
-    /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
-    transform-origin: calc(var(--pill-w, 100px) / 2) calc(var(--pill-h, 40px) / 2);
-    /* closing: quick and even, so the emptied box doesn't linger next to one that's opening */
-    transition: clip-path 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.16s ease-out, background-color 0.16s ease-out;
+    border-radius: 20px;
+    clip-path: inset(0 calc(100% - 100px) calc(100% - 40px) 0 round 20px);
 }
-.wn-panel.pressed {
+.work-note.wn-ready {
+    position: relative;
+    height: var(--wn-note-h);
+}
+.wn-ready .wn-panel {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: var(--pill-w);
+    height: var(--pill-h);
+    overflow: hidden;
+    clip-path: none;
+    /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
+    transform-origin: calc(var(--pill-w) / 2) calc(var(--pill-h) / 2);
+    /* closing: quick and even, so the emptied box doesn't linger next to one that's opening */
+    transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+        transform 0.16s ease-out, background-color 0.16s ease-out;
+}
+.wn-ready .wn-panel.pressed {
     background-color: rgb(236, 236, 236); /* the card colour, 4% darker */
     transform: scale(0.94);
-    transition-duration: 0.3s, 60ms, 60ms;
+    transition-duration: 0.3s, 0.3s, 60ms, 60ms;
 }
 /* opening: the slower, springier grow */
-.work-note.is-open .wn-panel {
-    clip-path: inset(0 0 0 0 round 20px);
-    transition: clip-path 0.45s var(--wn-ease), transform 0.16s ease-out, background-color 0.16s ease-out;
+.wn-ready.is-open .wn-panel {
+    width: var(--wn-w);
+    height: var(--wn-h);
+    transition: width 0.45s var(--wn-ease), height 0.45s var(--wn-ease), transform 0.16s ease-out,
+        background-color 0.16s ease-out;
+}
+/* the content keeps the full panel width throughout, so the text never rewraps mid-animation */
+.wn-ready .wn-inner {
+    width: var(--wn-w);
 }
 .wn-head {
     position: relative;
