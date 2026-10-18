@@ -731,6 +731,14 @@ main {
     }
 }
 
+/* Analyse is built around hovering, so touch screens (phones, tablets) leave it out for now */
+@media (hover: none) {
+    .wn-tab:nth-child(2),
+    .wn-page:nth-child(2) {
+        display: none;
+    }
+}
+
 /* Action labels name the gesture: "Click" with a mouse, "Tap" on touch screens */
 .on-touch {
     display: none;
