@@ -411,7 +411,7 @@ main {
 .work-note {
     --wn-ink: rgb(20, 20, 20);
     --wn-muted: rgb(149, 149, 149);
-    --wn-line: rgb(228, 228, 228);
+    --wn-line: #eaeaea;
     --wn-bar: #272525;
     --wn-pad: 15px;
     --wn-lift: 0px; /* the extra space above the tabs when open (the pill itself stays 40px) */
