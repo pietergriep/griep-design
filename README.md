@@ -33,7 +33,7 @@ https://griep-design.griep-design.workers.dev
 | Email copy + "Visca el Barça" easter egg | `src/scripts/footer.ts` |
 | Custom cursor | `src/scripts/cursor.ts` |
 | Footer fade-in | `src/scripts/appear.ts` |
-| Interactive cards (File Explorer, Gas, Swap, Dust) | `src/components/islands/` |
+| Interactive cards (Business card, Route Finder, File Explorer, Gas, DCA, Swap) | `src/components/islands/` |
 | Their settings per breakpoint (exported from Framer) | `src/data/instances.json` |
 | Images, videos, icons | `public/media/` |
 

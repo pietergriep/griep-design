@@ -778,43 +778,6 @@
    }
   }
  },
- "ConvertDustCard": {
-  "tablet": {
-   "size": {
-    "width": "350px",
-    "height": "auto"
-   },
-   "raw": {
-    "title": "Clean dust",
-    "theme": "true",
-    "grabber": "false",
-    "tokenIcons": "false",
-    "fillMid": "#9462F1",
-    "fillEnd": "#F3BD1D",
-    "fillMid1": "#9C9AF0",
-    "fillEnd1": "#F0D05E",
-    "midAt": "0.56",
-    "endAt": "0.83",
-    "fillBlur": "9",
-    "checkmark": "#4FB94B",
-    "sOLRollMs": "1000",
-    "sOLSpin": "5",
-    "flourish": "Shine",
-    "flourishMs": "750",
-    "shineBlur": "12",
-    "sOLStagger": "Left to right",
-    "shimmerMs": "1500",
-    "shimmerFade": "0.9",
-    "hintShimmer": "0.7",
-    "dust": "#9E9E9E",
-    "dustCount": "34",
-    "dustSize": "0.6",
-    "dustSpread": "2",
-    "dustTime": "1300",
-    "dustOpacity": "1"
-   }
-  }
- },
  "DCAFlow": {
   "desktop": {
    "size": {

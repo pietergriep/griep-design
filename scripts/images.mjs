@@ -21,7 +21,6 @@ const BOX = {
     LWyU3Kwt63ukHhi1DEkQvMJm5Y: [719, 570],
     h7fAIMpsN8qqOrXqoJHIz7HGvcQ: [405, 570],
     "8rdpwNSTMBDIBc1ipVIStD4": [405, 570],
-    R7s3lREuP7ucRDajhSF9q2dNM: [502, 571],
 }
 
 await mkdir(OUT, { recursive: true })
