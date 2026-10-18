@@ -44,8 +44,9 @@
 :root {
     --ink: rgb(0, 0, 0);
     --ink-soft: rgba(0, 0, 0, 0.35);
-    --card: rgb(246, 246, 246);
-    --card-image: rgb(246, 246, 246);
+    --card: #f8f8f8;
+    --card-image: #f8f8f8;
+    --card-hover: #f0f0f0; /* buttons in the card colour, under the pointer */
     /* the cards' (and carousel buttons') 0.5px edge: hidden for now; #ebebeb brings it back */
     --card-line: transparent;
     --badge: rgb(237, 237, 237);
@@ -275,7 +276,8 @@ main {
     transition:
         opacity 220ms ease,
         transform 160ms ease-out,
-        filter 160ms ease-out;
+        filter 160ms ease-out,
+        background-color 160ms ease;
 }
 
 .cbtn[aria-disabled="true"] {
@@ -311,8 +313,15 @@ main {
 }
 
 @media (hover: hover) and (pointer: fine) {
+    .cbtn:hover {
+        background-color: var(--card-hover);
+    }
     .cbtn:hover .arrow {
         background-color: #4d4d4d;
+    }
+    /* the closed "Learn more" pill (only the pill is the panel's size while closed) */
+    .work-note:not(.is-open) .wn-panel:hover {
+        background-color: var(--card-hover);
     }
 }
 
@@ -439,8 +448,8 @@ main {
     transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.3s cubic-bezier(0.25, 1, 0.5, 1),
         transform 0.16s ease-out, background-color 0.16s ease-out;
 }
-.wn-ready .wn-panel.pressed {
-    background-color: rgb(236, 236, 236); /* the card colour, 4% darker */
+.wn-ready:not(.is-open) .wn-panel.pressed {
+    background-color: rgb(238, 238, 238); /* the card colour, 4% darker */
     transform: scale(0.94);
     transition-duration: 0.3s, 0.3s, 60ms, 60ms;
 }
