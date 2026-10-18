@@ -18,7 +18,7 @@ const BOX = {
     "wallet-home-v3": [405, 570],
     SZB8MGBYtuMoqpmrvEvFoBevFxc: [405, 570],
     POSwVU7ZYAKsBv8prb5yQe4nE3k: [405, 570],
-    LWyU3Kwt63ukHhi1DEkQvMJm5Y: [719, 570],
+    LWyU3Kwt63ukHhi1DEkQvMJm5Y: [647, 570],
     h7fAIMpsN8qqOrXqoJHIz7HGvcQ: [405, 570],
     "8rdpwNSTMBDIBc1ipVIStD4": [405, 570],
 }
