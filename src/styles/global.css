@@ -389,26 +389,6 @@ main {
     justify-content: center;
 }
 
-/* The cards that render in the browser fade in when they appear, instead of
-   popping in. (The business card is in the page from the start; the File Explorer
-   fades its own frame in.) */
-.card-route .island-root > *,
-.card-gas .island-root > *,
-.card-dca .island-root > *,
-.card-swap .island-root > * {
-    animation: island-in 0.35s ease-out backwards;
-}
-@keyframes island-in {
-    from {
-        opacity: 0;
-    }
-}
-@media (prefers-reduced-motion: reduce) {
-    .island-root > * {
-        animation: none !important;
-    }
-}
-
 /* A card plus its optional "Learn more" note underneath */
 .work-item {
     flex: none;
