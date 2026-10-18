@@ -414,7 +414,7 @@ main {
     --wn-line: rgb(228, 228, 228);
     --wn-bar: #272525;
     --wn-pad: 15px;
-    --wn-lift: 5px; /* the extra space above the tabs when open (the pill itself stays 40px) */
+    --wn-lift: 0px; /* the extra space above the tabs when open (the pill itself stays 40px) */
     --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
     /* the panel growing open: set this curve to taste (x1, y1, x2, y2) */
     --wn-open-curve: cubic-bezier(0.44, 0, 0.14, 1);
