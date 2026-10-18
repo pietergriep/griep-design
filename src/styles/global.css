@@ -415,6 +415,9 @@ main {
     --wn-bar: #272525;
     --wn-pad: 15px;
     --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    /* the panel growing open: set this curve to taste (x1, y1, x2, y2) */
+    --wn-open-curve: cubic-bezier(0.32, 0.72, 0, 1);
+    --wn-open-time: 0.45s;
     /* exactly as wide as the card above: the text wraps to it instead of widening it */
     width: 0;
     min-width: 100%;
@@ -457,8 +460,8 @@ main {
 .wn-ready.is-open .wn-panel {
     width: var(--wn-w);
     height: var(--wn-h);
-    transition: width 0.45s var(--wn-ease), height 0.45s var(--wn-ease), transform 0.16s ease-out,
-        background-color 0.16s ease-out;
+    transition: width var(--wn-open-time) var(--wn-open-curve), height var(--wn-open-time) var(--wn-open-curve),
+        transform 0.16s ease-out, background-color 0.16s ease-out;
 }
 /* the content keeps the full panel width throughout, so the text never rewraps mid-animation */
 .wn-ready .wn-inner {
@@ -499,7 +502,7 @@ main {
     color: var(--wn-ink);
 }
 /* Only "Learn more" shows in the closed pill. Opening, the rest comes in one after
-   another (Details, Close, the line, the bar, the text); closing, it all goes at once. */
+   another (Details, the line, the bar, the text, Close); closing, it all goes at once. */
 .work-note:not(.is-open) .wn-tab:not(:first-child),
 .work-note:not(.is-open) .wn-close {
     opacity: 0;
@@ -513,7 +516,7 @@ main {
     --wn-delay: 0.08s;
 }
 .work-note.is-open .wn-close {
-    --wn-delay: 0.14s;
+    --wn-delay: 0.36s;
 }
 /* sits on the divider, as wide as the active tab's label */
 .wn-bar {
