@@ -417,9 +417,9 @@ main {
     --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
     /* the panel growing open: set this curve to taste (x1, y1, x2, y2) */
     --wn-open-curve: cubic-bezier(0.44, 0, 0.14, 1);
-    --wn-open-time: 0.4s;
-    /* shrinking closed: the same curve, quicker, with a small bounce (y2 above 1 overshoots) */
-    --wn-close-curve: cubic-bezier(0.44, 0, 0.14, 1.25);
+    --wn-open-time: 0.3s;
+    /* shrinking closed: the same curve, quicker (a y2 above 1 would add a bounce) */
+    --wn-close-curve: cubic-bezier(0.44, 0, 0.14, 1);
     --wn-close-time: 0.25s;
     /* exactly as wide as the card above: the text wraps to it instead of widening it */
     width: 0;
