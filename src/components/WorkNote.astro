@@ -1,19 +1,18 @@
 ---
 // "Learn more" under a carousel card: a small pill that grows into a panel with two
-// tabs, Learn more and Details. Renders nothing when there's no text, so cards
+// tabs, Learn more and Analyse. Renders nothing when there's no text, so cards
 // without a note show no button. See scripts/notes.ts for the behaviour.
-// With a `spec` (see data/specs.ts), Details is a compact spec sheet with an
-// "Analyse" button that inspects the live component on the card (scripts/analyse.ts).
+// With a `spec` (see data/specs.ts), the Analyse tab turns the live component on
+// the card into an inspector: hovering a part shows its values (scripts/analyse.ts).
 import { specs } from "../data/specs"
 
 interface Props {
     text?: string
-    details?: string
     spec?: keyof typeof specs
 }
-const { text, details = "Details about this project are coming soon.", spec: specKey } = Astro.props
+const { text, spec: specKey } = Astro.props
 const spec = specKey ? specs[specKey] : undefined
-const analyse = spec?.layers ? JSON.stringify({ layers: spec.layers, tokens: spec.tokens, scaleVar: spec.scaleVar }) : undefined
+const analyse = spec ? JSON.stringify(spec) : undefined
 ---
 
 {
@@ -27,59 +26,25 @@ const analyse = spec?.layers ? JSON.stringify({ layers: spec.layers, tokens: spe
                                 Learn more
                             </button>
                             <button class="wn-tab" type="button" role="tab" aria-selected="false" data-tab="1">
-                                Details
+                                Analyse
                             </button>
                             <span class="wn-bar" aria-hidden="true" />
                         </div>
-                        <div class="wn-actions">
-                            {analyse && (
-                                <button class="wn-analyse" type="button" data-analyse aria-pressed="false">
-                                    Analyse
-                                </button>
-                            )}
-                            <button class="wn-close" type="button">Close</button>
-                        </div>
+                        <button class="wn-close" type="button">Close</button>
                     </div>
                     <div class="wn-pages">
                         <div class="wn-page is-active" role="tabpanel">
                             <p>{text}</p>
                         </div>
                         <div class="wn-page" role="tabpanel">
-                            {spec ? (
-                                <div class="wn-spec">
-                                    <div class="wn-spec-grid">
-                                        {spec.tokens.map((g) => (
-                                            <section class={g.items.some((t) => t.swatch) ? "wn-spec-colours" : undefined}>
-                                                <h4>{g.group}</h4>
-                                                <ul>
-                                                    {g.items.map((t) => (
-                                                        <li>
-                                                            {t.swatch && <span class="wn-swatch" style={`background:${t.swatch}`} />}
-                                                            <span class="wn-tok">{t.name}</span>
-                                                            <span class="wn-val">{t.value}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </section>
-                                        ))}
-                                        <section>
-                                            <h4>Motion</h4>
-                                            <ul>
-                                                {spec.motion.map((t) => (
-                                                    <li>
-                                                        <span class="wn-tok">{t.name}</span>
-                                                        <span class="wn-val">{t.value}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </section>
-                                    </div>
-                                    <p class="wn-states">
-                                        <span class="wn-tok">States</span> {spec.states.join(" · ")}
-                                    </p>
-                                </div>
+                            {analyse ? (
+                                <p>
+                                    <span class="on-mouse">Hover</span>
+                                    <span class="on-touch">Tap</span> a part of the component to see how it's built: its size, type,
+                                    colours and spacing, named by the tokens behind it.
+                                </p>
                             ) : (
-                                <p>{details}</p>
+                                <p>Analyse for this component is coming soon.</p>
                             )}
                         </div>
                     </div>

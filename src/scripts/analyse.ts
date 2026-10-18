@@ -1,10 +1,10 @@
-// "Analyse" in a card's Details tab: inspects the live component on the card, like
-// Figma's dev mode. Every named layer (data/specs.ts) gets a faint outline; the one
+// The "Analyse" tab under a card: while it's showing, the live component on the
+// card becomes an inspector, like Figma's dev mode. Every named layer (data/specs.ts) gets a faint outline; the one
 // under the pointer (or tapped) is outlined with its padding shaded, its path shown
 // above the component and its size, type, colours, radius and padding below it.
 // Values are read from the page as it is, divided back to the design scale, and
 // colours are named by the card's tokens where they match.
-// Ends with the button again, Escape, or when the note closes (notes.ts).
+// Runs while the Analyse tab is showing in an open note (notes.ts tells us).
 
 type Layer = { selector: string; name: string; text?: boolean }
 type Token = { name: string; value: string; swatch?: string }
@@ -26,11 +26,11 @@ const same = (a: number[], b: number[]) => a.every((v, i) => Math.abs(v - b[i]) 
 
 const round = (n: number) => Math.round(n * 2) / 2 // to the half pixel, like the design values
 
-document.querySelectorAll<HTMLButtonElement>("[data-analyse]").forEach((btn) => {
-    const note = btn.closest<HTMLElement>(".work-note")
-    const card = note?.closest(".work-item")?.querySelector<HTMLElement>(".card")
-    if (!note || !card || !note.dataset.spec) return
-    const spec: Spec = JSON.parse(note.dataset.spec)
+document.querySelectorAll<HTMLElement>(".work-note[data-spec]").forEach((note) => {
+    const card = note.closest(".work-item")?.querySelector<HTMLElement>(".card")
+    if (!card) return
+    const spec: Spec = JSON.parse(note.dataset.spec!)
+    if (!spec.layers?.length) return
     const colours = spec.tokens.flatMap((g) => g.items).filter((t) => t.swatch)
 
     let overlay: HTMLElement | null = null
@@ -176,8 +176,6 @@ document.querySelectorAll<HTMLButtonElement>("[data-analyse]").forEach((btn) => 
         show(null)
         outlineAll()
         card.classList.add("is-analysing")
-        btn.setAttribute("aria-pressed", "true")
-        btn.textContent = "Stop analysing"
         requestAnimationFrame(() => overlay?.classList.add("is-in"))
 
         overlay.addEventListener("pointermove", (e) => {
@@ -188,7 +186,6 @@ document.querySelectorAll<HTMLButtonElement>("[data-analyse]").forEach((btn) => 
         })
         overlay.addEventListener("click", (e) => show(pick(e.clientX, e.clientY)))
         addEventListener("resize", outlineAll)
-        addEventListener("keydown", onKey)
     }
     const stop = () => {
         if (!overlay) return
@@ -197,15 +194,12 @@ document.querySelectorAll<HTMLButtonElement>("[data-analyse]").forEach((btn) => 
         old.classList.remove("is-in")
         setTimeout(() => old.remove(), 200)
         card.classList.remove("is-analysing")
-        btn.setAttribute("aria-pressed", "false")
-        btn.textContent = "Analyse"
         removeEventListener("resize", outlineAll)
-        removeEventListener("keydown", onKey)
-    }
-    const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") stop()
     }
 
-    btn.addEventListener("click", () => (overlay ? stop() : start()))
-    note.addEventListener("note:close", stop)
+    note.addEventListener("note:tab", (e) => {
+        const { tab, open } = (e as CustomEvent).detail
+        if (open && tab === 1) start()
+        else stop()
+    })
 })

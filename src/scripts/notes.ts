@@ -47,7 +47,6 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
     }
     const select = (i: number) => {
         active = i
-        note.dataset.tab = String(i) // shows the tab's own actions (Analyse on Details)
         tabs.forEach((t, j) => {
             t.classList.toggle("is-active", j === i)
             t.setAttribute("aria-selected", String(j === i))
@@ -55,7 +54,11 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         pages.forEach((p, j) => p.classList.toggle("is-active", j === i))
         sizeToTab()
         placeBar()
+        announce()
     }
+    // the Analyse tab (analyse.ts) runs while it's the tab showing in an open note
+    const announce = () =>
+        note.dispatchEvent(new CustomEvent("note:tab", { detail: { tab: active, open: note.classList.contains("is-open") } }))
     // while closed, only the pill can be reached (by mouse, keyboard or screen reader)
     const setOpen = (open: boolean) => {
         const changed = note.classList.contains("is-open") !== open
@@ -66,7 +69,7 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         pages.forEach((p) => p.toggleAttribute("inert", !open))
         if (!open) select(0)
         if (changed) note.closest(".work-item")?.querySelector(".card")?.dispatchEvent(new CustomEvent("xray", { detail: { open } }))
-        if (changed && !open) note.dispatchEvent(new CustomEvent("note:close")) // ends Analyse (analyse.ts)
+        if (changed) announce()
     }
 
     tabs.forEach((tab, i) =>

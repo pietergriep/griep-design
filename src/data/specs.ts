@@ -1,15 +1,12 @@
-// The "Details" tab under a card: a compact spec sheet (colour and type tokens,
-// motion, states) and, for coded components, the named layers "Analyse" can point
-// at on the live card (it reads their size, spacing and styles from the page).
-// Values are the design values (the card at scale 1), read from the component's code.
+// The "Analyse" tab under a card: the named layers it can point at on the live
+// component, and the colour tokens it names their colours by (the inspector reads
+// sizes, spacing and styles from the page itself; see scripts/analyse.ts).
 
 export type Token = { name: string; value: string; swatch?: string }
 export type Layer = { selector: string; name: string; text?: boolean }
 
 export type Spec = {
     tokens: { group: string; items: Token[] }[]
-    motion: Token[]
-    states: string[]
     // for Analyse: which elements on the card are named layers (deepest match wins)
     layers?: Layer[]
     // CSS variable on the component that scales it; Analyse divides by it to show design values
@@ -33,23 +30,7 @@ export const specs: Record<string, Spec> = {
                     { name: "success/fill", value: "#22C55E · 21%", swatch: "rgba(34, 197, 94, 0.2125)" },
                 ],
             },
-            {
-                group: "Type",
-                items: [
-                    { name: "amount", value: "Inter Medium 35" },
-                    { name: "fiat · balance", value: "Inter Medium 13" },
-                    { name: "label · chip", value: "SF Pro Medium 14" },
-                    { name: "pill", value: "SF Pro Semibold 12" },
-                ],
-            },
         ],
-        motion: [
-            { name: "number roll", value: "500ms · cubic-bezier(0.32, 0.72, 0, 1)" },
-            { name: "panel flip", value: "480ms · cubic-bezier(0.65, 0, 0.35, 1)" },
-            { name: "panel hover", value: "420ms · cubic-bezier(0.34, 1.25, 0.5, 1)" },
-            { name: "swap steps", value: "140ms stagger · 1.4s spinner" },
-        ],
-        states: ["Default", "Panel hover", "Flipped", "Swapping (steps)", "Success", "Reset"],
         scaleVar: "--sc-scale",
         layers: [
             { selector: ".swap-card", name: "SwapCard" },
