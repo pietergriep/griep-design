@@ -21,7 +21,7 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         if (!first || !head) return
         const left = first.getBoundingClientRect().left - head.getBoundingClientRect().left
         const pillW = left * 2 + first.offsetWidth
-        const pillH = head.offsetHeight
+        const pillH = head.offsetHeight - (parseFloat(getComputedStyle(head).paddingTop) || 0) // the tab row, without the space above it
         note.style.setProperty("--pill-w", `${pillW}px`)
         note.style.setProperty("--pill-h", `${pillH}px`)
         // the open panel's size: as wide as the note, as tall as the tab being shown;

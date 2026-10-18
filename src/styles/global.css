@@ -414,6 +414,7 @@ main {
     --wn-line: rgb(228, 228, 228);
     --wn-bar: #272525;
     --wn-pad: 15px;
+    --wn-lift: 10px; /* the extra space above the tabs when open (the pill itself stays 40px) */
     --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
     /* the panel growing open: set this curve to taste (x1, y1, x2, y2) */
     --wn-open-curve: cubic-bezier(0.44, 0, 0.14, 1);
@@ -434,7 +435,7 @@ main {
 .wn-panel {
     background: var(--card);
     border-radius: 20px;
-    clip-path: inset(0 calc(100% - 100px) calc(100% - 40px) 0 round 20px);
+    clip-path: inset(var(--wn-lift) calc(100% - 100px) calc(100% - 40px - var(--wn-lift)) 0 round 20px);
 }
 .work-note.wn-ready {
     position: relative;
@@ -442,7 +443,7 @@ main {
 }
 .wn-ready .wn-panel {
     position: absolute;
-    top: 10px;
+    top: calc(10px + var(--wn-lift));
     left: 0;
     width: var(--pill-w);
     height: var(--pill-h);
@@ -452,31 +453,38 @@ main {
     transform-origin: calc(var(--pill-w) / 2) calc(var(--pill-h) / 2);
     /* closing */
     transition: width var(--wn-close-time) var(--wn-close-curve), height var(--wn-close-time) var(--wn-close-curve),
-        transform 0.16s ease-out, background-color 0.16s ease-out;
+        top var(--wn-close-time) var(--wn-close-curve), transform 0.16s ease-out, background-color 0.16s ease-out;
 }
 .wn-ready:not(.is-open) .wn-panel.pressed {
     background-color: rgb(238, 238, 238); /* the card colour, 4% darker */
     transform: scale(0.94);
-    transition-duration: var(--wn-close-time), var(--wn-close-time), 60ms, 60ms;
+    transition-duration: var(--wn-close-time), var(--wn-close-time), var(--wn-close-time), 60ms, 60ms;
 }
 /* opening: the slower, springier grow */
 .wn-ready.is-open .wn-panel {
+    top: 10px;
     width: var(--wn-w);
     height: var(--wn-h);
     transition: width var(--wn-open-time) var(--wn-open-curve), height var(--wn-open-time) var(--wn-open-curve),
-        transform 0.16s ease-out, background-color 0.16s ease-out;
+        top var(--wn-open-time) var(--wn-open-curve), transform 0.16s ease-out, background-color 0.16s ease-out;
 }
 /* the content keeps the full panel width throughout, so the text never rewraps mid-animation */
 .wn-ready .wn-inner {
     width: var(--wn-w);
+    transform: translateY(calc(-1 * var(--wn-lift)));
+    transition: transform var(--wn-close-time) var(--wn-close-curve);
+}
+.wn-ready.is-open .wn-inner {
+    transform: none;
+    transition: transform var(--wn-open-time) var(--wn-open-curve);
 }
 .wn-head {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 40px;
-    padding: 0 var(--wn-pad);
+    height: calc(40px + var(--wn-lift));
+    padding: var(--wn-lift) var(--wn-pad) 0;
 }
 .wn-tabs {
     position: relative;
@@ -569,7 +577,7 @@ main {
 .wn-page {
     grid-area: 1 / 1;
     align-self: start;
-    padding: 26px var(--wn-pad) 20px;
+    padding: 16px var(--wn-pad) 20px;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0s linear 0.2s;
@@ -975,7 +983,7 @@ main {
         letter-spacing: var(--track-13);
     }
     .wn-head {
-        height: 36px;
+        height: calc(36px + var(--wn-lift));
     }
     .work-note p {
         font-size: 13px;
