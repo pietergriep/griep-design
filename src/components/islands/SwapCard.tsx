@@ -182,9 +182,7 @@ const CSS = `
   font-size: calc(35px * var(--sc-scale));
   font-weight: 500;
   color: #1a1a1a;
-  letter-spacing: calc(-1px * var(--sc-scale));
-  /* the amount's own tracking, so the digit columns add to it, not replace it */
-  --rn-tracking-base: calc(-1px * var(--sc-scale));
+  letter-spacing: 0;
   line-height: 1;
   transition: opacity 200ms ease;
 }
