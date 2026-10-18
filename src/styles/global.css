@@ -416,8 +416,8 @@ main {
     --wn-pad: 15px;
     --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
     /* the panel growing open: set this curve to taste (x1, y1, x2, y2) */
-    --wn-open-curve: cubic-bezier(0.32, 0.72, 0, 1);
-    --wn-open-time: 0.45s;
+    --wn-open-curve: cubic-bezier(0.44, 0, 0.14, 1);
+    --wn-open-time: 0.4s;
     /* exactly as wide as the card above: the text wraps to it instead of widening it */
     width: 0;
     min-width: 100%;
