@@ -3,6 +3,9 @@
 // revealing the Details tab, Close and the text. The dark bar under the tabs is as
 // wide as the active tab's label and slides to whichever one is picked. The card
 // is told when the note opens or closes (some cards come apart then, see xray.ts).
+// Only one note is open at a time: opening one closes whichever was open.
+const closers = new Map<HTMLElement, () => void>()
+
 document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
     const tabs = Array.from(note.querySelectorAll<HTMLButtonElement>(".wn-tab"))
     const pages = Array.from(note.querySelectorAll<HTMLElement>(".wn-page"))
@@ -38,6 +41,7 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
     // while closed, only the pill can be reached (by mouse, keyboard or screen reader)
     const setOpen = (open: boolean) => {
         const changed = note.classList.contains("is-open") !== open
+        if (open) closers.forEach((closeOther, other) => other !== note && other.classList.contains("is-open") && closeOther())
         note.classList.toggle("is-open", open)
         tabs[0].setAttribute("aria-expanded", String(open))
         ;[...tabs.slice(1), close].forEach((el) => el && (el.tabIndex = open ? 0 : -1))
@@ -73,6 +77,7 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         }
     })
 
+    closers.set(note, () => setOpen(false))
     setOpen(false)
     measure()
     new ResizeObserver(measure).observe(note)
