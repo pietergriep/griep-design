@@ -435,13 +435,15 @@ main {
     }
 }
 
-/* The DCA card's badge steps aside while its flow runs (it overlaps the expanded
-   sheet on phones), and comes back once the flow resets */
-.card-dca .badge {
-    transition: opacity 0.25s ease;
-}
-.card-dca:has(.dca--active) .badge {
-    opacity: 0;
+/* On phones the DCA card's badge overlaps the expanded sheet, so there it steps aside
+   while the flow runs and comes back once it resets (desktop has room for both) */
+@media (max-width: 599.98px) {
+    .card-dca .badge {
+        transition: opacity 0.25s ease;
+    }
+    .card-dca:has(.dca--active) .badge {
+        opacity: 0;
+    }
 }
 
 /* Carried over from the Framer file, where one "Interactive" badge was spaced
