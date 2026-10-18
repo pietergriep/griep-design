@@ -537,6 +537,7 @@ main {
     transition: opacity 0.35s ease 0.28s, filter 0.35s ease 0.28s, transform 0.45s var(--wn-ease) 0.28s;
 }
 .work-note p {
+    max-width: 90%;
     margin: 0;
     font-size: 15px;
     line-height: 1.45;
