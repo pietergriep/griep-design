@@ -413,7 +413,14 @@ main {
     background: var(--card);
     border-radius: 20px;
     clip-path: inset(0 calc(100% - var(--pill-w, 100px)) calc(100% - var(--pill-h, 40px)) 0 round 12px);
-    transition: clip-path 0.45s var(--wn-ease);
+    /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
+    transform-origin: calc(var(--pill-w, 100px) / 2) calc(var(--pill-h, 40px) / 2);
+    transition: clip-path 0.45s var(--wn-ease), transform 0.16s ease-out, filter 0.16s ease-out;
+}
+.wn-panel.pressed {
+    filter: brightness(0.96);
+    transform: scale(0.94);
+    transition-duration: 0.45s, 60ms, 60ms;
 }
 .work-note.is-open .wn-panel {
     clip-path: inset(0 0 0 0 round 20px);
@@ -461,7 +468,7 @@ main {
     position: absolute;
     left: 0;
     bottom: -1px;
-    height: 2px;
+    height: 1px;
     background: var(--wn-bar);
     opacity: 0;
     transition: transform 0.35s var(--wn-ease), width 0.35s var(--wn-ease), opacity 0.2s ease;

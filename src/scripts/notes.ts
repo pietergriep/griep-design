@@ -53,6 +53,19 @@ document.querySelectorAll<HTMLElement>(".work-note").forEach((note) => {
         }),
     )
     close?.addEventListener("click", () => setOpen(false))
+    // the closed pill presses in while held, like the carousel buttons (carousel.ts)
+    const panel = note.querySelector<HTMLElement>(".wn-panel")
+    tabs[0].addEventListener("pointerdown", () => {
+        if (!panel || note.classList.contains("is-open")) return
+        panel.classList.add("pressed")
+        const release = () => {
+            panel.classList.remove("pressed")
+            removeEventListener("pointerup", release)
+            removeEventListener("pointercancel", release)
+        }
+        addEventListener("pointerup", release)
+        addEventListener("pointercancel", release)
+    })
     note.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && note.classList.contains("is-open")) {
             setOpen(false)
