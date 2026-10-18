@@ -864,7 +864,8 @@ function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: nu
                     const y = state === "active" && !gathered ? rad * Math.sin(a) : 0
                     /* waiting: hidden in the middle; running: all six grow out of the
                        middle together onto the ring; done: they gather back in and go */
-                    const scale = gathered ? waitScale : state === "active" ? 1 : 0
+                    // at their final size from the start: only their position animates
+                    const scale = state === "active" ? 1 : 0
                     return (
                         <span
                             key={i}

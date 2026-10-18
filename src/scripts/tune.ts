@@ -47,9 +47,9 @@ const CONFS: Record<string, Conf> = {
         title: "Swap",
         sections: [
             ["Steps", ["showSteps", "step1", "step2", "step3", "stepDuration", "stepGap", "stepsStagger", "stepExpand", "stepSpinPerTurn", "stepDotSize", "stepWaitingDot", "stepSpinnerRadius", "stepDoneColour"]],
-            ["Loader dots", ["dotSize", "dotSpacing", "ringRadius", "dotColour"]],
-            ["Loader timing", ["popInDuration", "popInStagger", "popInRise", "rollStarts", "rollDuration", "rollStagger", "textAfterRoll", "swapDuration", "spinPerTurn"]],
-            ["Loader text", ["loaderSide", "textGap", "textSlideIn", "textFadeIn", "shimmer"]],
+            ["Button spinner dots (only with Show steps off)", ["dotSize", "dotSpacing", "ringRadius", "dotColour"]],
+            ["Button spinner timing (only with Show steps off)", ["popInDuration", "popInStagger", "popInRise", "rollStarts", "rollDuration", "rollStagger", "textAfterRoll", "swapDuration", "spinPerTurn"]],
+            ["Button text", ["loaderSide", "textGap", "textSlideIn", "textFadeIn", "shimmer"]],
             ["Success", ["circleSize", "circleLine", "tickSize", "filledCircle", "successColour", "successBackground", "messageFadeIn", "keepTick"]],
             ["After success", ["cardPop", "cardPopDuration", "cardPopDelay", "successBounce", "successBounceDuration", "txInfoDelay", "txInfoDuration", "txInfoSpring", "numberPop", "numberPopDuration", "numberPopDelay"]],
         ],
