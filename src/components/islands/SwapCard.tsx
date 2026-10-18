@@ -203,6 +203,8 @@ const CSS = `
   font-family: "Inter Display", var(--sc-font);
   font-variant-numeric: tabular-nums;
 }
+/* the big amounts in Inter (the text cut) instead */
+.swap-card__amount .rn-root { font-family: "Inter", var(--sc-font); }
 .swap-card__sub { white-space: nowrap; }
 
 /* Picker ------------------------------------------------------------------- */
