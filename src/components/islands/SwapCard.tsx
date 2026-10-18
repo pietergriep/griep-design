@@ -201,9 +201,11 @@ const CSS = `
   font-family: "Inter Display", var(--sc-font);
   font-variant-numeric: tabular-nums;
 }
-/* the big amounts in Inter (the text cut) instead, with proportional figures: Inter's
-   tabular 1 has a foot, the proportional one is the plain 1 Figma shows */
-.swap-card__amount .rn-root { font-family: "Inter", var(--sc-font); font-variant-numeric: normal; }
+/* the amounts and their ~$ values in Inter (the text cut) instead, with proportional
+   figures: Inter's tabular 1 has a foot, the proportional one is the plain 1 Figma
+   shows. "Inter Punct" covers only the comma and dot, a little tighter. */
+.swap-card__amount, .swap-card__amount .rn-root,
+.swap-card__sub, .swap-card__sub .rn-root { font-family: "Inter Punct", "Inter", var(--sc-font); font-variant-numeric: normal; }
 .swap-card__sub { white-space: nowrap; }
 
 /* Picker ------------------------------------------------------------------- */

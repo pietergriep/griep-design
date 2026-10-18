@@ -22,13 +22,23 @@
     font-weight: 500;
     font-display: swap;
 }
-/* Inter (the text cut, Inter 4.1, same license), Medium only: the swap card's big
-   amounts */
+/* Inter (the text cut, Inter 4.1, same license), Medium only: the swap card's
+   amounts and their ~$ values */
 @font-face {
     font-family: "Inter";
     src: url("/fonts/Inter-Medium.woff2") format("woff2");
     font-weight: 500;
     font-display: swap;
+}
+/* Inter Medium's comma and dot with a little less space either side, for the swap
+   card's rolling numbers, which draw each character alone (no kerning). Made by
+   scripts/tight-punct.py. */
+@font-face {
+    font-family: "Inter Punct";
+    src: url("/fonts/Inter-Medium-Punct.woff2") format("woff2");
+    font-weight: 500;
+    font-display: swap;
+    unicode-range: U+002C, U+002E;
 }
 
 :root {
