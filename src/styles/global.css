@@ -731,8 +731,8 @@ main {
     }
 }
 
-/* Analyse is built around hovering, so touch screens (phones, tablets) leave it out for now */
-@media (hover: none) {
+/* Analyse is built around hovering: the phone layout and touch screens leave it out for now */
+@media (hover: none), (max-width: 599.98px) {
     .wn-tab:nth-child(2),
     .wn-page:nth-child(2) {
         display: none;
