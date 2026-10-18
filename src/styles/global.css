@@ -502,7 +502,13 @@ main {
 
 .card-wide-image img {
     flex: none;
-    width: 575px;
+    width: 719px; /* the planner widget, 25% up from 575px */
+}
+
+/* the portfolio widget fills the card's width, so it keeps the size it had in the
+   older 475px card */
+.card-gradient-widget img {
+    max-width: 405px;
 }
 
 .tablet-only {
