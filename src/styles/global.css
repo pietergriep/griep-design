@@ -333,6 +333,7 @@ main {
     will-change: transform;
 }
 
+/* every card is 625px wide on desktop and tablet, except the File Explorer */
 .card {
     position: relative;
     flex: none;
@@ -478,7 +479,6 @@ main {
 }
 
 .card-image {
-    width: 475px;
     padding: 35px;
     background: var(--card-image);
 }
@@ -510,7 +510,6 @@ main {
 }
 
 .card-poster {
-    width: 526px;
     padding: 35px;
 }
 
@@ -673,12 +672,6 @@ main {
         padding: 40px 0 50px 40px;
     }
     /* the cards themselves use their desktop sizes here, scaled by carousel.ts */
-    .card-dust {
-        width: 475px;
-    }
-    .card-poster {
-        width: 526px;
-    }
     .tablet-only {
         display: flex;
     }
