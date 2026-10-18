@@ -415,7 +415,7 @@ main {
     --wn-bar: #272525;
     --wn-pad: 15px;
     --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
-    /* the panel growing open: set this curve to taste (x1, y1, x2, y2) */
+    /* the panel growing open and shrinking closed: set this curve to taste (x1, y1, x2, y2) */
     --wn-open-curve: cubic-bezier(0.44, 0, 0.14, 1);
     --wn-open-time: 0.4s;
     /* exactly as wide as the card above: the text wraps to it instead of widening it */
@@ -447,14 +447,14 @@ main {
     clip-path: none;
     /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
     transform-origin: calc(var(--pill-w) / 2) calc(var(--pill-h) / 2);
-    /* closing: quick and even, so the emptied box doesn't linger next to one that's opening */
-    transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+    /* closing: the same curve and time as opening */
+    transition: width var(--wn-open-time) var(--wn-open-curve), height var(--wn-open-time) var(--wn-open-curve),
         transform 0.16s ease-out, background-color 0.16s ease-out;
 }
 .wn-ready:not(.is-open) .wn-panel.pressed {
     background-color: rgb(238, 238, 238); /* the card colour, 4% darker */
     transform: scale(0.94);
-    transition-duration: 0.3s, 0.3s, 60ms, 60ms;
+    transition-duration: var(--wn-open-time), var(--wn-open-time), 60ms, 60ms;
 }
 /* opening: the slower, springier grow */
 .wn-ready.is-open .wn-panel {
