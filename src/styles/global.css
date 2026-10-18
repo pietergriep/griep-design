@@ -994,6 +994,7 @@ main {
         height: calc(36px + var(--wn-lift));
     }
     .work-note p {
+        max-width: none; /* the full width on phones */
         font-size: 13px;
         letter-spacing: 0.015em;
     }
