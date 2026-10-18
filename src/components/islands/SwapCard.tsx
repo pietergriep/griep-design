@@ -283,12 +283,27 @@ const CSS = `
   transition: opacity 320ms ease, transform 420ms cubic-bezier(.2,.8,.2,1), color 320ms ease, filter 320ms ease;
 }
 .swap-card__step--done { color: var(--sc-step-done); }
+/* steps still to come wait at half strength, dot and text */
+.swap-card__step .sc-step-icon,
+.swap-card__step .swap-card__step-text { transition: opacity 300ms ease; }
+.swap-card__step--pending .sc-step-icon,
+.swap-card__step--pending .swap-card__step-text { opacity: 0.5; }
 
 /* The step's icon: one dot while it waits, six in a spinning ring while it runs,
    a circle with a tick once it's done */
 .sc-step-icon { position: relative; flex: none; width: var(--sc-step-icon); height: var(--sc-step-icon); }
 .sc-step-icon__ring { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
-.sc-step-icon__ring--spin { animation: sc-step-spin var(--sc-step-spin) linear infinite; }
+.sc-step-icon .sc-step-icon__wait { left: 50%; top: 50%; }
+/* a short wind-up: an eighth of a turn in a quarter of the period, easing in to end
+   at exactly the steady speed (end slope 2 = twice its own average speed), then
+   steady turns carrying on from there */
+.sc-step-icon__ring--spin {
+  animation:
+    sc-step-wind calc(var(--sc-step-spin) * 0.25) cubic-bezier(0.5, 0, 0.75, 0.5),
+    sc-step-spin-on var(--sc-step-spin) linear calc(var(--sc-step-spin) * 0.25) infinite;
+}
+@keyframes sc-step-wind { from { transform: rotate(0deg); } to { transform: rotate(45deg); } }
+@keyframes sc-step-spin-on { from { transform: rotate(45deg); } to { transform: rotate(405deg); } }
 @keyframes sc-step-spin { to { transform: rotate(360deg); } }
 .sc-step-icon__dot {
   position: absolute;
@@ -796,17 +811,41 @@ const AVAIL_SPACING: Record<string, [number, number]> = { "1": [-0.04, -0.04], "
 function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: number; L: Loader }) {
     const d = L.stepDot * k
     const rad = L.stepRadius * k
+    /* Starting a step: 0 = the six dots sit on the waiting dot's spot at its size (so
+       it looks like the same dot), 1 = they spread out onto the ring, already
+       spinning (the short wind-up plays while they spread) */
+    const [beat, setBeat] = useState(0)
+    useIsoLayoutEffect(() => {
+        if (state !== "active") return
+        setBeat(0)
+        const raf = requestAnimationFrame(() => requestAnimationFrame(() => setBeat(1)))
+        return () => cancelAnimationFrame(raf)
+    }, [state])
+    const gathered = state === "active" && beat === 0
+    const waitScale = L.stepWaitDot / L.stepDot
     return (
         <span className={"sc-step-icon" + (state === "done" ? " sc-step-icon--done" : "")}>
-            <span className={"sc-step-icon__ring" + (state !== "pending" ? " sc-step-icon__ring--spin" : "")}>
+            {/* the waiting dot: stays in the middle and shrinks away as the spinner's dots
+                grow out of the middle */}
+            <span
+                className="sc-step-icon__dot sc-step-icon__wait"
+                style={{
+                    width: d,
+                    height: d,
+                    marginLeft: -d / 2,
+                    marginTop: -d / 2,
+                    transform: `scale(${state === "pending" ? waitScale : 0})`,
+                    transition: state === "pending" ? "transform 260ms cubic-bezier(.2,.8,.3,1)" : "none",
+                }}
+            />
+            <span className={"sc-step-icon__ring" + ((state === "active" && beat >= 1) || state === "done" ? " sc-step-icon__ring--spin" : "")}>
                 {Array.from({ length: COUNT }, (_, i) => {
                     const a = ((-90 + i * (360 / COUNT)) * Math.PI) / 180
-                    const x = state === "active" ? rad * Math.cos(a) : 0
-                    const y = state === "active" ? rad * Math.sin(a) : 0
-                    /* waiting: just the first dot, bigger; running: all six out on the
-                       ring (the big dot shrinking to size as it goes); done: they gather
-                       back in and go */
-                    const scale = state === "active" ? 1 : state === "pending" && i === 0 ? L.stepWaitDot / L.stepDot : 0
+                    const x = state === "active" && !gathered ? rad * Math.cos(a) : 0
+                    const y = state === "active" && !gathered ? rad * Math.sin(a) : 0
+                    /* waiting: hidden in the middle; running: all six grow out of the
+                       middle together onto the ring; done: they gather back in and go */
+                    const scale = gathered ? waitScale : state === "active" ? 1 : 0
                     return (
                         <span
                             key={i}
@@ -818,9 +857,10 @@ function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: nu
                                 marginTop: -d / 2,
                                 background: state === "done" ? L.stepDoneColour : undefined,
                                 transform: `translate(${x}px, ${y}px) scale(${scale})`,
-                                transition:
-                                    state === "active"
-                                        ? `transform ${L.stepExpand}ms cubic-bezier(.34,1.5,.5,1) ${i * 35}ms`
+                                transition: gathered
+                                    ? "none"
+                                    : state === "active"
+                                        ? `transform ${L.stepExpand}ms cubic-bezier(.34,1.5,.5,1)`
                                         : "transform 320ms cubic-bezier(.55,0,1,.45)",
                             }}
                         />
@@ -828,8 +868,9 @@ function StepIcon({ state, k, L }: { state: "pending" | "active" | "done"; k: nu
                 })}
             </span>
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <circle className="sc-step-icon__circle" cx="8" cy="8" r="7.3" stroke={L.stepDoneColour} strokeWidth="1.1" />
-                <path className="sc-step-icon__tick" d="M5.1 8.3 L7.1 10.2 L10.9 6.2" stroke={L.stepDoneColour} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" pathLength={1} />
+                {/* the tick and its circle in the success green (the success button's text colour) */}
+                <circle className="sc-step-icon__circle" cx="8" cy="8" r="7.3" stroke={L.successColour} strokeWidth="1.1" />
+                <path className="sc-step-icon__tick" d="M5.1 8.3 L7.1 10.2 L10.9 6.2" stroke={L.successColour} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" pathLength={1} />
             </svg>
         </span>
     )
@@ -1135,12 +1176,12 @@ const DEFAULT_LOADER: Loader = {
     stepTime: 1800,
     stepGap: 320,
     stepAppear: 140,
-    stepExpand: 560,
+    stepExpand: 680,
     stepSpin: 1.4,
     stepDot: 2.5,
     stepWaitDot: 5,
     stepRadius: 6.25,
-    stepDoneColour: "rgba(37, 37, 37, 0.35)",
+    stepDoneColour: "#1a1a1a",
     txDelay: 550,
     txDuration: 520,
     txSpring: false,
@@ -1876,12 +1917,15 @@ export default function SwapCard(props: Props) {
                                         className={
                                             "swap-card__step" +
                                             (stepsIn ? " swap-card__step--in" : "") +
-                                            (state === "done" ? " swap-card__step--done" : "")
+                                            (state === "done" ? " swap-card__step--done" : "") +
+                                            (state === "pending" ? " swap-card__step--pending" : "")
                                         }
                                         style={{ transitionDelay: stepsIn ? `${n * L.stepAppear}ms, ${n * L.stepAppear}ms, 0ms` : "0ms" }}
                                     >
                                         <StepIcon state={state} k={scale} L={L} />
-                                        {label.replace("{sell}", sellToken).replace("{receive}", recToken)}
+                                        <span className="swap-card__step-text">
+                                            {label.replace("{sell}", sellToken).replace("{receive}", recToken)}
+                                        </span>
                                     </div>
                                 )
                             })}
@@ -2115,12 +2159,12 @@ addPropertyControls(SwapCard, {
     loaderStepTime: { type: ControlType.Number, title: "Step duration", min: 300, max: 5000, step: 50, defaultValue: 1800, unit: "ms", description: "How long each step spins" },
     loaderStepGap: { type: ControlType.Number, title: "Step gap", min: 0, max: 1000, step: 10, defaultValue: 320, unit: "ms", description: "Between a step finishing and the next one starting" },
     loaderStepAppear: { type: ControlType.Number, title: "Steps stagger", min: 0, max: 400, step: 5, defaultValue: 140, unit: "ms", description: "Between the rows coming in" },
-    loaderStepExpand: { type: ControlType.Number, title: "Step expand", min: 100, max: 1000, step: 10, defaultValue: 560, unit: "ms", description: "The waiting dot opening into the spinner" },
+    loaderStepExpand: { type: ControlType.Number, title: "Step expand", min: 100, max: 1000, step: 10, defaultValue: 680, unit: "ms", description: "The waiting dot opening into the spinner" },
     loaderStepSpin: { type: ControlType.Number, title: "Step spin per turn", min: 0.3, max: 4, step: 0.1, defaultValue: 1.4, unit: "s" },
     loaderStepDot: { type: ControlType.Number, title: "Step dot size", min: 1, max: 5, step: 0.1, defaultValue: 2.5, unit: "px" },
     loaderStepWaitDot: { type: ControlType.Number, title: "Step waiting dot", min: 1, max: 10, step: 0.1, defaultValue: 5, unit: "px", description: "The single dot a step shows before it starts" },
     loaderStepRadius: { type: ControlType.Number, title: "Step spinner radius", min: 3, max: 9, step: 0.25, defaultValue: 6.25, unit: "px" },
-    loaderStepDoneColour: { type: ControlType.Color, title: "Step done colour", defaultValue: "rgba(37, 37, 37, 0.35)" },
+    loaderStepDoneColour: { type: ControlType.Color, title: "Step done colour", defaultValue: "#1a1a1a" },
     loaderKeepCheck: { type: ControlType.Boolean, title: "Keep tick", defaultValue: true, description: "Off: the circle and tick leave after a moment" },
     hoverShift: {
         type: ControlType.Number,
