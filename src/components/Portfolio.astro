@@ -22,6 +22,8 @@ const HOME = review ? "/dive/" : "/"
 const TITLE = "griep.design"
 const DESCRIPTION = "Product designer building clear, considered digital experiences. From concept to interface."
 
+// the "Set your limit" screen is hidden for now; true brings it back
+const SHOW_LIMIT_SCREEN = false
 ---
 
 <html lang="en">
@@ -157,12 +159,14 @@ const DESCRIPTION = "Product designer building clear, considered digital experie
                         <WorkNote text="A planner widget for the day. Each task shows its time as a bar that fills as it happens, the current one is outlined with the minutes left, and finished tasks fade back with a check." />
                     </div>
 
+                    {SHOW_LIMIT_SCREEN && (
                     <div class="work-item">
                         <div class="card card-image">
                             <WorkImage name="SZB8MGBYtuMoqpmrvEvFoBevFxc" />
                         </div>
                         <WorkNote text="Setting a spending limit on one screen: a big amount, a daily / weekly / monthly switch and a keypad. The line saying you can always change it later takes the pressure off the choice." />
                     </div>
+                    )}
 
                     <div class="work-item">
                         <div class="card card-image card-gradient-widget">
