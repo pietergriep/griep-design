@@ -5,6 +5,13 @@
 
 const SNAP_MS = 520 // how long a snap / step takes
 const SNAP_AFTER_MS = 130 // quiet time after wheel input before snapping
+// A mouse wheel over the row: "free" glides it (each notch adds WHEEL_SPEED px, eased
+// toward, then it settles on the nearest card after WHEEL_SNAP_AFTER_MS); "step"
+// moves exactly one card per notch.
+const WHEEL_MODE: "free" | "step" = "free"
+const WHEEL_SPEED = 1.6 // px of row per px of wheel delta (a notch is ~100)
+const WHEEL_EASE_MS = 90 // how quickly the row catches up with the wheel (time constant)
+const WHEEL_SNAP_AFTER_MS = 260 // a mouse wheel's notches come further apart than a trackpad's
 const RESISTANCE = 0.35 // how much the row gives past either end (touch)
 const FLING = 140 // how far a touch fling carries, in ms of velocity
 
@@ -144,6 +151,7 @@ if (row && track) {
         }
     }
     const stop = () => {
+        endWheel() // (defined with the wheel input below; only called once everything is set up)
         animating = false
         if (raf) cancelAnimationFrame(raf)
         raf = 0
@@ -209,9 +217,9 @@ if (row && track) {
 
     // --- Trackpad / wheel (only while hovered) ------------------------------------
     // A trackpad moves the row with sideways swipes (up/down still scrolls the page).
-    // A mouse wheel has no sideways, so over the row each notch steps one card, down
-    // for the next and up for the previous; at either end the wheel scrolls the page
-    // again, so nobody gets stuck in the row.
+    // A mouse wheel has no sideways, so over the row it moves the row instead: down
+    // goes forward, up goes back (see WHEEL_MODE); at either end the wheel scrolls the
+    // page again, so nobody gets stuck in the row.
     let hovered = false
     row.addEventListener("mouseenter", () => (hovered = true))
     row.addEventListener("mouseleave", () => (hovered = false))
@@ -225,19 +233,53 @@ if (row && track) {
     }
     const WHEEL_STEP_GAP = 260 // ms between card steps, so one flick of the wheel moves one card
     let lastWheelStep = 0
+    // free mode: the row eases toward wheelTarget, frame by frame
+    let wheelTarget: number | null = null
+    let wheelRaf = 0
+    let wheelLast = 0
+    const wheelFrame = (now: number) => {
+        if (wheelTarget === null) return (wheelRaf = 0)
+        const dt = Math.min(64, now - wheelLast)
+        wheelLast = now
+        offset += (wheelTarget - offset) * (1 - Math.exp(-dt / WHEEL_EASE_MS))
+        if (Math.abs(wheelTarget - offset) < 0.5) offset = wheelTarget
+        render()
+        publish()
+        wheelRaf = offset === wheelTarget ? 0 : requestAnimationFrame(wheelFrame)
+    }
+    const endWheel = () => {
+        wheelTarget = null
+        if (wheelRaf) cancelAnimationFrame(wheelRaf)
+        wheelRaf = 0
+    }
     row.addEventListener(
         "wheel",
         (e) => {
             if (!hovered) return
             if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX) && isMouseWheel(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
-                const pos = animating ? to : offset // where the row is (heading)
+                const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
                 if (dir > 0 ? pos >= maxOffset() - 1 : pos <= 1) return // at the end: the page scrolls
                 e.preventDefault()
-                const now = performance.now()
-                if (now - lastWheelStep < WHEEL_STEP_GAP) return
-                lastWheelStep = now
-                stepFrom(pos, dir)
+                if (WHEEL_MODE === "step") {
+                    const now = performance.now()
+                    if (now - lastWheelStep < WHEEL_STEP_GAP) return
+                    lastWheelStep = now
+                    stepFrom(pos, dir)
+                    return
+                }
+                stop()
+                clearTimeout(snapTimer)
+                const delta = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY
+                wheelTarget = clamp(pos + (delta * WHEEL_SPEED) / fit)
+                if (!wheelRaf) {
+                    wheelLast = performance.now()
+                    wheelRaf = requestAnimationFrame(wheelFrame)
+                }
+                snapTimer = window.setTimeout(() => {
+                    endWheel()
+                    animateTo(nearestRest(offset))
+                }, WHEEL_SNAP_AFTER_MS)
                 return
             }
             if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || e.deltaX === 0) return
