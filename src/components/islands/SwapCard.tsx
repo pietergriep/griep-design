@@ -4,7 +4,7 @@ import {
     useRef,
     useState,
 } from "react"
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react"
+import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react"
 import { addPropertyControls, ControlType, RenderTarget } from "framer"
 import { RollingNumber as LibRollingNumber } from "@kitlangton/rolling-number/react"
 import "@kitlangton/rolling-number/styles.css"
@@ -188,6 +188,25 @@ const CSS = `
 }
 
 .swap-card__sub { font-size: calc(13px * var(--sc-scale)); font-weight: 500; color: #c6c6c6; }
+
+/* the sell card's bottom part: click to type the amount */
+.swap-card--static .swap-card__amount-row--edit { cursor: text; }
+.swap-card__amount-input {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: "Inter Punct", "Inter", var(--sc-font);
+  font-variant-numeric: normal;
+  caret-color: #1a1a1a;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.swap-card__amount-input::placeholder { color: rgba(26, 26, 26, 0.35); }
 
 /* Rolling numbers (@kitlangton/rolling-number): its slots are content-box (the
    padding is room for overhang), so they're left out of the reset above */
@@ -1356,6 +1375,13 @@ export default function SwapCard(props: Props) {
     const [preset, setPreset] = useState<number | null>(
         selected >= 0 && selected < list.length ? list[selected] : null
     )
+    /* A typed amount (in the sell token), set by clicking the sell amount; it takes
+       over from the chips until a chip is picked again. */
+    const [custom, setCustom] = useState<number | null>(null)
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState("")
+    const inputRef = useRef<HTMLInputElement>(null)
+
     /* Keyed on the values, not just the count: editing "25, 50, 75, 100" to
      "10, 25, 50, 75" in the panel keeps the same length, and depending on
      length alone would leave the selection pointing at the old number. */
@@ -1436,8 +1462,8 @@ export default function SwapCard(props: Props) {
     /* Amounts ---------------------------------------------------------------- */
     const isEth = !flipped
     const bal = isEth ? balances.eth : balances.usdc
-    const share = preset ? preset / 100 : 0
-    const sellRaw = bal * share
+    const share = custom != null ? (bal ? custom / bal : 0) : preset ? preset / 100 : 0
+    const sellRaw = custom != null ? custom : bal * share
     const recRaw = isEth ? sellRaw * price * fee : (sellRaw / price) * fee
     const sellUsd = isEth ? sellRaw * price : sellRaw
     const recUsd = isEth ? recRaw : recRaw * price
@@ -1449,7 +1475,8 @@ export default function SwapCard(props: Props) {
 
     const finished = phase === "success" || phase === "done"
     const loading = phase !== "static" && !finished
-    const needsAmount = phase === "static" && !preset
+    const hasAmount = custom != null ? custom > 0 : !!preset
+    const needsAmount = phase === "static" && !hasAmount
     const sellToken: "ETH" | "USDC" = isEth ? "ETH" : "USDC"
     const recToken: "ETH" | "USDC" = isEth ? "USDC" : "ETH"
 
@@ -1679,8 +1706,16 @@ export default function SwapCard(props: Props) {
     const hoverMove = (e: ReactPointerEvent<HTMLDivElement>) => {
         if (e.pointerType !== "mouse") return
         const r = e.currentTarget.getBoundingClientRect()
-        const side: Side = e.clientX < r.left + r.width / 2 ? "sell" : "receive"
+        let side: Side | null = e.clientX < r.left + r.width / 2 ? "sell" : "receive"
+        // the sell card's bottom part is for typing the amount: no lift there
+        if (side === "sell" && (editing || (e.target as Element).closest?.(".swap-card__amount-row--edit"))) side = null
         if (side === wantRef.current) return
+        if (!side) {
+            wantRef.current = null
+            if (liftTimer.current) clearTimeout(liftTimer.current)
+            setLifted(null)
+            return
+        }
         wantRef.current = side
         hoverIn(side)
     }
@@ -1691,6 +1726,54 @@ export default function SwapCard(props: Props) {
         setLifted(null)
     }
     useEffect(() => () => { if (liftTimer.current) clearTimeout(liftTimer.current) }, [])
+
+    /* Typing the sell amount ------------------------------------------------- */
+    const sellDecimals = isEth ? 3 : 0
+    const toText = (n: number) => (n ? fmtNum(n, sellDecimals).replace(/\./g, "") : "")
+    const parse = (t: string) => {
+        const n = parseFloat(t.replace(",", "."))
+        return Number.isFinite(n) ? n : 0
+    }
+    const editBefore = useRef<{ custom: number | null; preset: number | null }>({ custom: null, preset: null })
+    const startEdit = (e: ReactMouseEvent) => {
+        e.stopPropagation() // the bottom of the sell card edits; it doesn't flip
+        if (phase !== "static" || swapLock.current || editing) return
+        editBefore.current = { custom, preset }
+        setDraft(toText(sellRaw))
+        setEditing(true)
+        setLifted(null)
+        requestAnimationFrame(() => {
+            const el = inputRef.current
+            if (el) {
+                // the caret at the end, nothing selected
+                el.focus()
+                const end = el.value.length
+                el.setSelectionRange(end, end)
+            }
+        })
+    }
+    const onDraft = (raw: string) => {
+        // digits and one decimal separator (comma or dot, shown as a comma)
+        let t = raw.replace(/\./g, ",").replace(/[^0-9,]/g, "")
+        const i = t.indexOf(",")
+        if (i >= 0) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/,/g, "")
+        if (!sellDecimals) t = t.replace(/,.*/, "")
+        else if (i >= 0) t = t.slice(0, i + 1 + sellDecimals)
+        t = t.replace(/^0+(?=\d)/, "")
+        // never more than what's available
+        if (parse(t) > bal) t = toText(bal)
+        setDraft(t)
+        setCustom(parse(t))
+        setPreset(null)
+    }
+    const endEdit = (keep: boolean) => {
+        if (!editing) return
+        setEditing(false)
+        if (!keep || parse(draft) <= 0) {
+            setCustom(editBefore.current.custom)
+            setPreset(editBefore.current.preset)
+        }
+    }
 
     const doSwap = () => {
         /* Ignore clicks while the panels are still crossing: re-entering mid-flight
@@ -1703,6 +1786,10 @@ export default function SwapCard(props: Props) {
         const dur = 480
         swapLock.current = true
         setSwapping(true)
+        if (custom != null) {
+            const nextBal = isEth ? balances.usdc : balances.eth
+            setCustom(Number(((custom / (bal || 1)) * nextBal).toFixed(isEth ? 0 : 3)))
+        }
         setFlipped((f) => !f)
         setFlipGen((g) => g + 1)
         if (sellRef.current) sellRef.current.style.zIndex = "2" /* front card */
@@ -1763,16 +1850,40 @@ export default function SwapCard(props: Props) {
                         <span className="swap-card__label">{sellLabel}</span>
                         <Pill token={sellToken} filled />
                     </div>
-                    <div className="swap-card__amount-row">
-                        <RollingNumber
-                            className="swap-card__amount"
-                            value={sellRaw}
-                            decimals={isEth ? 3 : 0}
-                            duration={rollOptions.duration}
-                            blur={blurOn}
-                            jump={flipGen}
-                            style={{ opacity: preset ? 1 : 0.35 }}
-                        />
+                    <div
+                        className={"swap-card__amount-row swap-card__amount-row--edit" + (editing ? " is-editing" : "")}
+                        onClick={startEdit}
+                    >
+                        {editing ? (
+                            <input
+                                ref={inputRef}
+                                className="swap-card__amount swap-card__amount-input"
+                                inputMode={sellDecimals ? "decimal" : "numeric"}
+                                aria-label={`Amount of ${sellToken} to sell`}
+                                value={draft}
+                                placeholder="0"
+                                style={{ width: `${Math.max(1, draft.length) * 0.62 + 0.15}em` }}
+                                onChange={(e) => onDraft(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                onBlur={() => endEdit(true)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") inputRef.current?.blur()
+                                    if (e.key === "Escape") {
+                                        endEdit(false)
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <RollingNumber
+                                className="swap-card__amount"
+                                value={sellRaw}
+                                decimals={isEth ? 3 : 0}
+                                duration={rollOptions.duration}
+                                blur={blurOn}
+                                jump={flipGen}
+                                style={{ opacity: hasAmount ? 1 : 0.35 }}
+                            />
+                        )}
                         <RollingNumber
                             className="swap-card__sub"
                             prefix="~$"
@@ -1807,7 +1918,7 @@ export default function SwapCard(props: Props) {
                             blur={blurOn}
                             jump={flipGen}
                             style={{
-                                opacity: preset ? 1 : 0.35,
+                                opacity: hasAmount ? 1 : 0.35,
                                 ...(landed && L.numberPop !== 1
                                     ? {
                                           display: "inline-block",
@@ -1900,6 +2011,7 @@ export default function SwapCard(props: Props) {
                                 }
                                 onClick={() => {
                                     if (phase !== "static") return
+                                    setCustom(null)
                                     setPreset(value)
                                 }}
                             >
