@@ -1752,6 +1752,22 @@ export default function SwapCard(props: Props) {
             }
         })
     }
+    // typing past the balance: the number gives a short, damped shake (it stays at the max)
+    const shakeAmount = () => {
+        const el = inputRef.current
+        if (!el?.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return
+        el.animate(
+            [
+                { transform: "translateX(0)" },
+                { transform: "translateX(-3px)" },
+                { transform: "translateX(3px)" },
+                { transform: "translateX(-2px)" },
+                { transform: "translateX(1px)" },
+                { transform: "translateX(0)" },
+            ],
+            { duration: 260, easing: "ease-out" },
+        )
+    }
     const onDraft = (raw: string) => {
         // digits and one decimal separator (comma or dot, shown as a comma)
         let t = raw.replace(/\./g, ",").replace(/[^0-9,]/g, "")
@@ -1761,7 +1777,10 @@ export default function SwapCard(props: Props) {
         else if (i >= 0) t = t.slice(0, i + 1 + sellDecimals)
         t = t.replace(/^0+(?=\d)/, "")
         // never more than what's available
-        if (parse(t) > bal) t = toText(bal)
+        if (parse(t) > bal) {
+            t = toText(bal)
+            shakeAmount()
+        }
         setDraft(t)
         setCustom(parse(t))
         setPreset(null)
