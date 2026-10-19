@@ -46,6 +46,7 @@ const CONFS: Record<string, Conf> = {
         island: "SwapCard",
         title: "Swap",
         sections: [
+            ["Swap icon", ["hoverLift", "swapIcon", "swapIconSize", "swapIconRadius", "swapIconCutout", "swapIconBorder", "swapIconTurn", "swapIconColour", "swapIconHoverColour", "swapIconOnHover"]],
             ["Steps", ["showSteps", "step1", "step2", "step3", "stepDuration", "stepGap", "stepsStagger", "stepExpand", "stepSpinPerTurn", "stepDotSize", "stepWaitingDot", "stepSpinnerRadius", "stepDoneColour"]],
             ["Button spinner dots (only with Show steps off)", ["dotSize", "dotSpacing", "ringRadius", "dotColour"]],
             ["Button spinner timing (only with Show steps off)", ["popInDuration", "popInStagger", "popInRise", "rollStarts", "rollDuration", "rollStagger", "textAfterRoll", "swapDuration", "spinPerTurn"]],

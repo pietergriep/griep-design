@@ -97,7 +97,47 @@ const CSS = `
 }
 
 /* Panels ------------------------------------------------------------------- */
-.swap-card__panels { display: flex; gap: calc(5px * var(--sc-scale)); }
+.swap-card__panels { position: relative; display: flex; gap: calc(5px * var(--sc-scale)); }
+
+/* The flip button: a small rounded square with an arrow on the seam between the
+   panels, so it's clear the pair can trade places (clicking a panel still flips too).
+   It never moves and stays on top (the panels slide beneath it when the pair flips); a
+   ring in the card's colour around it reads as a cut-out in the panels. The arrow turns
+   with each flip, and the button steps aside while a swap runs. --sc-flip-* are props. */
+.swap-card__flip {
+  --sc-flip-d: calc(var(--sc-flip-size) * var(--sc-scale));
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: var(--sc-flip-d);
+  height: var(--sc-flip-d);
+  margin: calc(var(--sc-flip-d) / -2) 0 0 calc(var(--sc-flip-d) / -2);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--sc-flip-radius) * var(--sc-scale));
+  background: var(--sc-flip-fill);
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.swap-card--notched .swap-card__flip { box-shadow: 0 0 0 calc(var(--sc-flip-border) * var(--sc-scale)) #fff; }
+.swap-card__flip svg {
+  width: 58%;
+  height: 58%;
+  transition: transform 480ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+.swap-card:not(.swap-card--static) .swap-card__flip { opacity: 0; transform: scale(0.85); pointer-events: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .swap-card--static .swap-card__flip:hover { background: var(--sc-flip-hover); }
+  /* hover-only: hidden until the pointer is over the panels (touch always shows it) */
+  .swap-card--flip-hover .swap-card__flip { opacity: 0; transform: scale(0.85); }
+  .swap-card--flip-hover.swap-card--static .swap-card__panels:hover .swap-card__flip { opacity: 1; transform: scale(1); }
+}
 
 .swap-card__panel {
   flex: 1;
@@ -196,12 +236,16 @@ const CSS = `
   min-width: 0;
   max-width: 100%;
   padding: 0;
-  margin: 0;
   border: 0;
   outline: none;
   background: transparent;
   font-family: "Inter Punct", "Inter", var(--sc-font);
   font-variant-numeric: normal;
+  /* inputs ignore line-height for their own height; take the number's line box (1em)
+     plus room for the comma's tail, given back with negative margins, so the digits
+     don't jump when editing starts */
+  height: 1.4em;
+  margin: -0.2em 0;
   caret-color: #1a1a1a;
   -webkit-appearance: none;
   appearance: none;
@@ -1257,10 +1301,20 @@ interface Props {
     presets?: number[]
     selected?: number
     roll?: Partial<Roll>
+    hoverLift?: boolean
     hoverShift?: number
     hoverBounce?: number
     hoverShadow?: number
     hoverReturn?: number
+    swapIcon?: boolean
+    swapIconSize?: number
+    swapIconHover?: boolean
+    swapIconRadius?: number
+    swapIconBorder?: number
+    swapIconTurn?: number
+    swapIconColour?: string
+    swapIconHoverColour?: string
+    swapIconNotch?: boolean
     loaderDot?: Loader["dot"]
     loaderGap?: Loader["gap"]
     loaderRadius?: Loader["radius"]
@@ -1329,10 +1383,20 @@ export default function SwapCard(props: Props) {
         presets = DEFAULT_PRESETS,
         selected = 0,
         roll,
+        hoverLift = false,
         hoverShift = 8,
         hoverBounce = 1.25,
         hoverShadow = 0.035,
         hoverReturn = 200,
+        swapIcon = true,
+        swapIconSize = 26,
+        swapIconHover = false,
+        swapIconRadius = 8,
+        swapIconBorder = 2,
+        swapIconTurn = 360,
+        swapIconColour = "#f6f6f6",
+        swapIconHoverColour = "#ededed",
+        swapIconNotch = true,
         onComplete,
         style,
     } = props
@@ -1704,11 +1768,13 @@ export default function SwapCard(props: Props) {
         else setLifted(side)
     }
     const hoverMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-        if (e.pointerType !== "mouse") return
+        if (e.pointerType !== "mouse" || !hoverLift) return
         const r = e.currentTarget.getBoundingClientRect()
         let side: Side | null = e.clientX < r.left + r.width / 2 ? "sell" : "receive"
         // the sell card's bottom part is for typing the amount: no lift there
         if (side === "sell" && (editing || (e.target as Element).closest?.(".swap-card__amount-row--edit"))) side = null
+        // over the flip button: it does the hinting itself
+        if ((e.target as Element).closest?.(".swap-card__flip")) side = null
         if (side === wantRef.current) return
         if (!side) {
             wantRef.current = null
@@ -1828,6 +1894,8 @@ export default function SwapCard(props: Props) {
         phase === "static" ? "swap-card--static" : "",
         swapping ? "swap-card--swapping" : "",
         landed && L.cardPop !== 1 ? "swap-card--popped" : "",
+        swapIcon && swapIconNotch ? "swap-card--notched" : "",
+        swapIcon && swapIconHover ? "swap-card--flip-hover" : "",
     ]
         .filter(Boolean)
         .join(" ")
@@ -1841,6 +1909,11 @@ export default function SwapCard(props: Props) {
         "--sc-hover-ease": `cubic-bezier(0.34, ${hoverBounce}, 0.5, 1)`,
         "--sc-hover-shadow": hoverShadow,
         "--sc-return-ms": `${hoverReturn}ms`,
+        "--sc-flip-size": `${swapIconSize}px`,
+        "--sc-flip-radius": `${swapIconRadius}px`,
+        "--sc-flip-fill": swapIconColour,
+        "--sc-flip-hover": swapIconHoverColour,
+        "--sc-flip-border": `${swapIconBorder}px`,
         ...style,
     } as CSSProperties
 
@@ -1960,6 +2033,22 @@ export default function SwapCard(props: Props) {
                     </div>
                     <div className="swap-card__shimmer" />
                 </div>
+
+                {swapIcon && (
+                    <button
+                        type="button"
+                        className="swap-card__flip"
+                        aria-label={`Switch to ${recToken} → ${sellToken}`}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            doSwap()
+                        }}
+                    >
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: `rotate(${flipGen * swapIconTurn}deg)` }}>
+                            <path d="M3 8h10M9 4l4 4-4 4" />
+                        </svg>
+                    </button>
+                )}
             </div>
 
             <div className="swap-card__picker">
@@ -2253,6 +2342,16 @@ addPropertyControls(SwapCard, {
     loaderStepRadius: { type: ControlType.Number, title: "Step spinner radius", min: 3, max: 9, step: 0.25, defaultValue: 6.25, unit: "px" },
     loaderStepDoneColour: { type: ControlType.Color, title: "Step done colour", defaultValue: "#1a1a1a" },
     loaderKeepCheck: { type: ControlType.Boolean, title: "Keep tick", defaultValue: true, description: "Off: the circle and tick leave after a moment" },
+    swapIcon: { type: ControlType.Boolean, title: "Swap icon", defaultValue: true, description: "A round ⇄ button on the seam between the panels that flips the pair" },
+    swapIconSize: { type: ControlType.Number, title: "Swap icon size", min: 16, max: 40, step: 1, defaultValue: 26, unit: "px", hidden: (p: any) => !p.swapIcon },
+    swapIconRadius: { type: ControlType.Number, title: "Swap icon radius", min: 0, max: 20, step: 0.5, defaultValue: 8, unit: "px", hidden: (p: any) => !p.swapIcon },
+    swapIconBorder: { type: ControlType.Number, title: "Swap icon border", min: 0, max: 6, step: 0.25, defaultValue: 2, unit: "px", description: "Width of the cut-out ring around the button", hidden: (p: any) => !p.swapIcon },
+    swapIconTurn: { type: ControlType.Enum, title: "Swap icon turn", options: [180, 360], optionTitles: ["Half turn", "Full turn"], defaultValue: 360, description: "How far the arrow turns on each flip (a half turn leaves it pointing back at Sell)", hidden: (p: any) => !p.swapIcon },
+    swapIconNotch: { type: ControlType.Boolean, title: "Swap icon cutout", defaultValue: true, description: "A ring in the card's colour around the button, so it reads as cut into the panels", hidden: (p: any) => !p.swapIcon },
+    swapIconColour: { type: ControlType.Color, title: "Swap icon colour", defaultValue: "#f6f6f6", description: "Same as the Receive panel", hidden: (p: any) => !p.swapIcon },
+    swapIconHoverColour: { type: ControlType.Color, title: "Swap icon hover colour", defaultValue: "#ededed", hidden: (p: any) => !p.swapIcon },
+    swapIconHover: { type: ControlType.Boolean, title: "Swap icon on hover", defaultValue: false, description: "Only shows while the mouse is over the panels (touch screens always show it)", hidden: (p: any) => !p.swapIcon },
+    hoverLift: { type: ControlType.Boolean, title: "Hover lift", defaultValue: false, description: "Hovering a panel slides it over its partner (off: the swap icon is the hint)" },
     hoverShift: {
         type: ControlType.Number,
         title: "Hover overlap",

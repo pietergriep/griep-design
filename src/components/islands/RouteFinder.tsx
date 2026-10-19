@@ -48,7 +48,7 @@ const DEFAULTS = {
     "shimmer": 1600,
     "band": 25,
     "shimSoft": 1.5,
-    "shimmerBase": 0.4,
+    "shimmerBase": 0.34,
     "shimmerPeak": 1,
     "waitSweep": true,
     "showSpinner": false,
