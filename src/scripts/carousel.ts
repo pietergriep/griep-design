@@ -3,7 +3,13 @@
 // it softly snaps to the nearest card. Motion is a translate3d on the track,
 // never scrollLeft (iOS flashes a blank frame when native scroll is touched).
 
-const SNAP_MS = 520 // how long a snap / step takes
+// How the row settles on a card: after a swipe or the wheel (snap), and for the prev /
+// next buttons and the logo's rewind (step). The same soft ease-in-out, the snap a
+// touch quicker (x1, y1, x2, y2 like a CSS cubic-bezier).
+const STEP_MS = 600
+const STEP_CURVE: [number, number, number, number] = [0.4, 0, 0.2, 1]
+const SNAP_MS = 550
+const SNAP_CURVE: [number, number, number, number] = STEP_CURVE
 const SNAP_AFTER_MS = 130 // quiet time after wheel input before snapping
 // A mouse wheel over the row: "free" glides it (each notch adds WHEEL_SPEED px, eased
 // toward, then it settles on the nearest card after WHEEL_SNAP_AFTER_MS); "step"
@@ -131,14 +137,42 @@ if (row && track) {
     let from = 0
     let to = 0
     let start = 0
-    const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3)
+    // a CSS cubic-bezier, solved for x (Newton, with a bisection fallback)
+    const bezier = ([x1, y1, x2, y2]: [number, number, number, number]) => {
+        const at = (a: number, b: number, t: number) => ((1 - 3 * b + 3 * a) * t + (3 * b - 6 * a)) * t * t + 3 * a * t
+        const slope = (a: number, b: number, t: number) => 3 * (1 - 3 * b + 3 * a) * t * t + 2 * (3 * b - 6 * a) * t + 3 * a
+        return (x: number) => {
+            if (x <= 0 || x >= 1) return x <= 0 ? 0 : 1
+            let t = x
+            for (let i = 0; i < 8; i++) {
+                const d = slope(x1, x2, t)
+                if (Math.abs(d) < 1e-6) break
+                t -= (at(x1, x2, t) - x) / d
+            }
+            if (t < 0 || t > 1 || Math.abs(at(x1, x2, t) - x) > 1e-4) {
+                let lo = 0
+                let hi = 1
+                t = x
+                for (let i = 0; i < 30; i++) {
+                    if (at(x1, x2, t) < x) lo = t
+                    else hi = t
+                    t = (lo + hi) / 2
+                }
+            }
+            return at(y1, y2, t)
+        }
+    }
+    const snapEase = bezier(SNAP_CURVE)
+    const stepEase = bezier(STEP_CURVE)
+    let ease = snapEase
+    let duration = SNAP_MS
     const frame = (now: number) => {
         if (!animating) {
             raf = 0
             return
         }
-        const p = Math.min((now - start) / SNAP_MS, 1)
-        offset = from + (to - from) * easeOutCubic(p)
+        const p = Math.min((now - start) / duration, 1)
+        offset = from + (to - from) * ease(p)
         render()
         publish()
         if (p < 1) raf = requestAnimationFrame(frame)
@@ -156,7 +190,9 @@ if (row && track) {
         if (raf) cancelAnimationFrame(raf)
         raf = 0
     }
-    const animateTo = (target: number) => {
+    const animateTo = (target: number, kind: "snap" | "step" = "snap") => {
+        ease = kind === "step" ? stepEase : snapEase
+        duration = kind === "step" ? STEP_MS : SNAP_MS
         from = offset
         to = clamp(target)
         start = performance.now()
@@ -177,7 +213,7 @@ if (row && track) {
         if (target === undefined) target = dir > 0 ? maxOffset() : 0
         clearTimeout(snapTimer)
         stop()
-        animateTo(target)
+        animateTo(target, "step")
     }
     // like stepBy, but counted from where the row is heading, so quick steps add up
     const stepFrom = (pos: number, dir: number) => {
@@ -186,7 +222,7 @@ if (row && track) {
         if (target === undefined) target = dir > 0 ? maxOffset() : 0
         clearTimeout(snapTimer)
         stop()
-        animateTo(target)
+        animateTo(target, "step")
     }
     prevBtn?.addEventListener("click", () => offset > 1 && stepBy(-1))
     nextBtn?.addEventListener("click", () => offset < maxOffset() - 1 && stepBy(1))
@@ -211,7 +247,7 @@ if (row && track) {
             if (location.pathname === new URL((el as HTMLAnchorElement).href).pathname) e.preventDefault()
             clearTimeout(snapTimer)
             stop()
-            animateTo(0)
+            animateTo(0, "step")
         })
     )
 
