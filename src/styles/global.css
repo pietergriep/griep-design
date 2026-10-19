@@ -730,12 +730,12 @@ main {
     }
 }
 
-/* Analyse is built around hovering: the phone layout and touch screens leave it out for now */
-@media (hover: none), (max-width: 599.98px) {
-    .wn-tab:nth-child(2),
-    .wn-page:nth-child(2) {
-        display: none;
-    }
+/* Analyse is switched off for now, on every card and screen (the code stays in
+   WorkNote.astro, scripts/analyse.ts and data/specs.ts). To bring it back on screens
+   that can hover, wrap this rule in @media (hover: none), (max-width: 599.98px). */
+.wn-tab:nth-child(2),
+.wn-page:nth-child(2) {
+    display: none;
 }
 
 /* Action labels name the gesture: "Click" with a mouse, "Tap" on touch screens */
