@@ -112,11 +112,26 @@ const DESCRIPTION = "Product designer building clear, considered digital experie
                     </div>
 
                     <div class="work-item">
+                        <div class="card card-swap">
+                            <SwapCard client:visible variants={instances.SwapCard} />
+                            <span class="badge badge-tight"><span class="badge-text">Try a swap</span></span>
+                        </div>
+                        <WorkNote spec="swap" text="An ETH → USDC swap card on a live price. Click either side to flip the pair. Every number rolls digit by digit instead of jumping, and the button walks through each state, from quote to confirming to done, so you always know where the swap is." />
+                    </div>
+
+                    <div class="work-item">
                         <div class="card card-files">
                             <span class="badge"><span class="badge-text">Drag files to stack</span></span>
                             <FileStacks client:visible variants={instances.FileStacks} />
                         </div>
                         <WorkNote text="A file view where loose files get paper-clipped into stacks. Select a few and press Stack, or drop one file onto another; click a stack to fan it open, drag anything to the trash, filter by type. The clip makes grouping feel physical instead of being yet another folder." />
+                    </div>
+
+                    <div class="work-item">
+                        <div class="card card-image">
+                            <WorkImage name="wallet-home-v3" />
+                        </div>
+                        <WorkNote text="A wallet home screen. Instead of a chart, one plain sentence says how the wallet did this week, under a balance whose cents are dimmed so the number that matters reads first. Below it, every asset with its change over the chosen period, and Ethereum or Solana one tap away at the top." />
                     </div>
 
                     <div class="work-item">
@@ -133,21 +148,6 @@ const DESCRIPTION = "Product designer building clear, considered digital experie
                             <DCAFlow client:visible variants={instances.DCAFlow} />
                         </div>
                         <WorkNote text="Setting up a recurring crypto buy. The summary repeats every choice in plain words, and a hold-to-confirm button makes committing money a deliberate gesture rather than a single tap. Once confirmed, the key details stay on screen as the receipt." />
-                    </div>
-
-                    <div class="work-item">
-                        <div class="card card-swap">
-                            <SwapCard client:visible variants={instances.SwapCard} />
-                            <span class="badge badge-tight"><span class="badge-text">Try a swap</span></span>
-                        </div>
-                        <WorkNote spec="swap" text="An ETH → USDC swap card on a live price. Click either side to flip the pair. Every number rolls digit by digit instead of jumping, and the button walks through each state, from quote to confirming to done, so you always know where the swap is." />
-                    </div>
-
-                    <div class="work-item">
-                        <div class="card card-image">
-                            <WorkImage name="wallet-home-v3" />
-                        </div>
-                        <WorkNote text="A wallet home screen. Instead of a chart, one plain sentence says how the wallet did this week, under a balance whose cents are dimmed so the number that matters reads first. Below it, every asset with its change over the chosen period, and Ethereum or Solana one tap away at the top." />
                     </div>
 
                     <div class="work-item">

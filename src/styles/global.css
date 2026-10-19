@@ -555,6 +555,10 @@ main {
     opacity: 1;
     transition: transform 0.35s var(--wn-ease), width 0.35s var(--wn-ease), opacity 0.3s ease 0.24s;
 }
+/* hidden for now (remove this rule to bring the tab underline back) */
+.work-note .wn-bar {
+    display: none;
+}
 .wn-pages {
     position: relative;
     display: grid;
