@@ -9,6 +9,9 @@
 const STEP_MS = 600
 const STEP_CURVE: [number, number, number, number] = [0.4, 0, 0.2, 1]
 const SNAP_MS = 550
+// a finger's swipe ends while the row is still moving: it carries on at that speed and
+// coasts in (an ease-out), so there's no pause after letting go
+const FLING_MS = 520
 const SNAP_CURVE: [number, number, number, number] = STEP_CURVE
 const SNAP_AFTER_MS = 130 // quiet time after wheel input before snapping
 // A mouse wheel over the row: "free" glides it (each notch adds WHEEL_SPEED px, eased
@@ -190,9 +193,10 @@ if (row && track) {
         if (raf) cancelAnimationFrame(raf)
         raf = 0
     }
-    const animateTo = (target: number, kind: "snap" | "step" = "snap") => {
-        ease = kind === "step" ? stepEase : snapEase
-        duration = kind === "step" ? STEP_MS : SNAP_MS
+    const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3)
+    const animateTo = (target: number, kind: "snap" | "step" | "fling" = "snap") => {
+        ease = kind === "step" ? stepEase : kind === "fling" ? easeOutCubic : snapEase
+        duration = kind === "step" ? STEP_MS : kind === "fling" ? FLING_MS : SNAP_MS
         from = offset
         to = clamp(target)
         start = performance.now()
@@ -396,7 +400,7 @@ if (row && track) {
         dragging = false
         if (!horizontal) return
         stop()
-        animateTo(nearestRest(clamp(offset + velocity * FLING)))
+        animateTo(nearestRest(clamp(offset + velocity * FLING)), "fling")
     }
     row.addEventListener("touchend", touchEnd, { passive: true })
     row.addEventListener("touchcancel", touchEnd, { passive: true })
