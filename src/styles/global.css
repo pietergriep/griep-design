@@ -319,10 +319,6 @@ main {
     .cbtn:hover .arrow {
         background-color: #4d4d4d;
     }
-    /* the closed "Learn more" pill (only the pill is the panel's size while closed) */
-    .work-note:not(.is-open) .wn-panel:hover {
-        background-color: var(--card-hover);
-    }
 }
 
 .row {
@@ -404,217 +400,54 @@ main {
     display: flex;
     flex-direction: column;
 }
-/* The note under a card (scripts/notes.ts). Closed, the panel is clipped down to a
-   "Learn more" pill around its first tab; open, the clip grows to the whole panel.
-   The panel always takes its full space (just clipped), so opening it never changes
-   the page height and the footer stays where it is. */
+/* The "Learn more" note under a card (scripts/notes.ts): a text button, and the note
+   fading in below it */
 .work-note {
-    --wn-ink: rgb(20, 20, 20);
-    --wn-muted: rgb(149, 149, 149);
-    --wn-line: #eaeaea;
-    --wn-bar: #272525;
-    --wn-pad: 15px;
-    --wn-lift: 0px; /* the extra space above the tabs when open (the pill itself stays 40px) */
-    --wn-ease: cubic-bezier(0.32, 0.72, 0, 1);
-    /* the panel growing open: set this curve to taste (x1, y1, x2, y2) */
-    --wn-open-curve: cubic-bezier(0.44, 0, 0.14, 1);
-    --wn-open-time: 0.3s;
-    /* shrinking closed: the same curve, quicker (a y2 above 1 would add a bounce) */
-    --wn-close-curve: cubic-bezier(0.44, 0, 0.14, 1);
-    --wn-close-time: 0.25s;
     /* exactly as wide as the card above: the text wraps to it instead of widening it */
     width: 0;
     min-width: 100%;
     padding-top: 10px;
 }
-/* Before notes.ts has measured, the panel sits in the flow at full size (reserving
-   its space) and a static clip shows just the pill. Once measured (.wn-ready), the
-   panel is a box of its own whose width and height grow from the pill to the full
-   panel, its 20px rounding hiding the rest. Animating size rather than the clip
-   keeps Safari (and the Claude app) from flashing the whole panel for a frame. */
-.wn-panel {
-    background: var(--card);
-    border-radius: 20px;
-    clip-path: inset(var(--wn-lift) calc(100% - 100px) calc(100% - 40px - var(--wn-lift)) 0 round 20px);
-}
-.work-note.wn-ready {
-    position: relative;
-    height: var(--wn-note-h);
-}
-.wn-ready .wn-panel {
-    position: absolute;
-    top: calc(10px + var(--wn-lift));
-    left: 0;
-    width: var(--pill-w);
-    height: var(--pill-h);
-    overflow: hidden;
-    clip-path: none;
-    /* the closed pill presses in like the carousel buttons (.cbtn.pressed), around its own centre */
-    transform-origin: calc(var(--pill-w) / 2) calc(var(--pill-h) / 2);
-    /* closing */
-    transition: width var(--wn-close-time) var(--wn-close-curve), height var(--wn-close-time) var(--wn-close-curve),
-        top var(--wn-close-time) var(--wn-close-curve), transform 0.16s ease-out, background-color 0.16s ease-out;
-}
-.wn-ready:not(.is-open) .wn-panel.pressed {
-    background-color: rgb(238, 238, 238); /* the card colour, 4% darker */
-    transform: scale(0.94);
-    transition-duration: var(--wn-close-time), var(--wn-close-time), var(--wn-close-time), 60ms, 60ms;
-}
-/* opening: the slower, springier grow */
-.wn-ready.is-open .wn-panel {
-    top: 10px;
-    width: var(--wn-w);
-    height: var(--wn-h);
-    transition: width var(--wn-open-time) var(--wn-open-curve), height var(--wn-open-time) var(--wn-open-curve),
-        top var(--wn-open-time) var(--wn-open-curve), transform 0.16s ease-out, background-color 0.16s ease-out;
-}
-/* the content keeps the full panel width throughout, so the text never rewraps mid-animation */
-.wn-ready .wn-inner {
-    width: var(--wn-w);
-    transform: translateY(calc(-1 * var(--wn-lift)));
-    transition: transform var(--wn-close-time) var(--wn-close-curve);
-}
-.wn-ready.is-open .wn-inner {
-    transform: none;
-    transition: transform var(--wn-open-time) var(--wn-open-curve);
-}
-.wn-head {
-    position: relative;
-    display: flex;
+.work-note-btn {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    height: calc(40px + var(--wn-lift));
-    padding: var(--wn-lift) var(--wn-pad) 0;
-}
-.wn-tabs {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    height: 100%;
-}
-.wn-tab,
-.wn-close {
-    height: 100%;
-    --wn-delay: 0s;
-    padding: 0;
+    padding: 4px 0;
     border: 0;
     background: none;
+    color: rgb(140, 140, 140);
     font: inherit;
     font-size: 14px;
+    font-weight: 400;
     letter-spacing: var(--track-14);
     cursor: pointer;
-    color: var(--wn-muted);
-    transition: color 0.2s ease, opacity 0.15s ease, transform 0.15s ease;
+    transition: color 0.2s ease;
 }
-.wn-tab.is-active,
-.wn-tab:hover,
-.wn-close:hover {
-    color: var(--wn-ink);
+.work-note-btn:hover,
+.work-note.is-open .work-note-btn {
+    color: rgb(20, 20, 20);
 }
-/* Only "Learn more" shows in the closed pill. Opening, the rest comes in one after
-   another (Details, the line, the bar, the text, Close); closing, it all goes at once. */
-.work-note:not(.is-open) .wn-tab:not(:first-child),
-.work-note:not(.is-open) .wn-close {
+/* The note's space is always reserved (just invisible while closed), so opening it
+   never changes the page height and the footer stays where it is. */
+.work-note-body {
     opacity: 0;
-    transform: translateY(3px);
+    filter: blur(3px);
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, filter 0.2s ease, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.work-note.is-open .wn-tab:not(:first-child),
-.work-note.is-open .wn-close {
-    transition: color 0.2s ease, opacity 0.3s ease var(--wn-delay), transform 0.4s var(--wn-ease) var(--wn-delay);
-}
-.work-note.is-open .wn-tab:nth-child(2) {
-    --wn-delay: 0.08s;
-}
-.work-note.is-open .wn-close {
-    --wn-delay: 0.36s;
-}
-/* the close cross: a comfortable hit area around a 12px icon, ending at the panel's padding */
-.wn-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    margin-right: -8px;
-}
-.wn-close svg {
-    display: block;
-}
-/* sits on the divider, as wide as the active tab's label */
-.wn-bar {
-    position: absolute;
-    left: 0;
-    bottom: -1px;
-    z-index: 1; /* above the divider it sits on */
-    height: 1px;
-    background: var(--wn-bar);
-    opacity: 0;
-    transition: transform 0.35s var(--wn-ease), width 0.35s var(--wn-ease), opacity 0.2s ease;
-}
-.work-note.is-open .wn-bar {
+.work-note.is-open .work-note-body {
     opacity: 1;
-    transition: transform 0.35s var(--wn-ease), width 0.35s var(--wn-ease), opacity 0.3s ease 0.24s;
-}
-.wn-pages {
-    position: relative;
-    display: grid;
-}
-/* the divider */
-.wn-pages::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 1px; /* the same as the bar, which sits exactly on it */
-    background: var(--wn-line);
-    opacity: 0;
-    transition: opacity 0.15s ease;
-}
-.work-note.is-open .wn-pages::before {
-    opacity: 1;
-    transition: opacity 0.3s ease 0.18s;
-}
-/* both pages share one cell, so the panel is as tall as the longer one and never jumps */
-.wn-page {
-    grid-area: 1 / 1;
-    align-self: start;
-    padding: 16px var(--wn-pad) 20px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
-}
-.wn-page.is-active {
-    opacity: 1;
-    visibility: visible;
-    transition: opacity 0.25s ease 0.05s, visibility 0s;
-}
-.wn-page > * {
-    opacity: 0;
-    transform: translateY(4px);
-    transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.work-note.is-open .wn-page > * {
-    opacity: 1;
+    filter: none;
     transform: none;
-    transition: opacity 0.35s ease 0.28s, transform 0.45s var(--wn-ease) 0.28s;
+    pointer-events: auto;
 }
 .work-note p {
-    max-width: 90%;
-    margin: 0;
+    max-width: 52ch;
+    margin: 6px 0 0;
     font-size: 15px;
     line-height: 1.45;
     letter-spacing: 0.015em;
     color: rgb(30, 30, 30);
-}
-@media (prefers-reduced-motion: reduce) {
-    .wn-panel,
-    .wn-bar,
-    .wn-page,
-    .wn-page > *,
-    .wn-pages::before,
-    .wn-tab,
-    .wn-close {
-        transition: none !important;
-    }
 }
 
 /* Analyse (scripts/analyse.ts): an inspector laid over the live card */
@@ -665,9 +498,6 @@ main {
    fixed so the panel doesn't jump as different layers are hovered */
 .an-panel {
     min-height: 112px;
-}
-.wn-page .an-hint {
-    margin: 0;
 }
 .an-panel .an-path {
     margin: 0 0 10px;
@@ -728,14 +558,6 @@ main {
     .an-panel dl {
         gap: 10px 24px;
     }
-}
-
-/* Analyse is switched off for now, on every card and screen (the code stays in
-   WorkNote.astro, scripts/analyse.ts and data/specs.ts). To bring it back on screens
-   that can hover, wrap this rule in @media (hover: none), (max-width: 599.98px). */
-.wn-tab:nth-child(2),
-.wn-page:nth-child(2) {
-    display: none;
 }
 
 /* Action labels name the gesture: "Click" with a mouse, "Tap" on touch screens */
@@ -984,13 +806,9 @@ main {
     .work-item > .card {
         width: 100%;
     }
-    .wn-tab,
-    .wn-close {
+    .work-note-btn {
         font-size: 13px;
         letter-spacing: var(--track-13);
-    }
-    .wn-head {
-        height: calc(36px + var(--wn-lift));
     }
     .work-note p {
         max-width: none; /* the full width on phones */

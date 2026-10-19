@@ -1,57 +1,24 @@
 ---
-// "Learn more" under a carousel card: a small pill that grows into a panel with two
-// tabs, Learn more and Analyse. Renders nothing when there's no text, so cards
-// without a note show no button. See scripts/notes.ts for the behaviour.
-// With a `spec` (see data/specs.ts), the Analyse tab turns the live component on
-// the card into an inspector: hovering a part shows its values (scripts/analyse.ts).
-import { specs } from "../data/specs"
-
+// "Learn more" under a carousel card: a small text button that unfolds a short note
+// about the work. Renders nothing when there's no text, so cards without a note show
+// no button. (`spec` is accepted but unused: the Analyse inspector is parked, its code
+// is in scripts/analyse.ts and data/specs.ts.)
 interface Props {
     text?: string
-    spec?: keyof typeof specs
+    spec?: string
 }
-const { text, spec: specKey } = Astro.props
-const spec = specKey ? specs[specKey] : undefined
-const analyse = spec ? JSON.stringify(spec) : undefined
+const { text } = Astro.props
 ---
 
 {
     text && (
-        <div class="work-note" data-spec={analyse}>
-            <div class="wn-panel">
-                <div class="wn-inner">
-                    <div class="wn-head">
-                        <div class="wn-tabs" role="tablist">
-                            <button class="wn-tab is-active" type="button" role="tab" aria-selected="true" aria-expanded="false" data-tab="0">
-                                Learn more
-                            </button>
-                            <button class="wn-tab" type="button" role="tab" aria-selected="false" data-tab="1">
-                                Analyse
-                            </button>
-                            <span class="wn-bar" aria-hidden="true" />
-                        </div>
-                        <button class="wn-close" type="button" aria-label="Close">
-                            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                                <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="wn-pages">
-                        <div class="wn-page is-active" role="tabpanel">
-                            <p>{text}</p>
-                        </div>
-                        <div class="wn-page" role="tabpanel">
-                            {analyse ? (
-                                <div class="an-panel" data-analyse-panel>
-                                    <p class="an-hint">
-                                        <span class="on-mouse">Hover</span><span class="on-touch">Tap</span> a part of the component to inspect it.
-                                    </p>
-                                </div>
-                            ) : (
-                                <p>Analyse for this component is coming soon.</p>
-                            )}
-                        </div>
-                    </div>
+        <div class="work-note">
+            <button class="work-note-btn" type="button" aria-expanded="false" data-work-note>
+                <span class="work-note-label">Learn more</span>
+            </button>
+            <div class="work-note-body">
+                <div class="work-note-inner">
+                    <p>{text}</p>
                 </div>
             </div>
         </div>

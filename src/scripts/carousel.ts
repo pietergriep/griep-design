@@ -171,6 +171,15 @@ if (row && track) {
         stop()
         animateTo(target)
     }
+    // like stepBy, but counted from where the row is heading, so quick steps add up
+    const stepFrom = (pos: number, dir: number) => {
+        const points = restPoints()
+        let target = dir > 0 ? points.find((p) => p > pos + 2) : [...points].reverse().find((p) => p < pos - 2)
+        if (target === undefined) target = dir > 0 ? maxOffset() : 0
+        clearTimeout(snapTimer)
+        stop()
+        animateTo(target)
+    }
     prevBtn?.addEventListener("click", () => offset > 1 && stepBy(-1))
     nextBtn?.addEventListener("click", () => offset < maxOffset() - 1 && stepBy(1))
 
@@ -198,14 +207,39 @@ if (row && track) {
         })
     )
 
-    // --- Trackpad / wheel (only while hovered, only horizontal intent) -------------
+    // --- Trackpad / wheel (only while hovered) ------------------------------------
+    // A trackpad moves the row with sideways swipes (up/down still scrolls the page).
+    // A mouse wheel has no sideways, so over the row each notch steps one card, down
+    // for the next and up for the previous; at either end the wheel scrolls the page
+    // again, so nobody gets stuck in the row.
     let hovered = false
     row.addEventListener("mouseenter", () => (hovered = true))
     row.addEventListener("mouseleave", () => (hovered = false))
+    // Chrome and Safari report a trackpad's wheelDeltaY as exactly -3 × deltaY; a mouse
+    // wheel's isn't (and Firefox's mouse wheel counts in lines).
+    const isMouseWheel = (e: WheelEvent) => {
+        if (e.deltaMode !== 0) return true
+        if (e.deltaX !== 0) return false
+        const legacy = (e as WheelEvent & { wheelDeltaY?: number }).wheelDeltaY
+        return typeof legacy === "number" && legacy !== 0 && legacy !== -3 * e.deltaY
+    }
+    const WHEEL_STEP_GAP = 260 // ms between card steps, so one flick of the wheel moves one card
+    let lastWheelStep = 0
     row.addEventListener(
         "wheel",
         (e) => {
             if (!hovered) return
+            if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX) && isMouseWheel(e)) {
+                const dir = e.deltaY > 0 ? 1 : -1
+                const pos = animating ? to : offset // where the row is (heading)
+                if (dir > 0 ? pos >= maxOffset() - 1 : pos <= 1) return // at the end: the page scrolls
+                e.preventDefault()
+                const now = performance.now()
+                if (now - lastWheelStep < WHEEL_STEP_GAP) return
+                lastWheelStep = now
+                stepFrom(pos, dir)
+                return
+            }
             if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || e.deltaX === 0) return
             e.preventDefault()
             e.stopPropagation()
