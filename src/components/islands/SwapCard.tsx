@@ -219,7 +219,7 @@ const CSS = `
 }
 
 .swap-card__amount {
-  font-size: calc(35px * var(--sc-scale));
+  font-size: calc(33px * var(--sc-scale));
   font-weight: 500;
   color: #1a1a1a;
   letter-spacing: 0;
