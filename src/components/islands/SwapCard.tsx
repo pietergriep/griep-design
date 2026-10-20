@@ -103,7 +103,7 @@ const CSS = `
    panels, so it's clear the pair can trade places (clicking a panel still flips too).
    It never moves and stays on top (the panels slide beneath it when the pair flips); a
    ring in the card's colour around it reads as a cut-out in the panels. The arrow turns
-   with each flip, and the button steps aside while a swap runs. --sc-flip-* are props. */
+   with each flip; while a swap runs it stays but can't be clicked. --sc-flip-* are props. */
 .swap-card__flip {
   --sc-flip-d: calc(var(--sc-flip-size) * var(--sc-scale));
   position: absolute;
@@ -125,15 +125,41 @@ const CSS = `
   -webkit-tap-highlight-color: transparent;
 }
 .swap-card--notched .swap-card__flip { box-shadow: 0 0 0 calc(var(--sc-flip-border) * var(--sc-scale)) #fff; }
+/* The Sell panel's edge runs on around the button: the same hairline, on the button's
+   left half only, ending where the Sell panel ends (half the 5px gap left of centre).
+   The right half sits on the grey Receive panel, which needs no line. */
+.swap-card--flip-ring .swap-card__flip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 var(--sc-hairline) var(--sc-flip-ring);
+  clip-path: inset(0 calc(50% + 2.5px * var(--sc-scale)) 0 0);
+  pointer-events: none;
+}
 .swap-card__flip svg {
+  position: relative;
+  z-index: 1; /* above the hover fill */
   width: 58%;
   height: 58%;
   transition: transform 480ms cubic-bezier(0.3, 0, 0.2, 1);
 }
-.swap-card:not(.swap-card--static) .swap-card__flip { opacity: 0; transform: scale(0.85); pointer-events: none; }
+/* the hover fill: inset from the edge, so a thin white rim stays around it */
+.swap-card__flip::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--sc-flip-inset) * var(--sc-scale));
+  border-radius: calc((var(--sc-flip-radius) - var(--sc-flip-inset)) * var(--sc-scale));
+  background: var(--sc-flip-hover);
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+}
+/* while a swap runs the pair can't flip: the button stays, it just doesn't respond */
+.swap-card:not(.swap-card--static) .swap-card__flip { pointer-events: none; }
 
 @media (hover: hover) and (pointer: fine) {
-  .swap-card--static .swap-card__flip:hover { background: var(--sc-flip-hover); }
+  .swap-card--static .swap-card__flip:hover::after { opacity: 1; }
   /* hover-only: hidden until the pointer is over the panels (touch always shows it) */
   .swap-card--flip-hover .swap-card__flip { opacity: 0; transform: scale(0.85); }
   .swap-card--flip-hover.swap-card--static .swap-card__panels:hover .swap-card__flip { opacity: 1; transform: scale(1); }
@@ -1315,6 +1341,9 @@ interface Props {
     swapIconColour?: string
     swapIconHoverColour?: string
     swapIconNotch?: boolean
+    swapIconRing?: boolean
+    swapIconHoverInset?: number
+    swapIconRingColour?: string
     loaderDot?: Loader["dot"]
     loaderGap?: Loader["gap"]
     loaderRadius?: Loader["radius"]
@@ -1394,9 +1423,12 @@ export default function SwapCard(props: Props) {
         swapIconRadius = 8,
         swapIconBorder = 2,
         swapIconTurn = 360,
-        swapIconColour = "#f6f6f6",
-        swapIconHoverColour = "#ededed",
-        swapIconNotch = true,
+        swapIconColour = "#ffffff",
+        swapIconHoverColour = "#f6f6f6",
+        swapIconNotch = false,
+        swapIconRing = true,
+        swapIconHoverInset = 1.5,
+        swapIconRingColour = "#f3f3f3", // the Sell panel's own ring colour (--sc-panel-ring)
         onComplete,
         style,
     } = props
@@ -1895,6 +1927,7 @@ export default function SwapCard(props: Props) {
         swapping ? "swap-card--swapping" : "",
         landed && L.cardPop !== 1 ? "swap-card--popped" : "",
         swapIcon && swapIconNotch ? "swap-card--notched" : "",
+        swapIcon && swapIconRing ? "swap-card--flip-ring" : "",
         swapIcon && swapIconHover ? "swap-card--flip-hover" : "",
     ]
         .filter(Boolean)
@@ -1913,6 +1946,8 @@ export default function SwapCard(props: Props) {
         "--sc-flip-radius": `${swapIconRadius}px`,
         "--sc-flip-fill": swapIconColour,
         "--sc-flip-hover": swapIconHoverColour,
+        "--sc-flip-ring": swapIconRingColour,
+        "--sc-flip-inset": `${swapIconHoverInset}px`,
         "--sc-flip-border": `${swapIconBorder}px`,
         ...style,
     } as CSSProperties
@@ -2347,9 +2382,12 @@ addPropertyControls(SwapCard, {
     swapIconRadius: { type: ControlType.Number, title: "Swap icon radius", min: 0, max: 20, step: 0.5, defaultValue: 8, unit: "px", hidden: (p: any) => !p.swapIcon },
     swapIconBorder: { type: ControlType.Number, title: "Swap icon border", min: 0, max: 6, step: 0.25, defaultValue: 2, unit: "px", description: "Width of the cut-out ring around the button", hidden: (p: any) => !p.swapIcon },
     swapIconTurn: { type: ControlType.Enum, title: "Swap icon turn", options: [180, 360], optionTitles: ["Half turn", "Full turn"], defaultValue: 360, description: "How far the arrow turns on each flip (a half turn leaves it pointing back at Sell)", hidden: (p: any) => !p.swapIcon },
-    swapIconNotch: { type: ControlType.Boolean, title: "Swap icon cutout", defaultValue: true, description: "A ring in the card's colour around the button, so it reads as cut into the panels", hidden: (p: any) => !p.swapIcon },
-    swapIconColour: { type: ControlType.Color, title: "Swap icon colour", defaultValue: "#f6f6f6", description: "Same as the Receive panel", hidden: (p: any) => !p.swapIcon },
-    swapIconHoverColour: { type: ControlType.Color, title: "Swap icon hover colour", defaultValue: "#ededed", hidden: (p: any) => !p.swapIcon },
+    swapIconHoverInset: { type: ControlType.Number, title: "Swap icon hover inset", min: 0, max: 6, step: 0.25, defaultValue: 1.5, unit: "px", description: "The white rim left around the hover fill", hidden: (p: any) => !p.swapIcon },
+    swapIconRing: { type: ControlType.Boolean, title: "Swap icon Sell edge", defaultValue: true, description: "The Sell panel's edge line runs on around the button's left half", hidden: (p: any) => !p.swapIcon },
+    swapIconRingColour: { type: ControlType.Color, title: "Swap icon edge colour", defaultValue: "#f3f3f3", hidden: (p: any) => !p.swapIcon || !p.swapIconRing },
+    swapIconNotch: { type: ControlType.Boolean, title: "Swap icon cutout", defaultValue: false, description: "A ring in the card's colour around the button, so it reads as cut into the panels", hidden: (p: any) => !p.swapIcon },
+    swapIconColour: { type: ControlType.Color, title: "Swap icon colour", defaultValue: "#ffffff", hidden: (p: any) => !p.swapIcon },
+    swapIconHoverColour: { type: ControlType.Color, title: "Swap icon hover colour", defaultValue: "#f6f6f6", hidden: (p: any) => !p.swapIcon },
     swapIconHover: { type: ControlType.Boolean, title: "Swap icon on hover", defaultValue: false, description: "Only shows while the mouse is over the panels (touch screens always show it)", hidden: (p: any) => !p.swapIcon },
     hoverLift: { type: ControlType.Boolean, title: "Hover lift", defaultValue: false, description: "Hovering a panel slides it over its partner (off: the swap icon is the hint)" },
     hoverShift: {
