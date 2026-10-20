@@ -444,13 +444,19 @@ main {
     transform: none;
     pointer-events: auto;
 }
+/* the File Explorer's card is wider (800px), so its note runs wider too */
+.work-item:has(.card-files) .work-note p {
+    max-width: 69ch;
+}
 .work-note p {
-    max-width: 52ch;
+    max-width: 60ch;
     margin: 6px 0 0;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.45;
     letter-spacing: 0.015em;
     color: rgb(30, 30, 30);
+    /* lines run full; only a lone last word gets company */
+    text-wrap: pretty;
 }
 
 /* Analyse (scripts/analyse.ts): an inspector laid over the live card */
