@@ -743,8 +743,9 @@ const CSS = `
   align-items: center;
   justify-content: center;
   gap: calc(6px * var(--sc-scale));
-  /* the same hairline as the success button, in its own text grey (follows it on hover) */
-  box-shadow: inset 0 0 0 0.1px currentColor;
+  /* the same hairline as the success button, in its own text grey at half strength
+     (follows it on hover) */
+  box-shadow: inset 0 0 0 0.1px color-mix(in srgb, currentColor 50%, transparent);
   transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
