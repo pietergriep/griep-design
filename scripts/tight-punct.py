@@ -16,7 +16,7 @@ opts = Options()
 opts.flavor = "woff2"
 opts.layout_features = []
 opts.name_IDs = ["*"]
-font = TTFont("public/fonts/Inter-Medium.woff2")
+font = TTFont("fonts-src/Inter-Medium.woff2")  # the full font (public/ has the trimmed one)
 sub = Subsetter(opts)
 sub.populate(unicodes=[ord(","), ord(".")])
 sub.subset(font)
