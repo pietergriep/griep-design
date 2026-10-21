@@ -189,7 +189,7 @@ main {
     max-width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 20px; /* between name + role and the intro text */
     position: relative;
     z-index: 2;
 }
@@ -220,7 +220,7 @@ main {
 
 .tagline {
     font-weight: 400;
-    line-height: 1.3em;
+    line-height: 1.5;
     max-width: 100%;
     /* no word or two left alone on the last line (browsers without it wrap as usual) */
     text-wrap: pretty;
