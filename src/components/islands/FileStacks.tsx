@@ -121,7 +121,7 @@ const CSS = `
 .pcg .btn:focus-visible,.pcg .paper:focus-visible,.pcg .gtitle:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .pcg .stage{position:relative;transition:height .5s cubic-bezier(.45,0,.2,1)}
 .pcg .tile{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform}
-.pcg .paper{width:var(--w);aspect-ratio:235/300;container-type:inline-size;cursor:default;border-radius:calc(var(--w) * 15 / 235)}
+.pcg .paper{width:var(--w);aspect-ratio:235/300;container-type:inline-size;cursor:pointer;border-radius:calc(var(--w) * 15 / 235)}
 .pcg .stage.selecting>.paper{cursor:pointer}
 .pcg .group .paper{cursor:default}
 .pcg .sheet{--u:calc(100cqw / 235);--pill:color-mix(in srgb, var(--card), #808080 var(--mx-pill));--line1:var(--sk-strong, color-mix(in srgb, var(--card), #808080 var(--mx-l1)));--line2:var(--sk, color-mix(in srgb, var(--card), #808080 var(--mx-l2)));--img:var(--sk, color-mix(in srgb, var(--card), #808080 var(--mx-img)));position:absolute;inset:0;background:var(--card);border:var(--fb-w,1px) var(--fb-s,solid) var(--fb-c,color-mix(in srgb, var(--card), #808080 20%));border-radius:calc(var(--u) * 15);background:color-mix(in srgb,var(--card),#000 calc(var(--k, 0) * var(--stack-step, 6%)));transition:border-color .25s ease,background-color .35s ease}
