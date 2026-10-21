@@ -154,6 +154,7 @@ button {
 .footer::before {
     top: 0;
     border-top: 0.5px solid var(--footer-line, rgb(230, 230, 230));
+    display: none; /* the footer's top line is hidden for now */
 }
 
 .nav-row {
