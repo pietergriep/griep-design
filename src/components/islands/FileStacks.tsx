@@ -190,7 +190,7 @@ const CSS = `
 .pcg .slabel .sn{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .pcg .paper.borrowed .slabel{opacity:1;transform:none}
 .pcg .paper.borrowed .plabel{opacity:0}
-.pcg .sheet .ttl{transition:opacity .22s ease}@media (hover:hover) and (pointer:fine){.pcg .stage>.paper>.sheet{transition:filter .1s cubic-bezier(.4,0,.2,1)}.pcg .stage>.paper:not(.dragging):hover>.sheet{filter:brightness(var(--file-hover-bright,1.03))}}
+.pcg .sheet .ttl{transition:opacity .22s ease}
 .pcg .sheet .gttl{opacity:0}
 .pcg .paper.ingroup.gtop .ttl:not(.gttl){opacity:0}
 .pcg .paper.ingroup.gtop .gttl{opacity:1}
