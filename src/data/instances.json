@@ -756,11 +756,11 @@
   },
   "phone": {
    "size": {
-    "width": "335px",
+    "width": "298px",
     "height": "auto"
    },
    "raw": {
-    "scale": "0.9",
+    "scale": "0.8",
     "sell": "Sell",
     "receive": "Receive",
     "button": "Begin swap",
