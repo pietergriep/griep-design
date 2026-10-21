@@ -710,11 +710,11 @@
  "SwapCard": {
   "desktop": {
    "size": {
-    "width": "375px",
+    "width": "422px",
     "height": "auto"
    },
    "raw": {
-    "scale": "1",
+    "scale": "1.125",
     "sell": "Sell",
     "receive": "Receive",
     "button": "Begin swap",
