@@ -892,7 +892,15 @@ function mountFileGroups(root, opts) {
                         gt = m.get(g),
                         sp = stackLocal(g, t, false)
                     t.el.classList.remove("borrowed")
-                    t.el.style.zIndex = 60
+                    // it flies home on the layer it will end up on, so nothing jumps over or under
+                    // when it's tucked in: under the stack if a paper still in it belongs above,
+                    // over it if it belongs on top of everything still there (in stack order)
+                    const at = g.members.indexOf(t),
+                        under = g.members.some(
+                            (q, i) => i > at && !q.borrowed && q.el.parentNode === g.el
+                        )
+                    g.el.style.zIndex = 100
+                    t.el.style.zIndex = (under ? 50 : 150) + at
                     // the stack waits with its clip off and its name hidden until its files are back, then clips them in
                     if (!homing.has(g)) {
                         homing.set(
