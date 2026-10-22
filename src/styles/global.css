@@ -673,7 +673,7 @@ main {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 20px;
 }
 
 .label {
@@ -681,6 +681,7 @@ main {
     line-height: 1.2em;
     letter-spacing: var(--track-14);
     color: var(--ink-soft);
+    display: none; /* the footer's "Social" and "Contact" labels are hidden for now */
 }
 
 .link {
@@ -694,6 +695,17 @@ main {
 
 .link span {
     transition: opacity 0.15s ease;
+}
+
+/* a dotted underline marks the footer's links (the email and X) */
+.link span,
+.email .swap-label {
+    text-decoration: underline dotted #191919;
+    text-decoration-thickness: 1px;
+    /* one unbroken line just below the letters' tails (g, p, @), instead of being
+       cut wherever it would cross them */
+    text-decoration-skip-ink: none;
+    text-underline-offset: 5px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -870,14 +882,11 @@ main {
         gap: 25px;
     }
     .footer-logo {
-        display: block;
+        display: none; /* no logo in the phone footer */
     }
     .footer-cols {
         flex-direction: column;
         gap: 35px;
-    }
-    .col-contact {
-        order: -1;
     }
     .footer-end {
         display: flex;
