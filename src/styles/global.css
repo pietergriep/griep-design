@@ -765,6 +765,14 @@ main {
     letter-spacing: var(--track-12);
     color: rgba(0, 0, 0, 0.5);
 }
+/* on desktop the copyright sits under the links, in their size (25px margin on top of
+   the list's 20px gap) */
+.copyright.copyright-desktop {
+    display: block;
+    margin-top: 25px;
+    font-size: 14px;
+    letter-spacing: var(--track-14);
+}
 
 /* footer content fades in when it comes into view (Framer appear effect) */
 .appear {
@@ -901,6 +909,12 @@ main {
     }
     .copyright {
         display: block;
+        /* the same size as the footer's links */
+        font-size: 14px;
+        letter-spacing: var(--track-14);
+    }
+    .copyright.copyright-desktop {
+        display: none;
     }
 }
 
