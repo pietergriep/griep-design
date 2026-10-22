@@ -13,7 +13,7 @@ const EASTER_EGG_LABEL = "Visca el Barça"
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches
 
-function labelSwap(button: HTMLElement, alternate: string) {
+function labelSwap(button: HTMLElement, alternate: string, hold = HOLD_MS) {
     const label = button.querySelector<HTMLElement>(".swap-label")
     if (!label) return () => {}
     const original = label.textContent || ""
@@ -44,7 +44,7 @@ function labelSwap(button: HTMLElement, alternate: string) {
         // hold the current width so a shorter label doesn't pull things in
         if (!button.style.width) button.style.width = button.getBoundingClientRect().width + "px"
         if (showing) {
-            after(HOLD_MS, fadeBack) // clicked again: keep it up a little longer
+            after(hold, fadeBack) // clicked again: keep it up a little longer
             return
         }
         label.classList.add("hidden")
@@ -53,7 +53,7 @@ function labelSwap(button: HTMLElement, alternate: string) {
             showing = true
             button.classList.add("swapped")
             label.classList.remove("hidden")
-            after(fade + HOLD_MS, fadeBack)
+            after(fade + hold, fadeBack)
         })
     }
 }
@@ -88,6 +88,6 @@ document.querySelectorAll<HTMLElement>("[data-copy-email]").forEach((button) => 
 })
 
 document.querySelectorAll<HTMLElement>("[data-visca-barca]").forEach((button) => {
-    const swap = labelSwap(button, EASTER_EGG_LABEL)
+    const swap = labelSwap(button, EASTER_EGG_LABEL, 1100) // back once its 1.4s shimmer has gone through (1100 + the 300ms fade in)
     button.addEventListener("click", swap)
 })

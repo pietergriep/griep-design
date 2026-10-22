@@ -746,6 +746,34 @@ main {
     }
 }
 
+/* "Visca el Barça" (the easter egg, scripts/footer.ts): Barça blue, with one wide grana
+   shimmer sweeping through it as soon as it shows */
+.barca.swapped .swap-label {
+    color: transparent;
+    background: linear-gradient(90deg, #3940bc 0%, #3940bc 28%, #d01352 50%, #3940bc 72%, #3940bc 100%);
+    background-size: 400% 100%; /* wide enough that the band starts and ends clear of the text */
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: barca-shimmer 1.4s cubic-bezier(0.2, 0, 0, 1) both; /* starts as the text shows, moving at once */
+}
+/* from the band just touching the text's left edge to just past its right edge */
+@keyframes barca-shimmer {
+    from {
+        background-position: 96% 0;
+    }
+    to {
+        background-position: 4% 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .barca.swapped .swap-label {
+        animation: none;
+        color: #3940bc;
+        background: none;
+    }
+}
+
 /* the email's line box (0.7em) is shorter than its letters. While fading, the label
    is drawn as its own layer cut to its box, which clipped the text, so the label
    gets a full-height box and the negative margin keeps the layout where it was */
