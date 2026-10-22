@@ -21,6 +21,13 @@ const WHEEL_MODE: "free" | "step" = "free"
 const WHEEL_SPEED = 1.6 // px of row per px of wheel delta (a notch is ~100)
 const WHEEL_EASE_MS = 90 // how quickly the row catches up with the wheel (time constant)
 const WHEEL_SNAP_AFTER_MS = 260 // a mouse wheel's notches come further apart than a trackpad's
+// false: the wheel glides the row and leaves it where it stops, no snapping to a card
+// afterwards (trackpads still snap; true brings the wheel's snap back)
+const WHEEL_SNAP = false
+// At either end the row keeps the wheel while it's still spinning; only after a pause
+// this long does the next scroll move the page, so a spin that reaches the last card
+// doesn't carry on into the page
+const WHEEL_HANDOFF_MS = 350
 const RESISTANCE = 0.35 // how much the row gives past either end (touch)
 const FLING = 140 // how far a touch fling carries, in ms of velocity
 
@@ -272,6 +279,8 @@ if (row && track) {
         return typeof legacy === "number" && legacy !== 0 && legacy !== -3 * e.deltaY
     }
     const WHEEL_STEP_GAP = 260 // ms between card steps, so one flick of the wheel moves one card
+    let lastWheelAt = 0 // the previous mouse-wheel event, to tell one spin from the next
+    let wheelOwned = false // the current spin has been moving the row
     let lastWheelStep = 0
     // free mode: the row eases toward wheelTarget, frame by frame
     let wheelTarget: number | null = null
@@ -299,10 +308,18 @@ if (row && track) {
             if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX) && isMouseWheel(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
-                if (dir > 0 ? pos >= maxOffset() - 1 : pos <= 1) return // at the end: the page scrolls
+                const now = performance.now()
+                const spinning = now - lastWheelAt < WHEEL_HANDOFF_MS
+                lastWheelAt = now
+                if (dir > 0 ? pos >= maxOffset() - 1 : pos <= 1) {
+                    // at the end: the same spin is still absorbed; a fresh scroll moves the page
+                    if (wheelOwned && spinning) e.preventDefault()
+                    else wheelOwned = false
+                    return
+                }
+                wheelOwned = true
                 e.preventDefault()
                 if (WHEEL_MODE === "step") {
-                    const now = performance.now()
                     if (now - lastWheelStep < WHEEL_STEP_GAP) return
                     lastWheelStep = now
                     stepFrom(pos, dir)
@@ -316,10 +333,11 @@ if (row && track) {
                     wheelLast = performance.now()
                     wheelRaf = requestAnimationFrame(wheelFrame)
                 }
-                snapTimer = window.setTimeout(() => {
-                    endWheel()
-                    animateTo(nearestRest(offset))
-                }, WHEEL_SNAP_AFTER_MS)
+                if (WHEEL_SNAP)
+                    snapTimer = window.setTimeout(() => {
+                        endWheel()
+                        animateTo(nearestRest(offset))
+                    }, WHEEL_SNAP_AFTER_MS)
                 return
             }
             if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || e.deltaX === 0) return
