@@ -842,13 +842,14 @@
   },
   "phone": {
    "size": {
-    "width": "80%",
+    "width": "90%",
     "height": "auto"
    },
    "raw": {
     "sliderDurationMs": "1450",
     "hour1Live": "-1",
-    "priceMovesEveryS": "5"
+    "priceMovesEveryS": "5",
+    "cornerRadius": "18"
    }
   }
  }

@@ -143,6 +143,8 @@ interface Props {
     sliderIntro: boolean
     /** The price moves live: every `liveEvery` seconds (give or take) it drifts by up to
      *  `liveDrift` percent, pulled gently back towards where it started. Digits roll. */
+    /** Corner radius in px (fixed, it doesn't scale with the widget). */
+    radius: number
     live: boolean
     liveEvery: number
     liveDrift: number
@@ -184,6 +186,7 @@ export default function WalletWidget(props: Props) {
         twinkle = true,
         shootingStars = true,
         sliderIntro = true,
+        radius = 25,
         live = true,
         liveEvery = 2.5,
         liveDrift = 0.12,
@@ -417,7 +420,7 @@ export default function WalletWidget(props: Props) {
                 className="wallet-widget__card"
                 style={{
                     aspectRatio: `${W} / ${H}`,
-                    borderRadius: 25, // a fixed 25 px at every size (everything else scales)
+                    borderRadius: radius, // fixed px (everything else scales); smaller on phones
                     // the 0.5 px #fff 50% stroke is drawn on top (::after), not as a border: a
                     // border lets the gradient repeat underneath it, so the top edge showed the
                     // bottom's orange
@@ -603,6 +606,7 @@ addPropertyControls(WalletWidget, {
     twinkle: { type: ControlType.Boolean, title: "Twinkle", defaultValue: true },
     shootingStars: { type: ControlType.Boolean, title: "Shooting stars", defaultValue: true },
     sliderIntro: { type: ControlType.Boolean, title: "Slider plays in", defaultValue: true },
+    radius: { type: ControlType.Number, title: "Corner radius", defaultValue: 25, min: 0, max: 40, step: 0.5 },
     live: { type: ControlType.Boolean, title: "Live price", defaultValue: true },
     liveEvery: { type: ControlType.Number, title: "Price moves every (s)", defaultValue: 2.5, min: 0.5, max: 15, step: 0.1 },
     liveDrift: { type: ControlType.Number, title: "Price move size (%)", defaultValue: 0.12, min: 0.01, max: 1, step: 0.01 },

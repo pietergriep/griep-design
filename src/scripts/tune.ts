@@ -49,6 +49,7 @@ const CONFS: Record<string, Conf> = {
             ["Time of day", ["hour1Live", "dayPreviewSPerDay0Off"]],
             ["Slider intro", ["sliderPlaysIn", "sliderDurationMs", "sliderDelayMs"]],
             ["Live price", ["livePrice", "priceMovesEveryS", "priceMoveSize"]],
+            ["Card", ["cornerRadius"]],
             ["Balance", ["dollarSignSize", "dollarSignGap"]],
             ["Afternoon sun", ["afternoonSun", "sunStrength"]],
             ["Stars", ["stars", "starBrightness", "twinkle"]],
