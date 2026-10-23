@@ -298,6 +298,10 @@ const CSS = `
 .swap-card__sub, .swap-card__sub .rn-root,
 .swap-card__avail-val, .swap-card__avail-val .rn-root { font-family: "Inter Punct", "Inter", var(--sc-font); font-variant-numeric: normal; }
 .swap-card__sub { white-space: nowrap; }
+/* Inter's 1 sits far right of its left edge (the flag is short), and the slots can't
+   kern, so "1.194" reads as "1. 194". A separator followed by a 1 gets narrower (see
+   RollingNumber); letter-spacing, not a margin, so the library sees it re-measure. */
+.swap-card .rn-token.sc-before-one { letter-spacing: calc(-1 * var(--sc-sep-one, 0.06em)); }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
@@ -836,8 +840,24 @@ function RollingNumber({
     style?: CSSProperties
 }) {
     const rounded = Number(value.toFixed(decimals))
+    const ref = useRef<HTMLSpanElement>(null)
+    /* marks a "." or "," whose next character is a 1 (the library keeps its measuring
+       tokens across updates, so watch them rather than the value) */
+    useEffect(() => {
+        const measure = ref.current?.querySelector(".rn-measure")
+        if (!measure) return
+        const mark = () => {
+            const tokens = Array.from(measure.children)
+            tokens.forEach((t, i) =>
+                t.classList.toggle("sc-before-one", /^[.,]$/.test(t.textContent ?? "") && tokens[i + 1]?.textContent === "1"))
+        }
+        mark()
+        const mo = new MutationObserver(mark)
+        mo.observe(measure, { childList: true, characterData: true, subtree: true })
+        return () => mo.disconnect()
+    }, [jump])
     return (
-        <span className={className} style={style}>
+        <span ref={ref} className={className} style={style}>
             {prefix}
             <LibRollingNumber
                 key={jump}
