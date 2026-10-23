@@ -323,8 +323,11 @@ export default function WalletWidget(props: Props) {
                 className="wallet-widget__card"
                 style={{
                     aspectRatio: `${W} / ${H}`,
-                    borderRadius: u(20),
-                    border: `${u(0.5)} solid rgba(255, 255, 255, 0.5)`,
+                    borderRadius: 20, // a fixed 20 px at every size (everything else scales)
+                    // the 0.5 px #fff 50% stroke is drawn on top (::after), not as a border: a
+                    // border lets the gradient repeat underneath it, so the top edge showed the
+                    // bottom's orange
+                    ["--ww-stroke" as any]: u(0.5),
                     padding: `${u(15)} ${u(15)} ${u(20)}`,
                     backgroundImage: sky,
                 }}
@@ -415,6 +418,10 @@ const CSS = `
   position: relative; box-sizing: border-box; width: 100%; overflow: clip;
   display: flex; flex-direction: column; justify-content: space-between;
   color: #fff; font-weight: 400; line-height: 1; -webkit-font-smoothing: antialiased;
+}
+.wallet-widget__card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 2;
+  box-shadow: inset 0 0 0 max(0.5px, var(--ww-stroke)) rgba(255, 255, 255, 0.5);
 }
 .wallet-widget__sky { position: absolute; inset: 0; pointer-events: none; }
 .wallet-widget__sun {
