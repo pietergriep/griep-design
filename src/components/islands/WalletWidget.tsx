@@ -560,8 +560,17 @@ const CSS = `
 .wallet-widget__price { text-box: trim-both cap alphabetic; }
 .wallet-widget__track {
   position: relative; flex: 1 0 0; min-width: 1px;
-  /* the design's glow, its brightest point following the thumb (--ww-at, 0.70448 in the design) */
-  background-image: linear-gradient(90deg, rgba(255,255,255,0) 12.526%, rgba(255,255,255,0.236) calc(var(--ww-at) * 100% - 17.618%), rgba(255,255,255,0.566) calc(var(--ww-at) * 100% - 9.093%), #fff calc(var(--ww-at) * 100%), rgba(255,255,255,0.535) calc(var(--ww-at) * 100% + 6.82%), rgba(255,255,255,0) 100%);
+  /* the design's glow, its brightest point following the thumb (--ww-at, 0.70448 in the
+     design). The stops left of it are scaled by where it is and those right of it by the
+     room that's left, so the glow stretches smoothly anywhere on the track (fixed offsets
+     piled up into a hard edge near the left end, during the intro) */
+  background-image: linear-gradient(90deg,
+    rgba(255,255,255,0) calc(var(--ww-at) * 17.781%),
+    rgba(255,255,255,0.236) calc(var(--ww-at) * 74.992%),
+    rgba(255,255,255,0.566) calc(var(--ww-at) * 87.093%),
+    #fff calc(var(--ww-at) * 100%),
+    rgba(255,255,255,0.535) calc(var(--ww-at) * 100% + (1 - var(--ww-at)) * 23.078%),
+    rgba(255,255,255,0) 100%);
   transition: --ww-at 900ms cubic-bezier(0.32, 0.72, 0, 1);
   box-shadow: 0 4px 50px rgba(144, 140, 144, 0.15);
   backdrop-filter: blur(0.5px);
