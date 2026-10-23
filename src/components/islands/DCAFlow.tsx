@@ -1139,11 +1139,11 @@ const CSS = `
   letter-spacing: var(--dca-sentence-track, -0.72px); color: var(--dca-ink, #000);
 }
 .dca .sentence .line { display: block; white-space: nowrap; }
-.dca .w { opacity: 0; transform: translateY(6px); }
-.dca .w.is-in {
-  opacity: 1; transform: translateY(0);
-  transition: opacity 644ms ease-out, transform 644ms cubic-bezier(0.22, 1, 0.36, 1);
-}
+/* Each word is its own box with its own layer: as plain inline text, iOS Safari only
+   repainted some of the fading words (the ones further right popped in at the end of
+   their fade). Inline also never moved them, so there's no rise here either: a fade. */
+.dca .w { display: inline-block; opacity: 0; will-change: opacity; }
+.dca .w.is-in { opacity: 1; transition: opacity 644ms ease-out; }
 
 .dca .pill {
   position: relative; display: inline-block;
