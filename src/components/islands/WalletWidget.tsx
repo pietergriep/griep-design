@@ -110,9 +110,9 @@ function nightAt(hour: number) {
 
 function greetingAt(hour: number) {
     const h = ((hour % 24) + 24) % 24
-    if (h >= 5 && h < 12) return "Goodmorning"
-    if (h >= 12 && h < 18) return "Goodafternoon"
-    if (h >= 18 && h < 22) return "Goodevening"
+    if (h >= 5 && h < 12) return "Good morning"
+    if (h >= 12 && h < 18) return "Good afternoon"
+    if (h >= 18 && h < 22) return "Good evening"
     return "Goodnight"
 }
 
