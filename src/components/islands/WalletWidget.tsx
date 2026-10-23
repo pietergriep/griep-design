@@ -25,17 +25,17 @@ const u = (px: number) => `${(px / W) * 100}cqw`
 const STOPS = [0.322, 18.585, 33.393, 50.176, 62.022, 73.375, 83.247, 94.599, 101.51]
 const MORNING = ["#5eb0f8", "#7ca6d9", "#92a6cf", "#9fa9c4", "#c2afaa", "#dcb393", "#f1a877", "#ff9f4e", "#e67c49"]
 const SKY: [number, string[]][] = [
-    [0, ["#0b1030", "#161b4a", "#2a2d62"]], // night
-    [4.5, ["#0b1030", "#161b4a", "#2a2d62"]],
+    [0, ["#1b2558", "#29326d", "#3e4582"]], // night
+    [4.5, ["#1b2558", "#29326d", "#3e4582"]],
     [6, ["#2d3a74", "#8070ab", "#f1926e"]], // dawn
     [7.5, MORNING], // morning (the design)
     [10, ["#3d8bf0", "#5fa3f1", "#8bbcf2"]], // midday
     [15, ["#3d8bf0", "#5fa3f1", "#8bbcf2"]],
     [17, ["#4a86dc", "#a9b0c4", "#f6c15e"]], // golden hour, yellow
     [18.6, ["#36438f", "#a88c8a", "#f4a74a"]], // sunset, more amber than pink
-    [19.5, ["#141a4a", "#272d66", "#6e5a6c"]], // dusk, short
-    [20.25, ["#0b1030", "#161b4a", "#2a2d62"]], // night
-    [24, ["#0b1030", "#161b4a", "#2a2d62"]],
+    [19.5, ["#222b63", "#353c7a", "#78657c"]], // dusk, short
+    [20.25, ["#1b2558", "#29326d", "#3e4582"]], // night
+    [24, ["#1b2558", "#29326d", "#3e4582"]],
 ]
 
 // sRGB hex <-> OKLab
@@ -359,38 +359,24 @@ export default function WalletWidget(props: Props) {
 
     // ---- slider intro ----
     const trackRef = useRef<HTMLDivElement>(null)
-    const thumbRef = useRef<HTMLImageElement>(null)
     const intro = useRef({ sliderDuration, sliderDelay })
     intro.current = { sliderDuration, sliderDelay }
     useEffect(() => {
         const track = trackRef.current
-        const thumb = thumbRef.current
-        if (!sliderIntro || !track || !thumb) return
+        if (!sliderIntro || !track) return
         if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return
-        let runs: Animation[] = []
-        // the track draws in from the left; the mask reaches well past it above, below and on
-        // the left, so the thumb (taller than the 2 px line, and starting half off its left
-        // end) isn't cut by it
-        const HIDDEN = "inset(-20px 100% -20px -20px)"
-        const SHOWN = "inset(-20px 0% -20px -20px)"
-        // waits hidden-at-the-start until it's in view (so it isn't played off screen)
-        const reset = () => {
-            runs.forEach((r) => r.cancel())
-            track.style.clipPath = HIDDEN
-            thumb.style.transform = `translateX(${-atRef.current * track.offsetWidth}px)`
-            thumb.style.opacity = "0"
-        }
-        const play = () => {
-            const { sliderDuration: d, sliderDelay: delay } = intro.current
-            const ease = "cubic-bezier(0.22, 1, 0.36, 1)"
-            track.style.clipPath = thumb.style.transform = thumb.style.opacity = ""
-            runs = [
-                track.animate([{ clipPath: HIDDEN }, { clipPath: SHOWN }], { duration: d * 1.15, delay, easing: ease, fill: "backwards" }),
-                thumb.animate([{ transform: `translateX(${-atRef.current * track.offsetWidth}px)` }, { transform: "none" }], { duration: d, delay, easing: ease, fill: "backwards" }),
-                thumb.animate([{ opacity: 0 }, { opacity: 1 }], { duration: d * 0.3, delay, easing: "ease-out", fill: "backwards" }),
-            ]
-        }
-        reset()
+        // The track is there from the start; the bright fade inside it (and the thumb that
+        // sits on its brightest point) travels from the left end to its place, with the
+        // whole slider fading in as it goes. Held at its start until it's in view.
+        const run = track.animate(
+            [
+                { ["--ww-at" as any]: 0.04, opacity: 0 },
+                { opacity: 1, offset: 0.3 },
+                { ["--ww-at" as any]: atRef.current, opacity: 1 },
+            ],
+            { duration: intro.current.sliderDuration, delay: intro.current.sliderDelay, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "backwards" },
+        )
+        run.pause()
         let shown = false
         const io = new IntersectionObserver(
             ([e]) => {
@@ -398,7 +384,7 @@ export default function WalletWidget(props: Props) {
                 // carousel is still bringing it in
                 if (e.intersectionRatio >= 0.97 && !shown) {
                     shown = true
-                    play()
+                    run.play()
                     io.disconnect()
                 }
             },
@@ -407,8 +393,7 @@ export default function WalletWidget(props: Props) {
         io.observe(track.closest(".wallet-widget__card") ?? track)
         return () => {
             io.disconnect()
-            runs.forEach((r) => r.cancel())
-            track.style.clipPath = thumb.style.transform = thumb.style.opacity = ""
+            run.cancel()
         }
     }, [sliderIntro])
 
@@ -483,7 +468,6 @@ export default function WalletWidget(props: Props) {
                         <Price value={price.low} />
                         <div ref={trackRef} className="wallet-widget__track" style={{ height: u(2), ["--ww-at" as any]: at }}>
                             <img
-                                ref={thumbRef}
                                 className="wallet-widget__thumb"
                                 src="/media/wallet/slider-thumb.svg"
                                 alt=""
@@ -512,12 +496,16 @@ function Money({ value, style }: { value: number; style?: CSSProperties }) {
     )
 }
 
-// "$ 4,096.53" at the ends of the slider, trimmed to its capitals like the design
+// "$ 4,096.53" at the ends of the slider, trimmed to its capitals like the design. Plain
+// text, not rolling: at this small size the rolling digits' one-box-per-character spacing
+// showed (uneven gaps), and the low / high only change on a new low or high anyway.
 function Price({ value }: { value: number }) {
+    const [whole, cents] = value.toFixed(2).split(".")
     return (
         <p className="wallet-widget__medium wallet-widget__price" style={{ fontSize: u(11), letterSpacing: u(-0.22) }}>
             <span style={{ letterSpacing: u(-1.1) }}>{"$ "}</span>
-            <Money value={value} />
+            {Number(whole).toLocaleString("en-US")}
+            <span className="wallet-widget__dim">.{cents}</span>
         </p>
     )
 }
