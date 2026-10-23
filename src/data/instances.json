@@ -834,14 +834,22 @@
     "width": "405px",
     "height": "auto"
    },
-   "raw": {}
+   "raw": {
+    "sliderDurationMs": "1450",
+    "hour1Live": "-1",
+    "priceMovesEveryS": "5"
+   }
   },
   "phone": {
    "size": {
     "width": "80%",
     "height": "auto"
    },
-   "raw": {}
+   "raw": {
+    "sliderDurationMs": "1450",
+    "hour1Live": "-1",
+    "priceMovesEveryS": "5"
+   }
   }
  }
 }

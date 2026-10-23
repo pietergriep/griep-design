@@ -47,6 +47,8 @@ const CONFS: Record<string, Conf> = {
         title: "Portfolio widget",
         sections: [
             ["Time of day", ["hour1Live", "dayPreviewSPerDay0Off"]],
+            ["Slider intro", ["sliderPlaysIn", "sliderDurationMs", "sliderDelayMs"]],
+            ["Live price", ["livePrice", "priceMovesEveryS", "priceMoveSize"]],
             ["Balance", ["dollarSignSize", "dollarSignGap"]],
             ["Afternoon sun", ["afternoonSun", "sunStrength"]],
             ["Stars", ["stars", "starBrightness", "twinkle"]],

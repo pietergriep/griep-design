@@ -9,6 +9,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { CSSProperties } from "react"
 import { addPropertyControls, ControlType } from "framer"
+import { RollingNumber } from "@kitlangton/rolling-number/react"
+import "@kitlangton/rolling-number/styles.css"
 
 const W = 365
 const H = 165
@@ -121,12 +123,6 @@ const nowHour = () => {
     return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600
 }
 
-// "4,291.80" -> ["4,291", ".80"]: the cents are dimmed
-function money(n: number) {
-    const [whole, cents] = n.toFixed(2).split(".")
-    return [whole.replace(/\B(?=(\d{3})+(?!\d))/g, ","), "." + cents]
-}
-
 interface Props {
     name: string
     balance: number
@@ -142,6 +138,16 @@ interface Props {
     starBrightness: number
     twinkle: boolean
     shootingStars: boolean
+    /** Each time the widget comes into view the slider plays in: the track draws in from the
+     *  left while the thumb slides to its place. Duration and delay in ms. */
+    sliderIntro: boolean
+    /** The price moves live: every `liveEvery` seconds (give or take) it drifts by up to
+     *  `liveDrift` percent, pulled gently back towards where it started. Digits roll. */
+    live: boolean
+    liveEvery: number
+    liveDrift: number
+    sliderDuration: number
+    sliderDelay: number
     /** The balance's dollar sign: size and the space after it, in design px. */
     dollarSize: number
     dollarGap: number
@@ -177,6 +183,12 @@ export default function WalletWidget(props: Props) {
         starBrightness = 0.8,
         twinkle = true,
         shootingStars = true,
+        sliderIntro = true,
+        live = true,
+        liveEvery = 2.5,
+        liveDrift = 0.12,
+        sliderDuration = 1100,
+        sliderDelay = 150,
         dollarSize = 25,
         dollarGap = 2,
         sunShades = true,
@@ -309,11 +321,93 @@ export default function WalletWidget(props: Props) {
         }
     }, [shootingStars])
 
-    const [whole, cents] = money(balance)
-    const [lowWhole, lowCents] = money(low)
-    const [highWhole, highCents] = money(high)
-    // the thumb sits on the track's brightest point, as in the design
-    const at = 0.70448
+    // ---- live price ----
+    // a small random walk around the starting balance; a new low or high moves the 24h range
+    const [price, setPrice] = useState({ balance, low, high })
+    useEffect(() => setPrice({ balance, low, high }), [balance, low, high])
+    const liveCfg = useRef({ liveEvery, liveDrift, balance })
+    liveCfg.current = { liveEvery, liveDrift, balance }
+    useEffect(() => {
+        if (!live) return
+        let timer = 0
+        const tick = () => {
+            const c = liveCfg.current
+            if (document.visibilityState === "visible")
+                setPrice((p) => {
+                    const step = p.balance * (c.liveDrift / 100) * (Math.random() * 2 - 1)
+                    const pull = (c.balance - p.balance) * 0.12
+                    const b = Math.round((p.balance + step + pull) * 100) / 100
+                    return { balance: b, low: Math.min(p.low, b), high: Math.max(p.high, b) }
+                })
+            timer = window.setTimeout(tick, c.liveEvery * 1000 * (0.6 + Math.random() * 0.8))
+        }
+        timer = window.setTimeout(tick, liveEvery * 1000)
+        return () => clearTimeout(timer)
+    }, [live])
+    // today's change follows the balance (the opening price is fixed by the starting change)
+    const open = balance / (1 + change / 100)
+    const changeNow = Math.round((price.balance / open - 1) * 1000) / 10
+    // the thumb sits on the track's brightest point; at the starting balance that's where the
+    // design has it (70.4%), and it moves with the price from there
+    const pos = (b: number, lo: number, hi: number) => (b - lo) / (hi - lo || 1)
+    const at = Math.min(0.97, Math.max(0.03, 0.70448 + pos(price.balance, price.low, price.high) - pos(balance, low, high)))
+    const atRef = useRef(at)
+    atRef.current = at
+
+    // ---- slider intro ----
+    const trackRef = useRef<HTMLDivElement>(null)
+    const thumbRef = useRef<HTMLImageElement>(null)
+    const intro = useRef({ sliderDuration, sliderDelay })
+    intro.current = { sliderDuration, sliderDelay }
+    useEffect(() => {
+        const track = trackRef.current
+        const thumb = thumbRef.current
+        if (!sliderIntro || !track || !thumb) return
+        if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return
+        let runs: Animation[] = []
+        // the track draws in from the left; the mask reaches well past it above, below and on
+        // the left, so the thumb (taller than the 2 px line, and starting half off its left
+        // end) isn't cut by it
+        const HIDDEN = "inset(-20px 100% -20px -20px)"
+        const SHOWN = "inset(-20px 0% -20px -20px)"
+        // waits hidden-at-the-start until it's in view (so it isn't played off screen)
+        const reset = () => {
+            runs.forEach((r) => r.cancel())
+            track.style.clipPath = HIDDEN
+            thumb.style.transform = `translateX(${-atRef.current * track.offsetWidth}px)`
+            thumb.style.opacity = "0"
+        }
+        const play = () => {
+            const { sliderDuration: d, sliderDelay: delay } = intro.current
+            const ease = "cubic-bezier(0.22, 1, 0.36, 1)"
+            track.style.clipPath = thumb.style.transform = thumb.style.opacity = ""
+            runs = [
+                track.animate([{ clipPath: HIDDEN }, { clipPath: SHOWN }], { duration: d * 1.15, delay, easing: ease, fill: "backwards" }),
+                thumb.animate([{ transform: `translateX(${-atRef.current * track.offsetWidth}px)` }, { transform: "none" }], { duration: d, delay, easing: ease, fill: "backwards" }),
+                thumb.animate([{ opacity: 0 }, { opacity: 1 }], { duration: d * 0.3, delay, easing: "ease-out", fill: "backwards" }),
+            ]
+        }
+        reset()
+        let shown = false
+        const io = new IntersectionObserver(
+            ([e]) => {
+                // plays once, the first time it's (all but) fully on screen, so not while the
+                // carousel is still bringing it in
+                if (e.intersectionRatio >= 0.97 && !shown) {
+                    shown = true
+                    play()
+                    io.disconnect()
+                }
+            },
+            { threshold: [0, 0.97] },
+        )
+        io.observe(track.closest(".wallet-widget__card") ?? track)
+        return () => {
+            io.disconnect()
+            runs.forEach((r) => r.cancel())
+            track.style.clipPath = thumb.style.transform = thumb.style.opacity = ""
+        }
+    }, [sliderIntro])
 
     return (
         // the outer box is the container its units measure against; the card is inside it
@@ -366,13 +460,12 @@ export default function WalletWidget(props: Props) {
                     <div className="wallet-widget__row" style={{ gap: u(5) }}>
                         <p className="wallet-widget__balance" style={{ letterSpacing: u(-0.72) }}>
                             <span style={{ fontSize: u(dollarSize), marginRight: u(dollarGap) }}>$</span>
-                            <span style={{ fontSize: u(36) }}>{whole}</span>
-                            <span className="wallet-widget__dim" style={{ fontSize: u(36) }}>{cents}</span>
+                            <Money value={price.balance} style={{ fontSize: u(36) }} />
                         </p>
                         <div className="wallet-widget__change" style={{ gap: u(3) }}>
                             <img src="/media/wallet/change-arrow.svg" alt="" style={{ width: u(6.85355), height: u(6.85355), margin: `${u(-0.5)} ${u(-0.5)} ${u(-0.35)} ${u(-0.35)}` /* the design's 6 x 6 frame, the stroke overhanging it */ }} />
                             <p className="wallet-widget__medium" style={{ fontSize: u(11), letterSpacing: u(-0.22), lineHeight: 1.48, color: "#75f36a" }}>
-                                {change.toFixed(1).replace(".", ",")}%
+                                <RollingNumber value={changeNow} locales="de-DE" format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }} motionBlur />%
                             </p>
                         </div>
                     </div>
@@ -384,16 +477,17 @@ export default function WalletWidget(props: Props) {
                         <p>24h high</p>
                     </div>
                     <div className="wallet-widget__row wallet-widget__row--centre" style={{ gap: u(5) }}>
-                        <Price whole={lowWhole} cents={lowCents} />
-                        <div className="wallet-widget__track" style={{ height: u(2) }}>
+                        <Price value={price.low} />
+                        <div ref={trackRef} className="wallet-widget__track" style={{ height: u(2), ["--ww-at" as any]: at }}>
                             <img
+                                ref={thumbRef}
                                 className="wallet-widget__thumb"
                                 src="/media/wallet/slider-thumb.svg"
                                 alt=""
-                                style={{ left: `calc(${at * 100}% - ${u(4.5)})`, top: u(-5), width: u(9), height: u(12.1667) }}
+                                style={{ left: `calc(var(--ww-at) * 100% - ${u(4.5)})`, top: u(-5), width: u(9), height: u(12.1667) }}
                             />
                         </div>
-                        <Price whole={highWhole} cents={highCents} />
+                        <Price value={price.high} />
                     </div>
                 </div>
             </div>
@@ -401,18 +495,32 @@ export default function WalletWidget(props: Props) {
     )
 }
 
+// "4,291" + dimmed ".80", each rolling to new values (two numbers so the cents can be dimmed)
+function Money({ value, style }: { value: number; style?: CSSProperties }) {
+    const cents = Math.round(value * 100)
+    return (
+        <>
+            <RollingNumber value={Math.floor(cents / 100)} locales="en-US" format={{ maximumFractionDigits: 0 }} motionBlur style={style} />
+            <span className="wallet-widget__dim" style={style}>
+                .
+                <RollingNumber value={cents % 100} locales="en-US" format={{ minimumIntegerDigits: 2, useGrouping: false }} motionBlur />
+            </span>
+        </>
+    )
+}
+
 // "$ 4,096.53" at the ends of the slider, trimmed to its capitals like the design
-function Price({ whole, cents }: { whole: string; cents: string }) {
+function Price({ value }: { value: number }) {
     return (
         <p className="wallet-widget__medium wallet-widget__price" style={{ fontSize: u(11), letterSpacing: u(-0.22) }}>
             <span style={{ letterSpacing: u(-1.1) }}>{"$ "}</span>
-            {whole}
-            <span className="wallet-widget__dim">{cents}</span>
+            <Money value={value} />
         </p>
     )
 }
 
 const CSS = `
+@property --ww-at { syntax: "<number>"; inherits: true; initial-value: 0.70448; }
 .wallet-widget p { margin: 0; white-space: nowrap; }
 .wallet-widget__card {
   position: relative; box-sizing: border-box; width: 100%; overflow: clip;
@@ -461,7 +569,9 @@ const CSS = `
 .wallet-widget__price { text-box: trim-both cap alphabetic; }
 .wallet-widget__track {
   position: relative; flex: 1 0 0; min-width: 1px;
-  background-image: linear-gradient(90deg, rgba(255,255,255,0) 12.526%, rgba(255,255,255,0.236) 52.83%, rgba(255,255,255,0.566) 61.355%, #fff 70.448%, rgba(255,255,255,0.535) 77.268%, rgba(255,255,255,0) 100%);
+  /* the design's glow, its brightest point following the thumb (--ww-at, 0.70448 in the design) */
+  background-image: linear-gradient(90deg, rgba(255,255,255,0) 12.526%, rgba(255,255,255,0.236) calc(var(--ww-at) * 100% - 17.618%), rgba(255,255,255,0.566) calc(var(--ww-at) * 100% - 9.093%), #fff calc(var(--ww-at) * 100%), rgba(255,255,255,0.535) calc(var(--ww-at) * 100% + 6.82%), rgba(255,255,255,0) 100%);
+  transition: --ww-at 900ms cubic-bezier(0.32, 0.72, 0, 1);
   box-shadow: 0 4px 50px rgba(144, 140, 144, 0.15);
   backdrop-filter: blur(0.5px);
 }
@@ -492,6 +602,12 @@ addPropertyControls(WalletWidget, {
     starBrightness: { type: ControlType.Number, title: "Star brightness", defaultValue: 0.8, min: 0, max: 1, step: 0.05 },
     twinkle: { type: ControlType.Boolean, title: "Twinkle", defaultValue: true },
     shootingStars: { type: ControlType.Boolean, title: "Shooting stars", defaultValue: true },
+    sliderIntro: { type: ControlType.Boolean, title: "Slider plays in", defaultValue: true },
+    live: { type: ControlType.Boolean, title: "Live price", defaultValue: true },
+    liveEvery: { type: ControlType.Number, title: "Price moves every (s)", defaultValue: 2.5, min: 0.5, max: 15, step: 0.1 },
+    liveDrift: { type: ControlType.Number, title: "Price move size (%)", defaultValue: 0.12, min: 0.01, max: 1, step: 0.01 },
+    sliderDuration: { type: ControlType.Number, title: "Slider duration (ms)", defaultValue: 1100, min: 200, max: 3000, step: 50 },
+    sliderDelay: { type: ControlType.Number, title: "Slider delay (ms)", defaultValue: 150, min: 0, max: 1500, step: 50 },
     starEveryMin: { type: ControlType.Number, title: "Star every (min s)", defaultValue: 7, min: 1, max: 60, step: 0.5 },
     starEveryMax: { type: ControlType.Number, title: "Star every (max s)", defaultValue: 18, min: 1, max: 120, step: 0.5 },
     starDuration: { type: ControlType.Number, title: "Star duration (ms)", defaultValue: 900, min: 200, max: 3000, step: 50 },
