@@ -3,6 +3,7 @@ import "../styles/global.css"
 import instances from "../data/instances.json"
 import FileStacks from "./islands/FileStacksIsland.tsx"
 import GasFeeBar from "./islands/GasFeeBarIsland.tsx"
+import WalletWidget from "./islands/WalletWidgetIsland.tsx"
 import SwapCard from "./islands/SwapCardIsland.tsx"
 import RouteFinder from "./islands/RouteFinderIsland.tsx"
 import BusinessCard from "./islands/BusinessCardIsland.tsx"
@@ -170,7 +171,7 @@ const SHOW_LIMIT_SCREEN = false
 
                     <div class="work-item">
                         <div class="card card-image card-gradient-widget">
-                            <WorkImage name="h7fAIMpsN8qqOrXqoJHIz7HGvcQ" />
+                            <WalletWidget client:visible variants={instances.WalletWidget} />
                         </div>
                         <WorkNote text="A portfolio widget whose gradient follows the time of day, so it looks different every time you open it. Today's value and change sit up top, with a slider showing where it is between its 24-hour low and high." />
                     </div>

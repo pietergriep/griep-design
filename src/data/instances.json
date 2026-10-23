@@ -827,5 +827,21 @@
     "backSheetColour": "#ffffff"
    }
   }
+ },
+ "WalletWidget": {
+  "desktop": {
+   "size": {
+    "width": "405px",
+    "height": "auto"
+   },
+   "raw": {}
+  },
+  "phone": {
+   "size": {
+    "width": "100%",
+    "height": "auto"
+   },
+   "raw": {}
+  }
  }
 }

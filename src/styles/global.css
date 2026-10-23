@@ -634,12 +634,6 @@ main {
     width: 647px; /* the planner widget (575px, +25%, then -10%) */
 }
 
-/* the portfolio widget fills the card's width, so it keeps the size it had in the
-   older 475px card */
-.card-gradient-widget img {
-    max-width: 405px;
-}
-
 /* ---------- footer ---------- */
 
 .footer {

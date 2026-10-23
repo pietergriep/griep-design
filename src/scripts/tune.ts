@@ -42,6 +42,17 @@ const CONFS: Record<string, Conf> = {
             ["Colours", ["accentColour", "textColour", "labelColour", "sheetColour", "backSheetColour", "backSheetShade", "sheetTopShadow", "sheetTopShadowBlur", "backButtonColour"]],
         ],
     },
+    wallet: {
+        island: "WalletWidget",
+        title: "Portfolio widget",
+        sections: [
+            ["Time of day", ["hour1Live", "dayPreviewSPerDay0Off"]],
+            ["Balance", ["dollarSignSize", "dollarSignGap"]],
+            ["Afternoon sun", ["afternoonSun", "sunStrength"]],
+            ["Stars", ["stars", "starBrightness", "twinkle"]],
+            ["Shooting stars", ["shootingStars", "starEveryMinS", "starEveryMaxS", "starDurationMs", "starTailLength"]],
+        ],
+    },
     swap: {
         island: "SwapCard",
         title: "Swap",
