@@ -299,9 +299,26 @@ const CSS = `
 .swap-card__avail-val, .swap-card__avail-val .rn-root { font-family: "Inter Punct", "Inter", var(--sc-font); font-variant-numeric: normal; }
 .swap-card__sub { white-space: nowrap; }
 /* Inter's 1 sits far right of its left edge (the flag is short), and the slots can't
-   kern, so "1.194" reads as "1. 194". A separator followed by a 1 gets narrower (see
-   RollingNumber); letter-spacing, not a margin, so the library sees it re-measure. */
-.swap-card .rn-token.sc-before-one { letter-spacing: calc(-1 * var(--sc-sep-one, 0.06em)); }
+   kern, so "1.194" reads as "1. 194". RollingNumber lists which characters are a
+   separator followed by a 1 in data-sep-one, and that measuring token gets a negative
+   margin. Set from the value before the library measures, and a margin doesn't resize
+   the token, so the roll isn't interrupted by a re-measure. */
+[data-sep-one~="1"] .rn-measure > :nth-child(1),
+[data-sep-one~="2"] .rn-measure > :nth-child(2),
+[data-sep-one~="3"] .rn-measure > :nth-child(3),
+[data-sep-one~="4"] .rn-measure > :nth-child(4),
+[data-sep-one~="5"] .rn-measure > :nth-child(5),
+[data-sep-one~="6"] .rn-measure > :nth-child(6),
+[data-sep-one~="7"] .rn-measure > :nth-child(7),
+[data-sep-one~="8"] .rn-measure > :nth-child(8),
+[data-sep-one~="9"] .rn-measure > :nth-child(9),
+[data-sep-one~="10"] .rn-measure > :nth-child(10),
+[data-sep-one~="11"] .rn-measure > :nth-child(11),
+[data-sep-one~="12"] .rn-measure > :nth-child(12),
+[data-sep-one~="13"] .rn-measure > :nth-child(13),
+[data-sep-one~="14"] .rn-measure > :nth-child(14),
+[data-sep-one~="15"] .rn-measure > :nth-child(15),
+[data-sep-one~="16"] .rn-measure > :nth-child(16) { margin-right: calc(-1 * var(--sc-sep-one, 0.06em)); }
 
 /* Picker ------------------------------------------------------------------- */
 .swap-card__picker { padding: 0 calc(3px * var(--sc-scale)); }
@@ -840,24 +857,13 @@ function RollingNumber({
     style?: CSSProperties
 }) {
     const rounded = Number(value.toFixed(decimals))
-    const ref = useRef<HTMLSpanElement>(null)
-    /* marks a "." or "," whose next character is a 1 (the library keeps its measuring
-       tokens across updates, so watch them rather than the value) */
-    useEffect(() => {
-        const measure = ref.current?.querySelector(".rn-measure")
-        if (!measure) return
-        const mark = () => {
-            const tokens = Array.from(measure.children)
-            tokens.forEach((t, i) =>
-                t.classList.toggle("sc-before-one", /^[.,]$/.test(t.textContent ?? "") && tokens[i + 1]?.textContent === "1"))
-        }
-        mark()
-        const mo = new MutationObserver(mark)
-        mo.observe(measure, { childList: true, characterData: true, subtree: true })
-        return () => mo.disconnect()
-    }, [jump])
+    /* 1-based positions of a "." or "," followed by a 1 (see .rn-measure above) */
+    const text = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: decimals }).format(rounded)
+    const sepOne = Array.from(text)
+        .flatMap((c, i) => (/[.,]/.test(c) && text[i + 1] === "1" ? [i + 1] : []))
+        .join(" ")
     return (
-        <span ref={ref} className={className} style={style}>
+        <span className={className} style={style} data-sep-one={sepOne || undefined}>
             {prefix}
             <LibRollingNumber
                 key={jump}
