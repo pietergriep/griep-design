@@ -224,6 +224,8 @@ export interface BusinessCardProps {
     /** Idle loop on the front while not hovered: share of maxTilt (0 = off) and seconds per full loop. */
     idleTilt?: number
     idleSpeed?: number
+    /** Keep the idle loop going on the back too (off: the back rests flat). */
+    idleOnBack?: boolean
     /** On phones/tablets, tilt follows how the device is held (blended with the idle loop; see deviceTakeover). */
     deviceTilt?: boolean
     /** Degrees of device tilt for a full card tilt. */
@@ -456,6 +458,7 @@ export default function BusinessCard({
     perspective = 900,
     idleTilt = 0.65,
     idleSpeed = 8,
+    idleOnBack = true,
     deviceTilt = true,
     deviceTiltRange = 20,
     deviceRecenter = 3,
@@ -582,8 +585,8 @@ export default function BusinessCard({
     const bioEmailRef = useRef<HTMLSpanElement>(null)
 
     // Latest props, read inside the animation loop without restarting it.
-    const cfg = useRef({ deviceTakeover, deviceRelease, hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize })
-    cfg.current = { deviceTakeover, deviceRelease, hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize }
+    const cfg = useRef({ deviceTakeover, deviceRelease, hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, idleOnBack, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize })
+    cfg.current = { deviceTakeover, deviceRelease, hideTurnedFace, maxTilt, backTilt, idleTilt, idleSpeed, idleOnBack, stiffness, damping, hoverScale, shadowLift, shadowOpacity, flipStiffness, flipDamping, blockDepth, blockDepthVariation, edgeCalm, edgeCalmStart, tintStrength, rippleStrength, rippleSpeed, rippleWidth, rippleDuration, rippleInterval, rippleOrigin, trailStrength, trailRadius, trailFade, glareStrength, glareShade, glareSize }
     const colors = useRef({ block: hexToRgb(blockColor), a: hexToRgb(tintA), b: hexToRgb(tintB), ripple: hexToRgb(rippleColor), trail: hexToRgb(trailColor) })
     colors.current = { block: hexToRgb(blockColor), a: hexToRgb(tintA), b: hexToRgb(tintB), ripple: hexToRgb(rippleColor), trail: hexToRgb(trailColor) }
 
@@ -636,9 +639,9 @@ export default function BusinessCard({
         const tau = moved > s.dw ? 0.12 : Math.max(0.05, c.deviceRelease)
         s.dw += (moved - s.dw) * (1 - Math.exp(-elapsed / tau))
 
-        // Idle loop (front only): with no cursor on the card, the tilt target circles slowly;
-        // on the back it rests flat. The spring smooths every hand-over.
-        const idle = !s.hovering && s.tf === 0 && c.idleTilt > 0 && c.idleSpeed > 0
+        // Idle loop: with no cursor on the card, the tilt target circles slowly, on the back too
+        // unless idleOnBack is off (then it rests flat there). The spring smooths every hand-over.
+        const idle = !s.hovering && (s.tf === 0 || c.idleOnBack) && c.idleTilt > 0 && c.idleSpeed > 0
         if (!s.hovering) {
             let ix = 0
             let iy = 0
