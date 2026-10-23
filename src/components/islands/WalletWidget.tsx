@@ -113,7 +113,7 @@ function greetingAt(hour: number) {
     if (h >= 5 && h < 12) return "Good morning"
     if (h >= 12 && h < 18) return "Good afternoon"
     if (h >= 18 && h < 22) return "Good evening"
-    return "Goodnight"
+    return "Good night"
 }
 
 const nowHour = () => {
@@ -323,7 +323,7 @@ export default function WalletWidget(props: Props) {
                 className="wallet-widget__card"
                 style={{
                     aspectRatio: `${W} / ${H}`,
-                    borderRadius: 20, // a fixed 20 px at every size (everything else scales)
+                    borderRadius: 25, // a fixed 25 px at every size (everything else scales)
                     // the 0.5 px #fff 50% stroke is drawn on top (::after), not as a border: a
                     // border lets the gradient repeat underneath it, so the top edge showed the
                     // bottom's orange
@@ -359,8 +359,8 @@ export default function WalletWidget(props: Props) {
                 </div>
                 <div ref={skyRef} className="wallet-widget__sky" />
 
-                <div className="wallet-widget__top" style={{ gap: u(5) }}>
-                    <p className="wallet-widget__medium" style={{ fontSize: u(11), letterSpacing: u(-0.22) }}>
+                <div className="wallet-widget__top" style={{ gap: u(7) }}>
+                    <p className="wallet-widget__medium" style={{ fontSize: u(10), letterSpacing: u(-0.2) }}>
                         {greetingAt(shown)}, {name}.
                     </p>
                     <div className="wallet-widget__row" style={{ gap: u(5) }}>
