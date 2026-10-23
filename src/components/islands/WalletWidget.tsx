@@ -31,10 +31,10 @@ const SKY: [number, string[]][] = [
     [7.5, MORNING], // morning (the design)
     [10, ["#3d8bf0", "#5fa3f1", "#8bbcf2"]], // midday
     [15, ["#3d8bf0", "#5fa3f1", "#8bbcf2"]],
-    [17.5, ["#4a84dc", "#a2a6cc", "#f6b064"]], // golden hour
-    [19.3, ["#384596", "#b06f98", "#f47a5c"]], // sunset
-    [20.8, ["#1d2360", "#45397c", "#8d5784"]], // dusk
-    [22.3, ["#0b1030", "#161b4a", "#2a2d62"]], // night
+    [17, ["#4a86dc", "#a9b0c4", "#f6c15e"]], // golden hour, yellow
+    [18.6, ["#36438f", "#a88c8a", "#f4a74a"]], // sunset, more amber than pink
+    [19.5, ["#141a4a", "#272d66", "#6e5a6c"]], // dusk, short
+    [20.25, ["#0b1030", "#161b4a", "#2a2d62"]], // night
     [24, ["#0b1030", "#161b4a", "#2a2d62"]],
 ]
 
@@ -104,8 +104,8 @@ function sunAt(hour: number) {
 // 0 by day, 1 deep in the night (fades with dusk and dawn): when shooting stars may show
 function nightAt(hour: number) {
     const h = ((hour % 24) + 24) % 24
-    if (h >= 22 || h < 4.5) return 1
-    if (h >= 20.5) return (h - 20.5) / 1.5
+    if (h >= 20.25 || h < 4.5) return 1
+    if (h >= 19.25) return h - 19.25
     if (h < 6) return 1 - (h - 4.5) / 1.5
     return 0
 }
