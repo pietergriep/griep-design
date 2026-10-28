@@ -7,6 +7,7 @@ import WalletWidget from "./islands/WalletWidgetIsland.tsx"
 import SwapCard from "./islands/SwapCardIsland.tsx"
 import RouteFinder from "./islands/RouteFinderIsland.tsx"
 import BusinessCard from "./islands/BusinessCardIsland.tsx"
+import WeeklyUsage from "./islands/WeeklyUsageIsland.tsx"
 import DCAFlow from "./islands/DCAFlowIsland.tsx"
 import WorkImage from "./WorkImage.astro"
 import WorkNote from "./WorkNote.astro"
@@ -105,6 +106,14 @@ const SHOW_LIMIT_SCREEN = false
                             <BusinessCard client:visible />
                         </div>
                         <WorkNote text="My business card as a component. The blocks are the Eixample, the Barcelona neighbourhood I live in, chamfered corners and the Diagonal included. It tilts with your cursor (or your phone), flips on click for a short intro, and the email on the back copies with a click." />
+                    </div>
+
+                    <div class="work-item">
+                        <div class="card card-usage" data-own-scroll>
+                            <span class="badge"><span class="badge-text">Open an agent</span></span>
+                            <WeeklyUsage client:visible />
+                        </div>
+                        <WorkNote text="A workload card for a team of AI agents. One number shows how much of the weekly limit is used, and a pace line says where it will land by the reset. Each agent shows what it's doing right now; open one to read its chat, and press Tab to send the suggested next prompt." />
                     </div>
 
                     <div class="work-item">
@@ -208,7 +217,8 @@ const SHOW_LIMIT_SCREEN = false
             import "../scripts/carousel.ts"
             // the settings panel for tuning components: dev server only, left out of builds
             // hidden unless the address ends in ?tune (localhost:4322/?tune, or ?tune=swap for the swap card)
-            if (import.meta.env.DEV && new URLSearchParams(location.search).has("tune")) import("../scripts/tune.ts")
+            // (?tune=usage and ?tune=usage-studio are the usage card's own panel instead, see WeeklyUsageIsland)
+            if (import.meta.env.DEV && new URLSearchParams(location.search).has("tune") && !new URLSearchParams(location.search).get("tune")?.startsWith("usage")) import("../scripts/tune.ts")
             import "../scripts/footer.ts"
             import "../scripts/cursor.ts"
             import "../scripts/appear.ts"

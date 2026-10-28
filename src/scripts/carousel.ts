@@ -33,11 +33,13 @@ const FLING = 140 // how far a touch fling carries, in ms of velocity
 
 const PHONE = "(max-width: 599.98px)"
 const DESKTOP = "(min-width: 600px)" // desktop-sized cards (desktop, iPad, small windows)
-// The cards keep their desktop size (up to 800 × 640px). On a short window (a 14"
+// The cards keep their desktop size (up to 800 × 640px), shown at
+// SCALE (cards and what's in them alike). On a short window (a 14"
 // MacBook in Safari shows ~860px) or a narrow one (an iPad) the row is scaled down so
 // the widest card, and a card's note, fit on screen.
 const NOTE_ROOM = 70 // px kept free under the cards for the "About" note
 const MIN_FIT = 0.72 // never smaller than this
+const SCALE = 1.15 // the whole row, cards and components alike, when the window has room
 
 const row = document.querySelector<HTMLElement>("[data-carousel]")
 const track = row?.querySelector<HTMLElement>(".track")
@@ -84,7 +86,7 @@ if (row && track) {
             const roomW = parent.clientWidth - parseFloat(pcs.paddingLeft) - parseFloat(pcs.paddingRight)
             const widest = Math.max(...cards().map((c) => c.offsetWidth))
             const byWidth = widest > 0 ? roomW / widest : 1
-            next = Math.min(1, Math.max(MIN_FIT, Math.min(byHeight, byWidth)))
+            next = Math.min(SCALE, Math.max(MIN_FIT, Math.min(byHeight, byWidth)))
             next = Math.round(next * 1000) / 1000
         }
         fit = next
@@ -97,6 +99,7 @@ if (row && track) {
             row.style.width = `calc(100% / ${fit})`
             row.style.transform = `scale(${fit})`
             row.style.transformOrigin = "0 0"
+            // the height the scale takes away (or adds, above 1) below the row
             row.style.marginBottom = `${-(1 - fit) * row.offsetHeight}px`
         }
     }
@@ -305,6 +308,9 @@ if (row && track) {
         "wheel",
         (e) => {
             if (!hovered) return
+            // Cards with their own scrolling (data-own-scroll, e.g. the usage card's agent list
+            // and chat) keep up / down scrolling to themselves; sideways swipes still move the row
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && (e.target as Element | null)?.closest?.("[data-own-scroll]")) return
             if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX) && isMouseWheel(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
