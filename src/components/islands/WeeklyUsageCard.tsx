@@ -339,6 +339,8 @@ export interface Design {
     usageGain: number
     /** Usage (% points) each prompt sent in a chat adds, a share per subtask as they finish */
     promptUsageGain: number
+    /** Every this many seconds an agent picks up one of its suggested prompts by itself (0: never) */
+    autoPromptSec: number
 }
 
 export const DEFAULT_DESIGN: Design = {
@@ -513,7 +515,7 @@ export const DEFAULT_DESIGN: Design = {
     inputBg: "#FDFCFC",
     composerGap: 3,
     promptInMs: 360,
-    summaryInMs: 300,
+    summaryInMs: 220,
     promptStaggerMs: 55,
     showSuggestions: true,
     suggestionCount: 4,
@@ -569,8 +571,9 @@ export const DEFAULT_DESIGN: Design = {
     shimmerMs: 2200,
     toggleMs: 220,
     bigCountMs: 2600,
-    usageGain: 3,
-    promptUsageGain: 3,
+    usageGain: 1,
+    promptUsageGain: 0.5,
+    autoPromptSec: 35,
 }
 
 const DesignContext = createContext<Design>(DEFAULT_DESIGN)
@@ -655,6 +658,8 @@ export interface Agent {
     currentProgress?: number
     /** Speed multiplier (1 = normal, 2 = twice as fast) */
     speed?: number
+    /** Always first in the list, whatever its share (for staged videos) */
+    pinned?: boolean
     /** Agent skills it has installed, e.g. "emil-design-eng" (see SKILL_AUTHORS) */
     skills?: string[]
     /** Example prompts shown as chips above the chat input (defaults by role) */
@@ -1358,7 +1363,6 @@ ${google ? `@import url("https://fonts.googleapis.com/css2?family=${google}:wght
 @keyframes wuc-spin { to { transform: rotate(360deg); } }
 @keyframes wuc-in { from { opacity: 0; transform: translateY(calc(1.6 * var(--s, 3px))); } }
 @keyframes wuc-in-fade { from { opacity: 0; } }
-@keyframes wuc-grow { from { grid-template-rows: 0fr; } }
 @keyframes wuc-out-fade { to { opacity: 0; } }
 @keyframes wuc-in-rise { from { opacity: 0; transform: translateY(calc(2.5 * var(--s, 3px))); } }
 @keyframes wuc-pop { from { opacity: 0; transform: scale(0.96) translateY(-2px); } }
@@ -1617,7 +1621,7 @@ function ShareText({ value }: { value: number }) {
  * Spinning ring while the agent works. When its tasks are done the ring closes into
  * a full circle and a checkmark draws inside it; when work resumes it reverses.
  */
-function Loader({ done, size }: { done: boolean; size?: number }) {
+function Loader({ done, size, pending = false }: { done: boolean; size?: number; pending?: boolean }) {
     const d = useD()
     const reduce = prefersReducedMotion()
     const ease = EASE_OUT
@@ -1627,7 +1631,7 @@ function Loader({ done, size }: { done: boolean; size?: number }) {
     // runs off the main thread; it doesn't do that for SVG elements), so it keeps turning while
     // the page is busy, e.g. while an agent opens or closes. The check draws on top, unrotated.
     return (
-        <span role="img" aria-label={done ? "Done" : "Working"} style={{ position: "relative", display: "flex", width: px, height: px, flexShrink: 0 }}>
+        <span role="img" aria-label={done ? "Done" : pending ? "To do" : "Working"} style={{ position: "relative", display: "flex", width: px, height: px, flexShrink: 0 }}>
             <span
                 aria-hidden="true"
                 className="wuc-spinner"
@@ -1637,7 +1641,7 @@ function Loader({ done, size }: { done: boolean; size?: number }) {
                     display: "block",
                     animation: reduce ? "none" : `wuc-spin ${d.loaderSpeedMs}ms linear infinite`,
                     // Paused, not removed: the closed ring keeps its angle, so nothing jumps
-                    animationPlayState: done ? "paused" : "running",
+                    animationPlayState: done || pending ? "paused" : "running",
                     willChange: "transform",
                 }}
             >
@@ -1647,12 +1651,13 @@ function Loader({ done, size }: { done: boolean; size?: number }) {
                     cy="12"
                     r="9.5"
                     fill="none"
-                    stroke={d.loaderColor}
+                    // Pending: a full faint ring, which opens into the arc and starts turning
+                    stroke={pending ? alpha(d.text, 0.2) : d.loaderColor}
                     strokeWidth={d.loaderStroke}
                     strokeLinecap="round"
                     pathLength={100}
-                    strokeDasharray={done ? "100 0" : "72 28"}
-                    style={{ transition: `stroke-dasharray ${ms}ms ${ease}` }}
+                    strokeDasharray={done || pending ? "100 0" : "72 28"}
+                    style={{ transition: `stroke-dasharray ${ms}ms ${ease}, stroke ${ms}ms ${ease}` }}
                 />
             </svg>
             </span>
@@ -2841,14 +2846,14 @@ function AgentTile({
 function StepRow({ step: s, state, progress }: { step: QueueStep; state: "done" | "current" | "pending"; progress: number }) {
     const d = useD()
     const size = u(d.stepIconSize)
-    const faint = alpha(d.text, 0.2)
     return (
         // Every row the icon's height: a skill chip sticks out a little instead of
         // making its row taller, so the rows stay evenly spaced
         <div style={{ display: "flex", alignItems: "center", gap: u(d.subtaskIconGap), minWidth: 0, height: size }}>
             <span style={{ display: "flex", width: size, height: size, flexShrink: 0 }}>
-                {state === "current" ? (
-                    <Loader done={false} size={d.stepIconSize} />
+                {state !== "done" ? (
+                    // one ring for both: the pending circle morphs into the loader
+                    <Loader done={false} pending={state === "pending"} size={d.stepIconSize} />
                 ) : (
                     <svg
                         viewBox="0 0 24 24"
@@ -2861,18 +2866,14 @@ function StepRow({ step: s, state, progress }: { step: QueueStep; state: "done" 
                         }}
                         aria-hidden="true"
                     >
-                        {state === "done" ? (
-                            <path
-                                d="M4.6 12.8 L9.8 17.8 L19.4 7.4"
-                                fill="none"
-                                stroke={d.loaderColor}
-                                strokeWidth={d.loaderStroke * 1.1}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        ) : (
-                            <circle cx="12" cy="12" r="8.5" fill="none" stroke={faint} strokeWidth={d.loaderStroke} />
-                        )}
+                        <path
+                            d="M4.6 12.8 L9.8 17.8 L19.4 7.4"
+                            fill="none"
+                            stroke={d.loaderColor}
+                            strokeWidth={d.loaderStroke * 1.1}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
                     </svg>
                 )}
             </span>
@@ -2973,7 +2974,12 @@ function promptTook(p: AgentPrompt): string {
                   const rand = mulberry32(hashString(p.id + p.text))
                   return p.steps.reduce((a) => a + 6000 + rand() * 16000, 0)
               })()
-    const sec = Math.max(1, Math.round(ms / 1000))
+    return formatSecs(ms, true)
+}
+
+/** "12s", "1m 5s" (at least 1s when rounding a finished time; a running timer counts from 0s) */
+function formatSecs(ms: number, round = false): string {
+    const sec = round ? Math.max(1, Math.round(ms / 1000)) : Math.max(0, Math.floor(ms / 1000))
     return sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}m ${sec % 60}s`
 }
 
@@ -3328,6 +3334,15 @@ function AgentChat({
         () => d.suggestionsOnly && typeof window !== "undefined" && matchMedia("(hover: none) and (pointer: coarse)").matches
     )
     const prompts = agent.prompts ?? []
+    // The running prompt's timer: ticks while the agent is at work
+    const [now, setNow] = useState(() => performance.now())
+    const running = working && !status.finished
+    useEffect(() => {
+        if (!running) return
+        setNow(performance.now())
+        const id = setInterval(() => setNow(performance.now()), 250)
+        return () => clearInterval(id)
+    }, [running])
 
     // Start at the newest prompt, before the first paint. The header (and skills row) are
     // measured just after mounting, which adds space at the top, so this runs again then,
@@ -3613,6 +3628,10 @@ function AgentChat({
                                                         <span className={working && status.done >= startIdx && !finished ? "wuc-shimmer" : undefined}>
                                                             {promptLine(p, finished)}
                                                         </span>
+                                                        {/* how long it's been going, counting up (the "in 12s" once done) */}
+                                                        {!finished && status.done >= startIdx && promptTimes.get(p.id)?.start != null && (
+                                                            <span style={{ fontVariantNumeric: "tabular-nums" }}> {formatSecs(now - promptTimes.get(p.id)!.start!)}</span>
+                                                        )}
                                                     </span>
                                                     <svg
                                                         viewBox="0 0 16 16"
@@ -3684,8 +3703,7 @@ function AgentChat({
                                 )}
                                 {/* The agent's summary, once the prompt is done */}
                                 {d.showSummary && startIdx + p.steps.length <= status.done && summaryOf(p, d.showFiles) && (
-                                    // Its space opens up first (the gap above it too, so nothing jumps),
-                                    // then the text fades and rises into it
+                                    // In place at once, the text fading in (like a terminal printing its answer)
                                     <div
                                         style={{
                                             display: "grid",
@@ -3693,9 +3711,6 @@ function AgentChat({
                                             marginTop: `calc(-1 * ${u(d.bubbleGap)})`,
                                             // the text box is trimmed at the baseline: room for descenders inside the clip
                                             marginBottom: `calc(-1 * ${u(1.5)})`,
-                                            ...(doneAtOpen.current.has(p.id) || reduce
-                                                ? {}
-                                                : { animation: `wuc-grow ${d.summaryInMs}ms ${EASE_OUT} both` }),
                                         }}
                                     >
                                         <div style={{ minHeight: 0, overflow: "hidden" }}>
@@ -3711,7 +3726,8 @@ function AgentChat({
                                                     ...(doneAtOpen.current.has(p.id)
                                                         ? {}
                                                         : {
-                                                              animation: `${reduce ? "wuc-in-fade" : "wuc-in"} ${d.summaryInMs}ms ${EASE_OUT} ${reduce ? 0 : Math.round(d.summaryInMs * 0.35)}ms both`,
+                                                              // its space is there at once; the text just fades in, in place
+                                                              animation: `wuc-in-fade ${d.summaryInMs}ms ${EASE_OUT} both`,
                                                           }),
                                                 }}
                                             >
@@ -3968,6 +3984,8 @@ export interface WeeklyUsageCardProps extends Partial<CardContent> {
     /** Called when chatting adds a prompt. Without it the card keeps its own copy of the agents. */
     onAgentsChange?: (agents: Agent[]) => void
     sectionRef?: Ref<HTMLElement>
+    /** Opens this agent's chat as soon as the card is on screen (e.g. for a side-by-side video) */
+    openAgentId?: string
     style?: CSSProperties
 }
 
@@ -3982,6 +4000,7 @@ export function WeeklyUsageCard({
     onAgentsChange,
     sectionRef,
     style,
+    openAgentId,
 }: WeeklyUsageCardProps) {
     const d = useMemo(() => withFixes({ ...DEFAULT_DESIGN, ...fixHexColors(design), a11yFixes: true }), [design])
     const dRef = useRef(d)
@@ -4069,8 +4088,10 @@ export function WeeklyUsageCard({
                 const t = promptTimes.get(p.id) ?? {}
                 const from = at
                 at += p.steps.length
-                // only a start that was seen counts; a prompt already under way at load gets the guess
-                if (t.start == null && s.done === from && !s.finished && at > from) promptTimes.set(p.id, { start: now })
+                // a start that was seen; a prompt already under way when first seen gets one estimated
+                // from the subtasks it has done (so its timer doesn't start at 0 halfway through)
+                if (t.start == null && !s.finished && s.done >= from && s.done < at)
+                    promptTimes.set(p.id, { start: now - (s.done - from) * 1500 })
                 else if (t.start != null && t.end == null && s.done >= at) promptTimes.set(p.id, { ...t, end: now })
             }
         }
@@ -4102,7 +4123,7 @@ export function WeeklyUsageCard({
     const sortedAgents = useMemo(
         () =>
             [...agents]
-                .sort((a, b) => b.share - a.share)
+                .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || b.share - a.share)
                 .map((a) => (growth[a.id] ? { ...a, share: a.share + growth[a.id] } : a)),
         [agents, growth]
     )
@@ -4172,9 +4193,20 @@ export function WeeklyUsageCard({
     const shown = (a: Agent) => !useTabs || tabOf(a) === tab
     const hasVisible = sortedAgents.some(shown)
     // One list: working agents first (a finished one moves down after its pause), then by share
-    const listAgents = useTabs
+    const sortedList = useTabs
         ? sortedAgents
         : [...sortedAgents].sort((a, b) => (ready[a.id] ? 1 : 0) - (ready[b.id] ? 1 : 0))
+    // While an agent is open the list keeps its order: moving the open card in the DOM
+    // would reset its chat's scroll and replay its entrance. The new order (and its glide)
+    // follows once it closes.
+    const heldOrder = useRef<string[]>([])
+    if (!detail) heldOrder.current = sortedList.map((a) => a.id)
+    const listAgents = detail
+        ? [...sortedList].sort((a, b) => {
+              const i = heldOrder.current.indexOf(a.id), j = heldOrder.current.indexOf(b.id)
+              return (i < 0 ? Infinity : i) - (j < 0 ? Infinity : j)
+          })
+        : sortedList
     const orderKey = listAgents.map((a) => a.id).join(",")
 
     // Reordering glides: each card starts where it was and slides to its new spot.
@@ -4452,6 +4484,13 @@ export function WeeklyUsageCard({
         setDetail({ id, from, full: fullBox() })
         setDetailOpen(true)
     }
+    // Opened from the start: once the tiles have their places
+    useEffect(() => {
+        if (!openAgentId) return
+        const id = setTimeout(() => openAgent(openAgentId), 400)
+        return () => clearTimeout(id)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [openAgentId])
     /** Put the tile back in the list (after it has finished shrinking) */
     const releaseAgent = () => {
         clearTimeout(closeTimer.current)
@@ -4498,7 +4537,7 @@ export function WeeklyUsageCard({
     })
     useEffect(() => () => clearTimeout(closeTimer.current), [])
 
-    const sendPrompt = (id: string, text: string) => {
+    const sendPrompt = (id: string, text: string, auto = false) => {
         updateAgents((list) =>
             list.map((a) => {
                 if (a.id !== id) return a
@@ -4524,8 +4563,36 @@ export function WeeklyUsageCard({
             })
         )
         // Show it under "Active" once the detail closes
-        setTab("active")
+        if (!auto) setTab("active")
     }
+
+    // Now and then an agent sends one of its suggested prompts by itself: one that's done
+    // with its work if there is one, never the agent whose chat is open
+    const sendPromptRef = useRef(sendPrompt)
+    sendPromptRef.current = sendPrompt
+    const statusOfRef = useRef(statusOf)
+    statusOfRef.current = statusOf
+    useEffect(() => {
+        if (!d.live || d.autoPromptSec <= 0) return
+        const id = setInterval(() => {
+            if (document.hidden) return
+            const open = detailRef.current?.id
+            const options = agentsRef.current
+                .filter((a) => a.id !== open)
+                .map((a) => {
+                    const sent = new Set((a.prompts ?? []).map((pr) => pr.text.toLowerCase()))
+                    const text = suggestionsFor(a).find((t) => !INSTALL_RE.test(t) && !sent.has(t.toLowerCase()))
+                    return { a, text, free: statusOfRef.current(a).finished }
+                })
+                .filter((o) => o.text)
+            const free = options.filter((o) => o.free)
+            const pool = free.length ? free : options
+            if (!pool.length) return
+            const pick = pool[Math.floor(Math.random() * pool.length)]
+            sendPromptRef.current(pick.a.id, pick.text!, true)
+        }, d.autoPromptSec * 1000)
+        return () => clearInterval(id)
+    }, [d.live, d.autoPromptSec])
 
     const setSectionRef = (el: HTMLElement | null) => {
         sectionEl.current = el
@@ -5268,7 +5335,7 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
             b("collapseSteps", "Fold line over the subtasks (prompts done earlier start folded)"),
             n("collapseMs", "Fold / unfold speed", 0, 1000, 10, "ms"),
             n("foldTextBoost", "Fold line: extra size", -3, 4, 0.5, "px"),
-            n("summaryInMs", "Summary: grow-in", 0, 1000, 10, "ms"),
+            n("summaryInMs", "Summary: fade-in", 0, 1000, 10, "ms"),
             b("showFiles", "Show produced files"),
             n("fileLineGap", "File name ↔ details", 0, 4, 0.1),
             c("fileHoverBg", "File card hover"),
@@ -5307,6 +5374,7 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
             n("bigCountMs", "Number count", 0, 6000, 50, "ms"),
             n("usageGain", "Usage added when all tasks are done", 0, 42, 1, "%"),
             n("promptUsageGain", "Usage added per sent prompt", 0, 20, 0.5, "%"),
+            n("autoPromptSec", "Prompt by itself every", 0, 180, 1, "s", { hint: "An agent sends one of its suggested prompts on its own (0: never)" }),
         ],
     },
 ]
