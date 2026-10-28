@@ -3321,6 +3321,12 @@ function AgentChat({
     const [kbdFocus, setKbdFocus] = useState(false)
     const threadRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    // On a phone (touch, no hover) with only suggested prompts: the suggestion is already in
+    // the field and the field can't be tapped (tapping it zoomed the page on iPhone); the
+    // send button is all there is to press
+    const [tapToSend] = useState(
+        () => d.suggestionsOnly && typeof window !== "undefined" && matchMedia("(hover: none) and (pointer: coarse)").matches
+    )
     const prompts = agent.prompts ?? []
 
     // Start at the newest prompt, before the first paint. The header (and skills row) are
@@ -3374,6 +3380,7 @@ function AgentChat({
     // Focus the chat input once the expand has finished
     useEffect(() => {
         if (!open) return
+        if (tapToSend) return // nothing to focus on a phone (and focusing zooms the page)
         const id = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), reduce ? 0 : d.expandMs)
         return () => clearTimeout(id)
     }, [open, reduce, d.expandMs])
@@ -3433,7 +3440,7 @@ function AgentChat({
     // The suggestion shown inside the empty input
     const inlineTip = !d.suggestionChips && !draft.trim() ? chips[0] : undefined
     const send = () => {
-        const text = draft.trim()
+        const text = (tapToSend ? inlineTip ?? "" : draft).trim()
         // A suggestion taken in with Tab (and sent as is): the next one takes its place
         const slot = chips.findIndex((c) => c.toLowerCase() === text.toLowerCase())
         if (text && slot >= 0) {
@@ -3831,14 +3838,14 @@ function AgentChat({
                             pointerEvents: "none",
                             fontSize: uc(d, d.inputTextSize),
                             letterSpacing: `${d.tracking}em`,
-                            color: alpha(d.text, d.labelOpacity),
+                            color: tapToSend ? d.text : alpha(d.text, d.labelOpacity),
                             animation: freshChips.has(inlineTip)
                                 ? `${reduce ? "wuc-in-fade" : "wuc-chip-in"} ${d.suggestionInMs}ms ${EASE_OUT} both`
                                 : undefined,
                         }}
                     >
                         <span style={{ ...ellipsis, minWidth: 0 }}>{inlineTip}</span>
-                        <span
+                        {!tapToSend && <span
                             style={{
                                 flexShrink: 0,
                                 padding: `${u(0.3)} ${u(1)}`,
@@ -3850,7 +3857,7 @@ function AgentChat({
                             }}
                         >
                             Tab
-                        </span>
+                        </span>}
                     </span>
                 )}
                 <input
@@ -3886,6 +3893,9 @@ function AgentChat({
                         }
                     }}
                     enterKeyHint="send"
+                    readOnly={tapToSend}
+                    tabIndex={tapToSend ? -1 : undefined}
+                    aria-hidden={tapToSend || undefined}
                     placeholder={inlineTip || d.suggestionsOnly ? "" : d.composerPlaceholder.replace("{name}", agent.name)}
                     aria-label={inlineTip ? `Message ${agent.name}. Suggestion: ${inlineTip}. Press Tab to use it` : `Message ${agent.name}`}
                     style={{
@@ -3900,26 +3910,27 @@ function AgentChat({
                         letterSpacing: `${d.tracking}em`,
                         color: d.text,
                         padding: `${u(1)} 0`,
+                        pointerEvents: tapToSend ? "none" : undefined,
                     }}
                 />
                 </div>
                 <button
                     type="button"
                     onClick={send}
-                    aria-label="Send"
+                    aria-label={tapToSend && inlineTip ? `Send: ${inlineTip}` : "Send"}
                     className="wuc-send"
                     // Only sends what's in the input: a suggestion has to be taken in with Tab first
-                    disabled={!draft.trim()}
+                    disabled={!(tapToSend ? inlineTip : draft.trim())}
                     style={{
                         appearance: "none",
                         border: "none",
-                        cursor: draft.trim() ? "pointer" : "default",
+                        cursor: (tapToSend ? inlineTip : draft.trim()) ? "pointer" : "default",
                         width: u(5.5),
                         height: u(5.5),
                         borderRadius: u(d.sendRadius),
                         background: d.text,
                         color: d.card,
-                        opacity: draft.trim() ? 1 : 0.2,
+                        opacity: (tapToSend ? inlineTip : draft.trim()) ? 1 : 0.2,
                         transition: "opacity 150ms ease",
                         display: "flex",
                         alignItems: "center",
