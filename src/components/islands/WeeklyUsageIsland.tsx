@@ -9,7 +9,7 @@ import type { Design } from "./WeeklyUsageCard"
 const DESIGN: Partial<Design> = {
     backdrop: "transparent",
     backdropRatio: "Fill screen", // the carousel card is its frame
-    fit: 0.85,
+    fit: 0.83,
     titleSize: 4.8,
     tracking: -0.01,
     titleWeight: 400,
@@ -31,8 +31,8 @@ const DESIGN: Partial<Design> = {
     card: "#FFFFFF",
     tileBg: "#FFFFFF",
     inputBg: "#FDFCFC",
-    threadBlur: 2, // a light blur where the chat slides under the agent's header
-    threadBlurHeight: 2.25,
+    threadBlur: 1, // a light blur where the chat slides under the agent's header
+    threadBlurHeight: 11.25,
     solidFade: 0,
     headerCutGap: 3, // that edge a little below the header
     threadTopSpace: 4, // and the chat starts as much lower, so the first message stays clear
