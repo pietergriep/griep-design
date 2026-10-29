@@ -227,6 +227,72 @@ main {
     text-wrap: pretty;
 }
 
+/* the two intro texts (scripts/intro.ts): one grid cell, so the box keeps the taller
+   one's height; the hidden one fades out with a slight blur */
+.taglines {
+    display: grid;
+}
+.taglines > .tagline {
+    grid-area: 1 / 1;
+    margin: 0;
+    opacity: 0;
+    filter: blur(2px);
+    visibility: hidden;
+    transition: opacity 0.3s ease, filter 0.3s ease, visibility 0s linear 0.3s;
+}
+.taglines > .tagline.is-shown {
+    opacity: 1;
+    filter: none;
+    visibility: visible;
+    transition: opacity 0.3s ease 0.15s, filter 0.3s ease 0.15s, visibility 0s;
+}
+/* the process text carries chips, so its lines are a little taller and stay even */
+.tagline--process {
+    line-height: 1.75;
+}
+/* the swap words: underlined in dots like the footer's links */
+.tagline-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: underline dotted #191919;
+    text-decoration-thickness: 1px;
+    text-decoration-skip-ink: none;
+    text-underline-offset: 5px;
+    transition: opacity 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+    .tagline-link:hover {
+        opacity: 0.5;
+    }
+}
+/* Figma and Claude, as small chips in the text */
+.tool-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 7px 1px 6px;
+    border-radius: 7px;
+    background: #f2f2f2;
+    line-height: 1.45;
+    white-space: nowrap;
+    vertical-align: baseline;
+}
+.tool-chip svg {
+    flex: none;
+    width: auto;
+    height: 0.85em;
+}
+@media (prefers-reduced-motion: reduce) {
+    .taglines > .tagline {
+        transition: none;
+    }
+}
+
 
 /* Framer's withBlurIn: name + role together (0.45s), tagline staggered (0.6s).
    Hidden until the head script adds .intro-in (after the page fade-in and the font) */
