@@ -266,6 +266,11 @@ main {
         opacity: 0.5;
     }
 }
+/* the process text fills its first line first (no rebalancing), so the two chips and
+   "I build," stay together up there */
+.tagline--process {
+    text-wrap: wrap;
+}
 /* a chip and the punctuation after it never split over two lines */
 .chip-word {
     white-space: nowrap;
