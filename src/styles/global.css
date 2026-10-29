@@ -186,7 +186,7 @@ main {
 }
 
 .intro {
-    width: 420px; /* wide enough that the process text (with its chips) sits in calm lines */
+    width: 300px;
     max-width: 100%;
     display: flex;
     flex-direction: column;
@@ -248,7 +248,7 @@ main {
 }
 /* the process text carries chips, so its lines are a little taller and stay even */
 .tagline--process {
-    line-height: 1.75;
+    line-height: 1.9;
 }
 /* the swap words: underlined in dots like the footer's links */
 .tagline-link {
@@ -960,7 +960,7 @@ main {
     }
     .intro {
         padding: 40px 0 20px 0;
-        width: 420px;
+        width: 300px;
         max-width: calc(100% - 15px);
     }
     .tagline {
