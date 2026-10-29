@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
-import { WeeklyUsageShowcase, sampleAgents } from "./WeeklyUsageCard"
+import { BackdropPanel, DEFAULT_DESIGN, WeeklyUsageShowcase, backdropPaint, sampleAgents } from "./WeeklyUsageCard"
 import type { Design } from "./WeeklyUsageCard"
 
 // The weekly usage / agents card (from Downloads/WeeklyUsageCard.tsx), on its own: no
@@ -102,6 +102,23 @@ const FILM_AGENTS = sampleAgents.map((a) =>
 
 const STUDIO_KEY = "agent-overview-panel-v1"
 const CAROUSEL_KEY = "agent-overview-panel-carousel-v1"
+const PAIR_KEY = "agent-overview-panel-pair-v1"
+/** What the pair view's panel saved (its backdrop edits, the cards' size) */
+const savedPair = () => {
+    try {
+        return JSON.parse(localStorage.getItem(PAIR_KEY) || "{}")
+    } catch {
+        return {}
+    }
+}
+/** The design a view's panel saved in this browser */
+const loadDesign = (key: string): Partial<Design> => {
+    try {
+        return JSON.parse(localStorage.getItem(key) || "null")?.design ?? {}
+    } catch {
+        return {}
+    }
+}
 
 export default function WeeklyUsageIsland() {
     // dev only, the card's own settings panel (it saves in this browser; ask to bake values in):
@@ -122,6 +139,41 @@ export default function WeeklyUsageIsland() {
     const [pairIn, setPairIn] = useState(true)
     // with &scale=1.15 both cards are that much bigger (for a narrower video, e.g. 4:3 for phones)
     const [pairScale, setPairScale] = useState(1)
+    // its backdrop: the studio's (as saved in its panel), then its own panel's edits over that
+    const [pairDesign, setPairDesign] = useState<Design>({ ...DEFAULT_DESIGN, ...STUDIO })
+    const [pairPanel, setPairPanel] = useState(true)
+    // the agents keep busy: one that's done sends a suggested prompt every few seconds
+    const [pairAuto, setPairAutoState] = useState(8)
+    const setPairAuto = (raw: number) => {
+        const v = Math.max(0, Math.round(raw) || 0)
+        setPairAutoState(v)
+        try {
+            localStorage.setItem(PAIR_KEY, JSON.stringify({ ...savedPair(), autoSec: v }))
+        } catch {}
+    }
+    const setScale = (raw: number) => {
+        const v = Math.min(3, Math.max(0.2, raw || 1))
+        setPairScale(v)
+        try {
+            localStorage.setItem(PAIR_KEY, JSON.stringify({ ...savedPair(), scale: v }))
+        } catch {}
+    }
+    // its panel's edits are saved on their own (only the backdrop's settings), over the studio's
+    const editPair = (fn: (d: Design) => Design) =>
+        setPairDesign((prev) => {
+            const next = fn(prev)
+            // only what differs from the studio's backdrop (so its image isn't stored twice)
+            const base: Design = { ...DEFAULT_DESIGN, ...STUDIO, ...loadDesign(STUDIO_KEY) }
+            const own = Object.fromEntries(
+                (Object.keys(next) as (keyof Design)[]).filter((k) => k.startsWith("backdrop") && next[k] !== base[k]).map((k) => [k, next[k]]),
+            )
+            try {
+                localStorage.setItem(PAIR_KEY, JSON.stringify({ ...savedPair(), design: own }))
+            } catch {
+                /* an image over the storage limit: kept for this visit only */
+            }
+            return next
+        })
     useEffect(() => {
         if (!import.meta.env.DEV) return
         const t = new URLSearchParams(location.search).get("tune")
@@ -152,8 +204,16 @@ export default function WeeklyUsageIsland() {
             window.addEventListener("usage-pair-out", out)
             window.addEventListener("usage-pair-start", start)
             if (new URLSearchParams(location.search).has("wait")) setPairIn(false)
-            const scale = Number(new URLSearchParams(location.search).get("scale"))
+            // &scale= (for recording) over the size saved in its panel
+            let scale = Number(new URLSearchParams(location.search).get("scale"))
+            if (!(scale > 0)) try { scale = Number(JSON.parse(localStorage.getItem(PAIR_KEY) || "null")?.scale) } catch {}
             if (scale > 0) setPairScale(scale)
+            // recording (&wait): no panel, and only the scripted work
+            if (new URLSearchParams(location.search).has("wait")) {
+                setPairPanel(false)
+                setPairAutoState(0)
+            } else if (typeof savedPair().autoSec === "number") setPairAutoState(savedPair().autoSec)
+            setPairDesign({ ...DEFAULT_DESIGN, ...STUDIO, ...loadDesign(STUDIO_KEY), ...loadDesign(PAIR_KEY) })
             setTune("pair")
             return () => {
                 window.removeEventListener("usage-pair-out", out)
@@ -224,11 +284,13 @@ export default function WeeklyUsageIsland() {
             </div>,
             document.body,
         )
-    if (tune === "pair")
+    if (tune === "pair") {
+        const d = pairDesign
         return createPortal(
-            <div style={{ position: "fixed", inset: 0, zIndex: 2147483000, overflow: "hidden", background: "#F8F8F8" }}>
-                <div style={{ position: "absolute", inset: -4, background: `url("${STUDIO.backdropImage}") center / cover no-repeat`, filter: `blur(${STUDIO.backdropBlur}px)` }} />
-                <div style={{ position: "absolute", inset: 0, background: "#000", opacity: STUDIO.backdropOverlayOpacity }} />
+            <div style={{ position: "fixed", inset: 0, zIndex: 2147483000, display: "flex" }}>
+            <div style={{ position: "relative", flex: 1, overflow: "hidden", containerType: "size" }}>
+                <div style={{ position: "absolute", inset: -2 * Math.max(2, d.backdropBlur), background: backdropPaint(d), filter: d.backdropBlur > 0 ? `blur(${d.backdropBlur}px)` : undefined }} />
+                <div style={{ position: "absolute", inset: 0, background: d.backdropOverlay, opacity: d.backdropOverlayOpacity }} />
                 <style>
                     {"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }" +
                         "@keyframes wu-pair-out { to { opacity: 0; transform: translateY(14px) scale(0.985) } }"}
@@ -244,10 +306,10 @@ export default function WeeklyUsageIsland() {
                     <div
                         key={i}
                         style={{
-                            ["--u" as string]: `calc(min(1vw, 1.566vh) * ${pairScale})`,
+                            ["--u" as string]: `calc(min(1cqw, 1.566cqh) * ${pairScale})`,
                             position: "absolute",
-                            left: `calc((100vw - 75.7 * var(--u)) / 2 + ${f.x} * var(--u))`,
-                            top: `calc((100vh - (34.9 * 749 / 685 + 13.75) * var(--u)) / 2 + ${f.y} * var(--u))`,
+                            left: `calc((100cqw - 75.7 * var(--u)) / 2 + ${f.x} * var(--u))`,
+                            top: `calc((100cqh - (34.9 * 749 / 685 + 13.75) * var(--u)) / 2 + ${f.y} * var(--u))`,
                             width: "calc(34.9 * var(--u))",
                             aspectRatio: "685 / 749",
                             animation: pairOut
@@ -258,15 +320,38 @@ export default function WeeklyUsageIsland() {
                         <WeeklyUsageShowcase
                             panel={false}
                             mode="fill"
-                            design={{ ...DESIGN, fit: PAIR_FIT }}
+                            design={{ ...DESIGN, fit: PAIR_FIT, autoPromptSec: pairAuto }}
                             openAgentId={f.open}
                             agents={PAIR_AGENTS}
                         />
                     </div>
                 ))}
+                {!pairPanel && !new URLSearchParams(location.search).has("wait") && (
+                    <button onClick={() => setPairPanel(true)} style={{ position: "absolute", top: 12, right: 12, padding: "6px 10px", font: "12px Geist, system-ui, sans-serif", background: "#FFFFFF", border: "none", borderRadius: 6, boxShadow: "0 1px 3px rgba(0,0,0,0.12)", cursor: "pointer" }}>
+                        Customize
+                    </button>
+                )}
+            </div>
+            {pairPanel && (
+                <BackdropPanel
+                    design={d}
+                    setDesign={editPair}
+                    onClose={() => setPairPanel(false)}
+                    onReset={() => {
+                        editPair(() => ({ ...DEFAULT_DESIGN, ...STUDIO, ...loadDesign(STUDIO_KEY) }))
+                        setScale(1)
+                        setPairAuto(8)
+                    }}
+                    scale={pairScale}
+                    setScale={setScale}
+                    autoSec={pairAuto}
+                    setAutoSec={setPairAuto}
+                />
+            )}
             </div>,
             document.body,
         )
+    }
     if (tune === "studio")
         // on <body>: inside the carousel's moving track, "fixed" would only cover this card
         return createPortal(

@@ -5821,7 +5821,7 @@ const btn: CSSProperties = {
 }
 
 /** Only the values that differ from the defaults */
-function designDiff(d: Design): Partial<Design> {
+export function designDiff(d: Design): Partial<Design> {
     const out: Partial<Design> = {}
     for (const k of Object.keys(DEFAULT_DESIGN) as (keyof Design)[]) {
         if (d[k] !== DEFAULT_DESIGN[k]) (out as Record<string, unknown>)[k] = d[k]
@@ -5846,6 +5846,9 @@ function Panel({
     setContent,
     onClose,
     onResetAll,
+    only,
+    omit = [],
+    extra,
 }: {
     design: Design
     setDesign: (fn: (d: Design) => Design) => void
@@ -5853,6 +5856,11 @@ function Panel({
     setContent: (fn: (c: CardContent) => CardContent) => void
     onClose: () => void
     onResetAll: () => void
+    /** Only these sections (by title), without these settings, and no Content */
+    only?: string[]
+    omit?: (keyof Design)[]
+    /** More settings above the sections (a view's own) */
+    extra?: ReactNode
 }) {
     const [exported, setExported] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
@@ -5865,12 +5873,15 @@ function Panel({
         const hay = texts.join(" ").toLowerCase()
         return words.every((w) => hay.includes(w))
     }
+    const shown = only
+        ? SECTIONS.filter((sec) => only.includes(sec.title)).map((sec) => ({ ...sec, fields: sec.fields.filter((f) => !omit.includes(f.key)) }))
+        : SECTIONS
     const sections = words.length
-        ? SECTIONS.map((sec) => ({ ...sec, fields: sec.fields.filter((f) => matches(f.label, sec.title, String(f.key))) })).filter(
+        ? shown.map((sec) => ({ ...sec, fields: sec.fields.filter((f) => matches(f.label, sec.title, String(f.key))) })).filter(
               (sec) => sec.fields.length > 0,
           )
-        : SECTIONS
-    const showContent = !words.length || matches("Content used projected days until reset agents")
+        : shown
+    const showContent = !only && (!words.length || matches("Content used projected days until reset agents"))
 
     const exportSettings = () => {
         const text = exportText(design, content)
@@ -5963,6 +5974,7 @@ function Panel({
                 {words.length > 0 && sections.length === 0 && !showContent && (
                     <div style={{ padding: "12px 14px", color: P.sub, fontSize: 11 }}>No settings match "{query}"</div>
                 )}
+                {!words.length && extra}
                 {showContent && (
                 <Group title="Content" defaultOpen>
                     <Row label="Used">
@@ -6032,7 +6044,7 @@ function Panel({
 
                 {sections.map((s) => (
                     // while searching, the matching sections open (re-keyed so they reopen per search)
-                    <Group key={s.title + (words.length ? ":search" : "")} title={s.title} defaultOpen={words.length > 0}>
+                    <Group key={s.title + (words.length ? ":search" : "")} title={s.title} defaultOpen={words.length > 0 || !!only}>
                         {s.fields.map((f) => (
                             <Row
                                 key={f.key}
@@ -6063,6 +6075,43 @@ function Panel({
 
 /* ------------------------------------------------------------------ */
 /* Showcase                                                            */
+/** The panel with only the backdrop's settings (the pair view's backdrop: full screen, no frame) */
+export function BackdropPanel({ design, setDesign, onClose, onReset, scale, setScale, autoSec, setAutoSec }: {
+    design: Design
+    setDesign: (fn: (d: Design) => Design) => void
+    onClose: () => void
+    onReset: () => void
+    /** Size of the cards, 1 = as drawn */
+    scale: number
+    setScale: (v: number) => void
+    /** Seconds between prompts the agents send by themselves (0: never) */
+    autoSec: number
+    setAutoSec: (v: number) => void
+}) {
+    return (
+        <Panel
+            design={design}
+            setDesign={setDesign}
+            content={DEFAULT_CONTENT}
+            setContent={() => {}}
+            onClose={onClose}
+            onResetAll={onReset}
+            only={["Backdrop"]}
+            omit={["backdropRatio", "backdropSurround", "backdropRadius", "backdropMargin"]}
+            extra={
+                <Group title="Cards" defaultOpen>
+                    <Row label="Size" changed={scale !== 1} onReset={() => setScale(1)} hint="Both cards, 1 = as drawn">
+                        <NumberInput value={scale} min={0.5} max={1.6} step={0.01} unit="×" onChange={setScale} />
+                    </Row>
+                    <Row label="Prompt by itself every" changed={autoSec !== 8} onReset={() => setAutoSec(8)} hint="Keeps the agents working: one that's done sends a suggested prompt on its own (0: never)">
+                        <NumberInput value={autoSec} min={0} max={60} step={1} unit="s" onChange={setAutoSec} />
+                    </Row>
+                </Group>
+            }
+        />
+    )
+}
+
 /* ------------------------------------------------------------------ */
 
 const STORAGE_KEY = "agent-overview-panel-v1"
@@ -6170,6 +6219,12 @@ export function WeeklyUsageShowcase({
         ...designProp,
         ...(panel ? loadSaved(storageKey).design : undefined),
     }))
+    // without a panel, settings passed in later apply too (the pair view's own controls)
+    const designKey = panel ? "" : JSON.stringify(designProp ?? {})
+    useEffect(() => {
+        if (!panel) setDesign({ ...DEFAULT_DESIGN, ...designProp })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [designKey])
     const [content, setContent] = useState<CardContent>(() => (panel && loadSaved(storageKey).content) || initialContent)
     // What happens in the card (chats, agents finishing) lives here and isn't saved: every
     // load starts fresh. Editing the agents in the panel starts over from those edits.
