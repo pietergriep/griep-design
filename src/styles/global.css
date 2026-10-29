@@ -186,7 +186,7 @@ main {
 }
 
 .intro {
-    width: 300px;
+    width: 420px; /* wide enough that the process text (with its chips) sits in calm lines */
     max-width: 100%;
     display: flex;
     flex-direction: column;
@@ -269,6 +269,10 @@ main {
     .tagline-link:hover {
         opacity: 0.5;
     }
+}
+/* a chip and the punctuation after it never split over two lines */
+.chip-word {
+    white-space: nowrap;
 }
 /* Figma and Claude, as small chips in the text */
 .tool-chip {
@@ -955,7 +959,7 @@ main {
     }
     .intro {
         padding: 40px 0 20px 0;
-        width: 300px;
+        width: 420px;
         max-width: calc(100% - 15px);
     }
     .tagline {
