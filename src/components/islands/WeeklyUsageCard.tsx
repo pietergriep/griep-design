@@ -341,6 +341,16 @@ export interface Design {
     promptUsageGain: number
     /** Every this many seconds an agent picks up one of its suggested prompts by itself (0: never) */
     autoPromptSec: number
+    /** The agent list settles on whole cards after scrolling */
+    listSnap: boolean
+    /** Blur where cards scroll out under the top of the list (px; 0 = off) */
+    listBlur: number
+    /** How far down from the list's top edge it reaches (u) */
+    listBlurHeight: number
+    /** The card colour laid over it, strongest at the edge (0–1) */
+    listBlurTintOpacity: number
+    /** How much scrolling (u) it takes to fade fully in; 0 = always there */
+    listBlurReveal: number
 }
 
 export const DEFAULT_DESIGN: Design = {
@@ -573,7 +583,12 @@ export const DEFAULT_DESIGN: Design = {
     bigCountMs: 2600,
     usageGain: 1,
     promptUsageGain: 0.5,
-    autoPromptSec: 35,
+    listSnap: false, // free scrolling; true settles on whole cards
+    listBlur: 1, // the chat's edge blur settings, at the top of the list
+    listBlurHeight: 11.25,
+    listBlurTintOpacity: 1,
+    listBlurReveal: 8,
+    autoPromptSec: 0, // off for now (was 35: an agent sends a suggested prompt by itself every 35s)
 }
 
 const DesignContext = createContext<Design>(DEFAULT_DESIGN)
@@ -664,6 +679,8 @@ export interface Agent {
     skills?: string[]
     /** Example prompts shown as chips above the chat input (defaults by role) */
     suggestions?: string[]
+    /** Hand-written subtasks for prompts of its own (e.g. its `suggestions`), by prompt text */
+    plans?: Record<string, QueueStep[]>
     /** Fallback lines for an agent without prompts */
     currentTask?: AgentTask
     secondaryLine?: string
@@ -1193,6 +1210,8 @@ export function generateSummary(agent: Agent, text: string): string | undefined 
 }
 
 function planFor(agent: Agent, text: string): { steps: QueueStep[]; summary?: string } {
+    const own = agent.plans && Object.entries(agent.plans).find(([t]) => t.toLowerCase() === text.trim().toLowerCase())
+    if (own) return { steps: own[1] }
     // A suggested prompt gets its hand-written plan
     for (const g of SUGGESTED) {
         const hit = g.prompts.find(([t]) => t.toLowerCase() === text.trim().toLowerCase())
@@ -4171,8 +4190,11 @@ export function WeeklyUsageCard({
                 delete timers[a.id]
                 setReady((r) => (r[a.id] ? omit(r, a.id) : r))
                 setLeaving((l) => (l[a.id] ? omit(l, a.id) : l))
-            } else if (!ready[a.id] && !timers[a.id] && openId !== a.id) {
-                // (An open agent stays put until it's closed, so it closes back into its slot)
+            } else if (!ready[a.id] && !timers[a.id] && (openId !== a.id || !d.showToggle)) {
+                // With tabs, an open agent stays in its tab until it's closed, so it closes back
+                // into its slot. In one list it moves on while open: the list holds its order
+                // while an agent is open, so it doesn't show, and closing it then changes nothing
+                // (instead of the card going up to the working agents and back down after)
                 const { moveToReadyMs, moveOutMs } = dRef.current
                 const out = prefersReducedMotion() ? 0 : moveOutMs
                 timers[a.id] = [
@@ -4262,9 +4284,22 @@ export function WeeklyUsageCard({
     const listEl = useRef<HTMLDivElement | null>(null)
     const [listMax, setListMax] = useState<number | null>(null)
     const [listEdges, setListEdges] = useState({ top: false, bottom: false })
+    // The list's edge blur fades in with the scroll (set straight on the element, no re-render)
+    const listBlurEl = useRef<HTMLDivElement>(null)
+    const revealListBlur = () => {
+        const el = listEl.current, blur = listBlurEl.current
+        if (!el || !blur) return
+        const { listBlurReveal, listBlurHeight } = dRef.current
+        const perU = (blur.firstElementChild as HTMLElement | null)?.offsetHeight ?? 0
+        const px = listBlurReveal * (perU / Math.max(0.01, listBlurHeight))
+        blur.style.opacity = String(px > 0 ? Math.min(1, el.scrollTop / px) : 1)
+    }
+    // after every render too (React would otherwise put back the opacity it was given)
+    useLayoutEffect(revealListBlur)
     const updateEdges = () => {
         const el = listEl.current
         if (!el) return
+        revealListBlur()
         const top = el.scrollTop > 1
         const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 1
         setListEdges((e) => (e.top === top && e.bottom === bottom ? e : { top, bottom }))
@@ -4305,7 +4340,7 @@ export function WeeklyUsageCard({
     settleListRef.current = settleList
     const onListScroll = () => {
         updateEdges()
-        if (detail || keepScroll.current !== null || settling.current) return
+        if (!dRef.current.listSnap || detail || keepScroll.current !== null || settling.current) return
         // Browsers with scrollend settle once all scrolling (trackpad momentum too) is over
         if ("onscrollend" in window) return
         clearTimeout(settleTimer.current)
@@ -4333,7 +4368,8 @@ export function WeeklyUsageCard({
             clearTimeout(wait)
             const quiet = 180 - (performance.now() - lastInput)
             wait = setTimeout(() => {
-                if (!detailRef.current && keepScroll.current === null && performance.now() - lastInput >= 150) settleListRef.current()
+                if (dRef.current.listSnap && !detailRef.current && keepScroll.current === null && performance.now() - lastInput >= 150)
+                    settleListRef.current()
             }, Math.max(0, quiet))
         }
         el.addEventListener("scrollend", onEnd)
@@ -4808,6 +4844,35 @@ export function WeeklyUsageCard({
                                 </div>
                             )}
                         </div>
+                        {/* The chat's blur, at the list's top edge too: cards scrolling out under it
+                            blur instead of being cut off. Only once scrolled, so the first card is
+                            sharp at rest; laid over the list (the list itself clips its cards) */}
+                        {d.listBlur > 0 && listMax !== null && (
+                            <div
+                                aria-hidden="true"
+                                style={{
+                                    gridArea: "1 / 1",
+                                    alignSelf: "start",
+                                    marginTop: -LIST_EDGE,
+                                    position: "relative",
+                                    zIndex: 4, // over the cards' headers (3), under an open card (20)
+                                    pointerEvents: "none",
+                                    // hidden while an agent is open (the open card sits over the list)
+                                    opacity: detail ? 0 : 1,
+                                    transition: `opacity 150ms ${EASE_OUT}`,
+                                }}
+                            >
+                                <div ref={listBlurEl} style={{ opacity: 0 }}>
+                                    <EdgeBlur
+                                        side="top"
+                                        height={u(d.listBlurHeight)}
+                                        amount={d.listBlur}
+                                        tint={d.listBlurTintOpacity > 0 ? alpha(d.tileFill ? d.tileBg : d.card, d.listBlurTintOpacity) : undefined}
+                                        tintFade={u(d.listBlurHeight)}
+                                    />
+                                </div>
+                            </div>
+                        )}
                         {d.showScrollbar && listMax !== null && thumb.h > 0 && (
                             <div
                                 aria-hidden="true"
@@ -4884,7 +4949,7 @@ export interface BackdropProps {
 
 /** Backdrop with the card centered, scaled to fit both width and height */
 /** Backdrop shapes: the whole screen, or a frame in one of these aspect ratios */
-export const BACKDROP_RATIOS = ["Fill screen", "16:9", "3:2", "4:3", "1:1", "4:5", "3:4", "9:16"]
+export const BACKDROP_RATIOS = ["Fill screen", "16:9", "3:2", "4:3", "1:1", "4:5", "3:4", "1:1.414 (A4)", "9:16"]
 
 /** The backdrop's paint: colour, optional gradient, optional image on top */
 export function backdropPaint(d: Design): string {
@@ -4922,7 +4987,9 @@ export function Backdrop({
                     justifyContent: "center",
                     overflow: "hidden",
                     containerType: "size",
-                    "--s": `min(${fit} * 100cqw / ${cardWidth}, ${fit} * 100cqh / ${Math.max(1, cardHeight)})`,
+                    // Sized for the default width: a wider card keeps its text size and just takes
+                    // more of the frame, until it nearly reaches the frame's edges (then it scales down)
+                    "--s": `min(${fit} * 100cqw / ${Math.min(cardWidth, DEFAULT_DESIGN.cardWidth)}, 0.96 * 100cqw / ${cardWidth}, ${fit} * 100cqh / ${Math.max(1, cardHeight)})`,
                     ...style,
                 } as CSSProperties
             }
@@ -5196,7 +5263,7 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
         title: "Card",
         fields: [
             n("fit", "Size on screen", 0.2, 1, 0.01, ""),
-            n("cardWidth", "Width", 80, 200, 1),
+            n("cardWidth", "Width", 80, 200, 1, "u", { hint: "Wider keeps the text size, up to the edges of its frame" }),
             n("cardPadding", "Padding", 0, 12, 0.25),
             n("cardRadius", "Corner radius", 0, 20, 0.25),
             n("cardBorderWidth", "Border width", 0, 3, 0.25, "px"),
@@ -5246,6 +5313,11 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
             n("scrollbarOffset", "Scrollbar distance from cards", -2, 4, 0.1),
             c("scrollbarColor", "Scrollbar color"),
             n("scrollbarOpacity", "Scrollbar opacity", 0, 1, 0.01, ""),
+            b("listSnap", "Snap list to whole cards", { hint: "After scrolling, the agent list settles on whole cards" }),
+            n("listBlur", "List edge blur", 0, 20, 0.5, "px", { hint: "Cards scrolling out under the top of the list blur. 0 = off." }),
+            n("listBlurHeight", "List blur height", 1, 20, 0.25, "u", { activeWhen: (d) => d.listBlur > 0 }),
+            n("listBlurTintOpacity", "List blur fade (card colour)", 0, 1, 0.05, "", { activeWhen: (d) => d.listBlur > 0 }),
+            n("listBlurReveal", "Blur fades in over", 0, 40, 0.5, "u", { hint: "Scrolling it takes to show fully. 0 = always on.", activeWhen: (d) => d.listBlur > 0 }),
             n("tileRadius", "Corner radius", 0, 10, 0.25),
             n("tilePadding", "Padding", 0, 10, 0.25),
             n("tileHeaderGap", "Header ↔ tasks", 0, 12, 0.25),
@@ -6111,7 +6183,9 @@ export function WeeklyUsageShowcase({
     useEffect(() => {
         if (!panel) return
         try {
-            window.localStorage.setItem(storageKey, JSON.stringify({ design: designDiff(design), content, migrated: MIGRATION }))
+            // keeps any one-time flags the page set on it (e.g. "blurFromCode")
+            const prev = JSON.parse(window.localStorage.getItem(storageKey) || "{}")
+            window.localStorage.setItem(storageKey, JSON.stringify({ ...prev, design: designDiff(design), content, migrated: MIGRATION }))
         } catch {
             // Usually a big uploaded image going over the browser's storage limit:
             // keep everything else, just not the image
@@ -6125,7 +6199,7 @@ export function WeeklyUsageShowcase({
     }, [panel, storageKey, design, content])
 
     // Backdrop: the whole screen, or a frame in the chosen aspect ratio, centred
-    const ratio = /^(\d+):(\d+)$/.exec(design.backdropRatio)
+    const ratio = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)/.exec(design.backdropRatio)
     const backdrop = (
         <Backdrop
             mode="fill"

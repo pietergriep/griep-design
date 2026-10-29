@@ -26,11 +26,12 @@ const DESIGN: Partial<Design> = {
     sendRadius: 1.35,
     suggestionsOnly: true, // prompts can't be typed, only the suggested ones sent
     closeBg: "#EBEBEB",
-    tileHoverBg: "#FAFAFA",
-    // the card and its agent cards white, the input off-white
+    tileHoverBg: "#F7F7F7",
+    // the card, its agent cards and the input white
     card: "#FFFFFF",
     tileBg: "#FFFFFF",
-    inputBg: "#FDFCFC",
+    inputBg: "#FFFFFF",
+    inputBorderColor: "#D6D6D6",
     threadBlur: 1, // a light blur where the chat slides under the agent's header
     threadBlurHeight: 11.25,
     solidFade: 0,
@@ -40,6 +41,10 @@ const DESIGN: Partial<Design> = {
     readyWeight: 500, // "Ready for the next prompt"
     workSpeed: 3.5, // agents get through their subtasks 3.5× as fast
     chatTextBoost: 0.5, // the agent chat's text 0.5px bigger
+    summaryInMs: 300,
+    listBlur: 0.5, // a lighter, shorter blur where the list scrolls under its top edge
+    listBlurHeight: 6.25,
+    listBlurReveal: 4,
 }
 
 // The studio view (?tune=usage-studio): the same card on its own framed backdrop
@@ -47,7 +52,8 @@ const DESIGN: Partial<Design> = {
 const STUDIO: Partial<Design> = {
     ...DESIGN,
     backdrop: "#F8F8F8",
-    backdropRatio: "4:3",
+    backdropRatio: "1:1.414 (A4)", // a tall A-paper frame (1415 × 2000)
+    autoPromptSec: 0, // agents don't send prompts by themselves (for now)
     backdropImage: "/media/usage/backdrop.jpg",
     backdropBlur: 2,
     backdropOverlayOpacity: 0.14,
@@ -62,6 +68,38 @@ const PAIR_AGENTS = sampleAgents.map((a) =>
     a.id === "reviewer" ? { ...a, status: "active" as const, tasksDone: 0, currentProgress: 0 } : a.id === "researcher" ? { ...a, pinned: true } : a
 )
 
+// The film view (a staged screen video of the studio): prompts typed out (not the suggested
+// ones), each with a short plan of its own; Reviewer gets through its review faster
+const FILM_REVIEW = "Review the pricing page PR #240"
+const FILM_PROMPT = "Polish the settings page"
+const FILM_AGENTS = sampleAgents.map((a) =>
+    a.id === "reviewer"
+        ? {
+              ...a,
+              speed: 2.2,
+              plans: {
+                  [FILM_REVIEW]: [
+                      { doing: "Reading the diff {n} of 6 files", done: "Read the diff of 6 files", count: 6 },
+                      { doing: "Stress-testing the layout", done: "Found 2 overflow bugs", skill: "break-ui" },
+                      { doing: "Leaving comments {n} of 2", done: "Left 2 comments", count: 2 },
+                  ],
+              },
+          }
+        : a.id === "coder"
+          ? {
+                ...a,
+                suggestions: ["Add dark mode to the dashboard"], // what the input suggests; the prompt typed is another
+                plans: {
+                    [FILM_PROMPT]: [
+                        { doing: "Reading src/pages/Settings.tsx", done: "Read src/pages/Settings.tsx" },
+                        { doing: "Fixing spacing and focus states", done: "Fixed 5 spacing and focus issues" },
+                        { doing: "Running tests {n} of 14", done: "14 tests passed", count: 14 },
+                    ],
+                },
+            }
+          : a
+)
+
 const STUDIO_KEY = "agent-overview-panel-v1"
 const CAROUSEL_KEY = "agent-overview-panel-carousel-v1"
 
@@ -74,12 +112,16 @@ export default function WeeklyUsageIsland() {
     //                                      shown on a "usage-record-start" event (for screen videos)
     //   localhost:4322/?tune=usage-pair    two cards side by side on the studio backdrop, the list
     //                                      and an open agent, both running (for the X post)
-    const [tune, setTune] = useState<"" | "carousel" | "studio" | "record" | "pair">("")
+    const [tune, setTune] = useState<"" | "carousel" | "studio" | "record" | "pair" | "film">("")
+    // film view: the studio's saved look (backdrop included), shown on a "usage-film-start" event
+    const [film, setFilm] = useState<{ design: Partial<Design>; on: boolean } | null>(null)
     const [recording, setRecording] = useState(false)
     // pair view: the cards fade out again on a "usage-pair-out" event (the end of a looping video)
     const [pairOut, setPairOut] = useState(false)
     // with &wait the cards only come in on a "usage-pair-start" event (for recording a loop)
     const [pairIn, setPairIn] = useState(true)
+    // with &scale=1.15 both cards are that much bigger (for a narrower video, e.g. 4:3 for phones)
+    const [pairScale, setPairScale] = useState(1)
     useEffect(() => {
         if (!import.meta.env.DEV) return
         const t = new URLSearchParams(location.search).get("tune")
@@ -89,12 +131,29 @@ export default function WeeklyUsageIsland() {
             setTune("record")
             return () => window.removeEventListener("usage-record-start", start)
         }
+        if (t === "usage-film") {
+            let saved: Partial<Design> = {}
+            try {
+                saved = JSON.parse(localStorage.getItem(STUDIO_KEY) || "null")?.design ?? {}
+            } catch {}
+            // the code's usage pace, no prompts by themselves, the frame filling the screen
+            const { usageGain: _u, promptUsageGain: _p, ...look } = saved
+            // and typing allowed, so a prompt can be typed out instead of tabbed in
+            const design = { ...STUDIO, ...look, backdropRatio: "Fill screen", autoPromptSec: 0, suggestionsOnly: false }
+            setFilm({ design, on: false })
+            const start = () => setFilm((f) => f && { ...f, on: true })
+            window.addEventListener("usage-film-start", start)
+            setTune("film")
+            return () => window.removeEventListener("usage-film-start", start)
+        }
         if (t === "usage-pair") {
             const out = () => setPairOut(true)
             const start = () => setPairIn(true)
             window.addEventListener("usage-pair-out", out)
             window.addEventListener("usage-pair-start", start)
             if (new URLSearchParams(location.search).has("wait")) setPairIn(false)
+            const scale = Number(new URLSearchParams(location.search).get("scale"))
+            if (scale > 0) setPairScale(scale)
             setTune("pair")
             return () => {
                 window.removeEventListener("usage-pair-out", out)
@@ -117,6 +176,14 @@ export default function WeeklyUsageIsland() {
             if (t === "usage-studio" && saved?.design && !saved.blurFromCode) {
                 for (const k of ["threadBlur", "threadBlurHeight", "threadBlurTintOpacity", "solidFade", "headerCutGap"]) delete saved.design[k]
                 saved.blurFromCode = true
+                localStorage.setItem(STUDIO_KEY, JSON.stringify(saved))
+            }
+            // One-time: the studio's frame ratio (now A4), auto prompts (now off) and card corners come from the code
+            if (t === "usage-studio" && saved?.design && !saved.ratioFromCode3) {
+                if (!saved.ratioFromCode) delete saved.design.backdropRatio
+                if (!saved.ratioFromCode2) delete saved.design.autoPromptSec
+                delete saved.design.tileRadius // the agent cards' 3u corners
+                saved.ratioFromCode = saved.ratioFromCode2 = saved.ratioFromCode3 = true
                 localStorage.setItem(STUDIO_KEY, JSON.stringify(saved))
             }
         } catch {}
@@ -145,6 +212,18 @@ export default function WeeklyUsageIsland() {
             </div>,
             document.body,
         )
+    if (tune === "film" && film)
+        return createPortal(
+            <div style={{ position: "fixed", inset: 0, zIndex: 2147483000, background: film.design.backdrop ?? "#F8F8F8" }}>
+                {film.on && (
+                    <div style={{ position: "absolute", inset: 0, animation: "wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+                        <style>{"@keyframes wu-rec-in { from { opacity: 0 } }"}</style>
+                        <WeeklyUsageShowcase panel={false} mode="screen" design={film.design} agents={FILM_AGENTS} />
+                    </div>
+                )}
+            </div>,
+            document.body,
+        )
     if (tune === "pair")
         return createPortal(
             <div style={{ position: "fixed", inset: 0, zIndex: 2147483000, overflow: "hidden", background: "#F8F8F8" }}>
@@ -165,7 +244,7 @@ export default function WeeklyUsageIsland() {
                     <div
                         key={i}
                         style={{
-                            ["--u" as string]: "min(1vw, 1.566vh)",
+                            ["--u" as string]: `calc(min(1vw, 1.566vh) * ${pairScale})`,
                             position: "absolute",
                             left: `calc((100vw - 75.7 * var(--u)) / 2 + ${f.x} * var(--u))`,
                             top: `calc((100vh - (34.9 * 749 / 685 + 13.75) * var(--u)) / 2 + ${f.y} * var(--u))`,
