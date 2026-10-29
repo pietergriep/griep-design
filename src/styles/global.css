@@ -186,7 +186,7 @@ main {
 }
 
 .intro {
-    width: 300px;
+    width: 420px; /* wide enough that the process text (with its chips) sits in calm lines */
     max-width: 100%;
     display: flex;
     flex-direction: column;
@@ -246,31 +246,28 @@ main {
     visibility: visible;
     transition: opacity 0.3s ease 0.15s, filter 0.3s ease 0.15s, visibility 0s;
 }
-/* the story keeps the intro's width; the process text, with its chips, runs wider so
-   its lines stay calm (but never past the screen) */
-.taglines > [data-tagline="story"] {
-    max-width: 300px;
-}
+/* the process text carries chips, so its lines are a little taller and stay even */
 .tagline--process {
-    width: 420px;
-    max-width: calc(100vw - 2 * var(--gutter));
-    /* it carries chips, so its lines are a little taller and stay even */
     line-height: 1.75;
 }
-/* the swap words: lighter than the text around them, darkening under the pointer */
+/* the swap words: underlined in dots like the footer's links */
 .tagline-link {
     padding: 0;
     border: 0;
     background: none;
     font: inherit;
     letter-spacing: inherit;
-    color: var(--ink-soft);
+    color: inherit;
     cursor: pointer;
-    transition: color 0.15s ease;
+    text-decoration: underline dotted #191919;
+    text-decoration-thickness: 1px;
+    text-decoration-skip-ink: none;
+    text-underline-offset: 5px;
+    transition: opacity 0.15s ease;
 }
 @media (hover: hover) and (pointer: fine) {
     .tagline-link:hover {
-        color: var(--ink);
+        opacity: 0.5;
     }
 }
 /* a chip and the punctuation after it never split over two lines */
@@ -962,7 +959,7 @@ main {
     }
     .intro {
         padding: 40px 0 20px 0;
-        width: 300px;
+        width: 420px;
         max-width: calc(100% - 15px);
     }
     .tagline {
