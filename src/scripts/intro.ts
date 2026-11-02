@@ -1,6 +1,6 @@
 // The intro has two texts in one spot: the story ("…on the other side of the
 // process") and the process (Figma, then Claude). The underlined words swap between
-// them: "process" shows how, "the same curiosity" goes back to the story (the kid installing betas). The texts share one
+// them: "process" shows how, "just getting started" goes back to the story (when I started designing). The texts share one
 // grid cell, so the intro keeps the height of the taller one and nothing below moves;
 // the swap is a fade with a slight blur, like the footer's email (footer.ts).
 

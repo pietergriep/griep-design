@@ -39,7 +39,7 @@ const DESKTOP = "(min-width: 600px)" // desktop-sized cards (desktop, iPad, smal
 // the widest card, and a card's note, fit on screen.
 const NOTE_ROOM = 70 // px kept free under the cards for the "About" note
 const MIN_FIT = 0.72 // never smaller than this
-const SCALE = 1.15 // the whole row, cards and components alike, when the window has room
+const SCALE = 0.9775 // the whole row, cards and components alike, when the window has room
 
 const row = document.querySelector<HTMLElement>("[data-carousel]")
 const track = row?.querySelector<HTMLElement>(".track")
