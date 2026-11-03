@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { BackdropPanel, DEFAULT_DESIGN, WeeklyUsageShowcase, backdropPaint, sampleAgents } from "./WeeklyUsageCard"
 import type { Design } from "./WeeklyUsageCard"
@@ -171,19 +171,37 @@ const CASE_FIT = 0.775 // how much of its frame the single card fills
 const CASE_PAIR_SCALE = 1.25 // the pair's cards, 1 = as in the pair view
 const CASE_BACKDROP: Partial<Design> = { backdropImage: "/media/usage/case-backdrop.webp", backdropBlur: 0, backdropOverlayOpacity: 0 }
 const CASE_AUTO_SEC = 0 // no prompts by themselves: the pair only moves when someone uses it
+const CASE_PAIR_IN = 0.4 // how much of the pair's frame shows before its cards fade in (0–1)
 
 export function WorkloadCase({ view }: { view: "single" | "pair" }) {
     const d: Design = { ...DEFAULT_DESIGN, ...STUDIO, ...CASE_BACKDROP }
     // Starts over on every open of the case study ("case-study-open", scripts/case-study.ts)
     const [run, setRun] = useState(0)
+    // the pair waits until it scrolls into view (CASE_PAIR_IN of it showing), each open again
+    const [seen, setSeen] = useState(view === "single")
+    const root = useRef<HTMLDivElement>(null)
     useEffect(() => {
-        const restart = () => setRun((n) => n + 1)
+        const restart = () => {
+            setRun((n) => n + 1)
+            if (view === "pair") setSeen(false)
+        }
         window.addEventListener("case-study-open", restart)
         return () => window.removeEventListener("case-study-open", restart)
-    }, [])
+    }, [view])
+    useEffect(() => {
+        if (seen || !root.current) return
+        const io = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((e) => e.isIntersecting)) setSeen(true)
+            },
+            { threshold: CASE_PAIR_IN },
+        )
+        io.observe(root.current)
+        return () => io.disconnect()
+    }, [seen, run])
     // The photo stays; only the cards fade in on top of it, as in the videos
     return (
-        <div className="island-root" style={{ position: "absolute", inset: 0, overflow: "hidden", containerType: "size" }}>
+        <div ref={root} className="island-root" style={{ position: "absolute", inset: 0, overflow: "hidden", containerType: "size" }}>
             <div style={{ position: "absolute", inset: -2 * Math.max(2, d.backdropBlur), background: backdropPaint(d), filter: d.backdropBlur > 0 ? `blur(${d.backdropBlur}px)` : undefined }} />
             <div style={{ position: "absolute", inset: 0, background: d.backdropOverlay, opacity: d.backdropOverlayOpacity }} />
             {view === "single" ? (
@@ -192,7 +210,7 @@ export function WorkloadCase({ view }: { view: "single" | "pair" }) {
                     <WeeklyUsageShowcase panel={false} mode="fill" design={{ ...STUDIO, ...CASE_BACKDROP, backdrop: "transparent", backdropImage: "", backdropRatio: "Fill screen", fit: CASE_FIT }} />
                 </div>
             ) : (
-                <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />
+                seen && <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />
             )}
         </div>
     )
