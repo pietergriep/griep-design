@@ -22,20 +22,37 @@ const u = (px: number) => `${(px / W) * 100}cqw`
 // Each moment of the day gives the nine colours: the morning is the design's own; the
 // others are given as top / middle / bottom and spread over the same stops. Between two
 // moments every colour is blended by the time in between.
+// The colours are settings (per moment, see COLOURS below); these are their defaults.
 const STOPS = [0.322, 18.585, 33.393, 50.176, 62.022, 73.375, 83.247, 94.599, 101.51]
 const MORNING = ["#5eb0f8", "#7ca6d9", "#92a6cf", "#9fa9c4", "#c2afaa", "#dcb393", "#f1a877", "#ff9f4e", "#e67c49"]
-const SKY: [number, string[]][] = [
-    [0, ["#1b2558", "#29326d", "#3e4582"]], // night
-    [4.5, ["#1b2558", "#29326d", "#3e4582"]],
-    [6, ["#2d3a74", "#8070ab", "#f1926e"]], // dawn
-    [7.5, MORNING], // morning (the design)
-    [10, ["#3d8bf0", "#5fa3f1", "#8bbcf2"]], // midday
-    [15, ["#3d8bf0", "#5fa3f1", "#8bbcf2"]],
-    [17, ["#4a86dc", "#a9b0c4", "#f6c15e"]], // golden hour, yellow
-    [18.6, ["#36438f", "#a88c8a", "#f4a74a"]], // sunset, more amber than pink
-    [19.5, ["#222b63", "#353c7a", "#78657c"]], // dusk, short
-    [20.25, ["#1b2558", "#29326d", "#3e4582"]], // night
-    [24, ["#1b2558", "#29326d", "#3e4582"]],
+// each moment's colours (setting name prefix, label, defaults top / middle / bottom; the
+// morning has all nine)
+const MOMENTS = [
+    ["night", "Night", ["#1b2558", "#29326d", "#3e4582"]],
+    ["dawn", "Dawn", ["#2d3a74", "#8070ab", "#f1926e"]],
+    ["morning", "Morning", MORNING], // the design
+    ["midday", "Midday", ["#3d8bf0", "#5fa3f1", "#8bbcf2"]],
+    ["golden", "Golden hour", ["#4a86dc", "#a9b0c4", "#f6c15e"]], // yellow
+    ["sunset", "Sunset", ["#36438f", "#a88c8a", "#f4a74a"]], // more amber than pink
+    ["dusk", "Dusk", ["#222b63", "#353c7a", "#78657c"]], // short
+] as const
+type Moment = (typeof MOMENTS)[number][0]
+const PARTS = ["Top", "Middle", "Bottom"]
+// a moment's colour settings: nightTop, nightMiddle, nightBottom … morning1 … morning9
+const colourKeys = (id: string, n: number) => (n === 3 ? PARTS.map((p) => id + p) : Array.from({ length: n }, (_, i) => `${id}${i + 1}`))
+// when each moment is at its fullest (between two, the colours blend)
+const TIMES: [number, Moment][] = [
+    [0, "night"],
+    [4.5, "night"],
+    [6, "dawn"],
+    [7.5, "morning"],
+    [10, "midday"],
+    [15, "midday"],
+    [17, "golden"],
+    [18.6, "sunset"],
+    [19.5, "dusk"],
+    [20.25, "night"],
+    [24, "night"],
 ]
 
 // sRGB hex <-> OKLab
@@ -76,17 +93,35 @@ const spread = (cs: Lab[]): Lab[] =>
               const t = Math.min(1, Math.max(0, pos / 100))
               return t < 0.52 ? mix(cs[0], cs[1], t / 0.52) : mix(cs[1], cs[2], (t - 0.52) / 0.48)
           })
-const SKY_LAB = SKY.map(([h, cs]) => [h, spread(cs.map(hexToLab))] as [number, Lab[]])
+// a colour setting may be any CSS colour; the blend needs hex (a bad value keeps the default)
+const toHex = (css: string, fallback: string) => {
+    if (/^#[0-9a-f]{6}$/i.test(css)) return css
+    const m = String(css).match(/[\d.]+/g)
+    if (String(css).startsWith("rgb") && m && m.length >= 3) return "#" + m.slice(0, 3).map((v) => Math.round(+v).toString(16).padStart(2, "0")).join("")
+    if (/^#[0-9a-f]{3}$/i.test(css)) return "#" + [...css.slice(1)].map((c) => c + c).join("")
+    return fallback
+}
+// the settings -> each moment's nine colours (OKLab), by time
+type Sky = [number, Lab[]][]
+function skyFrom(props: Record<string, any>): Sky {
+    const byMoment = Object.fromEntries(
+        MOMENTS.map(([id, , defaults]) => {
+            const cs = colourKeys(id, defaults.length).map((k, i) => toHex(props[k] ?? defaults[i], defaults[i]))
+            return [id, spread(cs.map(hexToLab))]
+        }),
+    ) as Record<Moment, Lab[]>
+    return TIMES.map(([h, id]) => [h, byMoment[id]])
+}
 
 // smoothstep, so each blend eases in and out of the moments instead of kinking at them
 const ease = (t: number) => t * t * (3 - 2 * t)
 
-function skyAt(hour: number): string {
+function skyAt(sky: Sky, hour: number): string {
     const h = ((hour % 24) + 24) % 24
     let i = 0
-    while (i < SKY_LAB.length - 2 && SKY_LAB[i + 1][0] <= h) i++
-    const [h0, a] = SKY_LAB[i]
-    const [h1, b] = SKY_LAB[i + 1]
+    while (i < sky.length - 2 && sky[i + 1][0] <= h) i++
+    const [h0, a] = sky[i]
+    const [h1, b] = sky[i + 1]
     const t = ease(h1 === h0 ? 0 : (h - h0) / (h1 - h0))
     return `linear-gradient(180deg, ${a.map((c, k) => `${labToCss(mix(c, b[k], t))} ${STOPS[k]}%`).join(", ")})`
 }
@@ -234,7 +269,9 @@ export default function WalletWidget(props: Props) {
         }
     }, [hour, dayPreview])
 
-    const sky = skyAt(shown)
+    const colours = MOMENTS.flatMap(([id, , d]) => colourKeys(id, d.length).map((k) => (props as any)[k]))
+    const skyColours = useMemo(() => skyFrom(props as any), colours) // eslint-disable-line react-hooks/exhaustive-deps
+    const sky = skyAt(skyColours, shown)
     const night = nightAt(shown)
     const sun = sunShades ? sunAt(shown) * sunStrength : 0
 
@@ -613,4 +650,13 @@ addPropertyControls(WalletWidget, {
     starEveryMax: { type: ControlType.Number, title: "Star every (max s)", defaultValue: 18, min: 1, max: 120, step: 0.5 },
     starDuration: { type: ControlType.Number, title: "Star duration (ms)", defaultValue: 900, min: 200, max: 3000, step: 50 },
     starLength: { type: ControlType.Number, title: "Star tail length", defaultValue: 60, min: 10, max: 160, step: 1 },
+    // the sky's colours per moment of the day ("Night top" … "Morning 9")
+    ...Object.fromEntries(
+        MOMENTS.flatMap(([id, label, defaults]) =>
+            colourKeys(id, defaults.length).map((k, i) => [
+                k,
+                { type: ControlType.Color, title: `${label} ${defaults.length === 3 ? PARTS[i].toLowerCase() : i + 1}`, defaultValue: defaults[i] },
+            ]),
+        ),
+    ),
 })

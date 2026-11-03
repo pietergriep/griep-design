@@ -837,7 +837,12 @@
    "raw": {
     "sliderDurationMs": "1450",
     "hour1Live": "-1",
-    "priceMovesEveryS": "5"
+    "priceMovesEveryS": "5",
+    "cornerRadius": "28.5",
+    "starTailLength": "67",
+    "goldenHourTop": "#4a8cec",
+    "goldenHourMiddle": "#a1abc8",
+    "goldenHourBottom": "#f4d9a9"
    }
   },
   "phone": {
@@ -849,7 +854,11 @@
     "sliderDurationMs": "1450",
     "hour1Live": "-1",
     "priceMovesEveryS": "5",
-    "cornerRadius": "20"
+    "cornerRadius": "28.5",
+    "starTailLength": "67",
+    "goldenHourTop": "#4a8cec",
+    "goldenHourMiddle": "#a1abc8",
+    "goldenHourBottom": "#f4d9a9"
    }
   }
  }

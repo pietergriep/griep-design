@@ -1,26 +1,36 @@
 ---
 // "Learn more" under a carousel card: a small text button that unfolds a short note
 // about the work. Renders nothing when there's no text, so cards without a note show
-// no button. (`spec` is accepted but unused: the Analyse inspector is parked, its code
-// is in scripts/analyse.ts and data/specs.ts.)
+// no button. With `caseStudy` (the id of its <dialog>) it's a "Case study" button
+// instead, opening that (scripts/case-study.ts). (`spec` is accepted but unused: the
+// Analyse inspector is parked, its code is in scripts/analyse.ts and data/specs.ts.)
 interface Props {
     text?: string
     spec?: string
+    caseStudy?: string
 }
-const { text } = Astro.props
+const { text, caseStudy } = Astro.props
 ---
 
 {
-    text && (
+    caseStudy ? (
         <div class="work-note">
-            <button class="work-note-btn" type="button" aria-expanded="false" data-work-note>
-                <span class="work-note-label">Learn more</span>
+            <button class="work-note-btn" type="button" aria-haspopup="dialog" data-case-open={caseStudy}>
+                Case study
             </button>
-            <div class="work-note-body">
-                <div class="work-note-inner">
-                    <p>{text}</p>
+        </div>
+    ) : (
+        text && (
+            <div class="work-note">
+                <button class="work-note-btn" type="button" aria-expanded="false" data-work-note>
+                    <span class="work-note-label">Learn more</span>
+                </button>
+                <div class="work-note-body">
+                    <div class="work-note-inner">
+                        <p>{text}</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        )
     )
 }

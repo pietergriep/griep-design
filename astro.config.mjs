@@ -42,11 +42,21 @@ const tuneSave = {
     },
 }
 
+// Dev server only: tuning pages, left out of builds (localhost:4322/tune/wallet)
+const tunePages = {
+    name: "tune-pages",
+    hooks: {
+        "astro:config:setup": ({ command, injectRoute }) => {
+            if (command === "dev") injectRoute({ pattern: "/tune/wallet", entrypoint: fileURLToPath(new URL("./src/dev/wallet.astro", import.meta.url)) })
+        },
+    },
+}
+
 // https://astro.build/config
 // A fully static site: `astro build` writes plain files to dist/, which Cloudflare serves as-is.
 export default defineConfig({
     site: "https://griep.design",
-    integrations: [react()],
+    integrations: [react(), tunePages],
     // the dev toolbar would cover the preview; the site never shows it
     devToolbar: { enabled: false },
     vite: {

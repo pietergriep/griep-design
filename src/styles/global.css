@@ -334,9 +334,72 @@ main {
     gap: 10px;
 }
 
+/* the arrows on the left (they fade out in the grid), the carousel / grid switch on
+   the right, at the page's margin */
+.work-bar {
+    align-self: stretch;
+    margin-right: var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .carousel-buttons {
     display: flex;
     gap: 5px;
+    transition: opacity 200ms ease;
+}
+
+/* in the grid the arrows have nothing to do */
+html.work-grid .work .carousel-buttons {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 200ms ease, visibility 0s 200ms;
+}
+
+/* a segmented control in the arrows' style: same height, fill and edge; the current
+   view sits on a white segment */
+.view-switch {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--card);
+    box-shadow: inset 0 0 0 0.5px var(--card-line);
+}
+
+.vbtn {
+    width: 36px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #919191;
+    transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.vbtn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.5; /* the icons are drawn at 1px for 24px; at 18px that reads too thin */
+}
+
+.vbtn[aria-pressed="true"] {
+    background: #fff;
+    color: #4d4d4d;
+    box-shadow: 0 0 0 0.5px var(--card-line), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .vbtn[aria-pressed="false"]:hover {
+        color: #4d4d4d;
+    }
+}
+
+.vbtn:focus-visible {
+    outline: 2px solid #4d4d4d;
+    outline-offset: 2px;
 }
 
 .cbtn {
@@ -412,6 +475,42 @@ main {
     gap: 10px;
     width: max-content;
     will-change: transform;
+}
+
+/* Grid: the same cards in two columns across the page, scrolling with it (carousel.ts
+   leaves the track where it is, and drops to one column, data-cols="1", where two
+   don't fit). The cards stretch to their column, the File Explorer too, though it's
+   wider in the carousel. (data-cols="measure": carousel.ts reading the cards' own
+   widths, for a moment.) */
+html.work-grid .work .track {
+    transform: none !important;
+    width: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 30px 10px;
+}
+html.work-grid .work .track[data-cols="1"] {
+    grid-template-columns: minmax(0, 1fr);
+}
+html.work-grid .work .track[data-cols="measure"] {
+    grid-template-columns: max-content;
+}
+html.work-grid .work .track:not([data-cols="measure"]) .work-item > .card {
+    width: 100%;
+}
+
+/* In the grid a closed note takes no room, or every row would have a gap under it */
+html.work-grid .work .work-note-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease, filter 0.2s ease, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+html.work-grid .work .work-note.is-open .work-note-body {
+    grid-template-rows: 1fr;
+}
+html.work-grid .work .work-note-inner {
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* every card is 625px wide on desktop and tablet, except the File Explorer */
@@ -703,7 +802,18 @@ main {
 
 .card-wide-image img {
     flex: none;
-    width: 647px; /* the planner widget (575px, +25%, then -10%) */
+    width: 647px; /* the planner widget (575px, +25%, then -10%; +25% again in the grid) */
+}
+
+/* In the grid's wider cards the planner and the portfolio widget read small, so there
+   they're 25% bigger (not on phones, where the cards are as wide as the screen) */
+@media (min-width: 600px) {
+    html.work-grid .work .card-wide-image img {
+        width: 809px;
+    }
+    html.work-grid .work .card-gradient-widget .island-root {
+        transform: scale(1.25);
+    }
 }
 
 /* ---------- footer ---------- */
@@ -1018,7 +1128,212 @@ main {
     .work {
         padding-right: 15px;
     }
+    .work-bar {
+        margin-right: 0;
+    }
     .track {
         padding-right: 0;
+    }
+}
+
+/* ---------- case study (components/CaseStudy.astro, scripts/case-study.ts) ---------- */
+
+html.case-open {
+    overflow: hidden;
+}
+/* The dialog fills the screen: its own background blurs and dims the page behind,
+   and the sheet sits on it */
+.case {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 24px;
+    border: 0;
+    display: flex;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.16);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 250ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.case:not([open]) {
+    display: none;
+}
+.case::backdrop {
+    background: transparent;
+}
+.case.is-in {
+    opacity: 1;
+}
+.case.is-closing {
+    transition-duration: 200ms;
+    transition-timing-function: ease-in;
+}
+.case-sheet {
+    width: min(1600px, 100%);
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: 48px;
+    padding: 0 40px 0 32px;
+    border-radius: 16px;
+    background: #fff;
+    position: relative;
+    /* only the images scroll (with their rubber band); the text stays put */
+    overflow: hidden;
+    transform: translateY(10px) scale(0.985);
+    transition: transform 250ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.case.is-in .case-sheet {
+    transform: none;
+}
+/* The text lies over the images' scroll area and lets the wheel through to it, so
+   scrolling over the text scrolls (and bounces) the images too. Its buttons still
+   take clicks; the wheel over those is passed on by scripts/case-study.ts. */
+.case-text {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+    max-width: 545px;
+    padding: 44px 0 40px;
+}
+.case-back {
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 15px;
+    letter-spacing: var(--track-15);
+    color: rgb(140, 140, 140);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+.case-back:hover {
+    color: rgb(20, 20, 20);
+}
+.case-title {
+    margin: 34px 0 0;
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+}
+.case-sub {
+    margin: 12px 0 0;
+    font-size: 15px;
+    line-height: 1.3;
+    letter-spacing: var(--track-15);
+    color: rgb(140, 140, 140);
+}
+.case-parts {
+    margin-top: 50px;
+}
+.case-part + .case-part {
+    border-top: 1px solid rgb(235, 235, 235);
+}
+.case-part h3 {
+    margin: 0;
+    font: inherit;
+}
+.case-part-btn {
+    width: 100%;
+    padding: 12px 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    font: inherit;
+    font-size: 17px;
+    letter-spacing: 0.005em;
+    color: rgb(140, 140, 140);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+.case-part-btn:hover,
+.case-part.is-open .case-part-btn {
+    color: rgb(20, 20, 20);
+}
+.case-part.is-open .case-part-btn {
+    cursor: default;
+}
+/* opens to its height: the row grows from 0fr to 1fr */
+.case-part-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 250ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms ease;
+}
+.case-part.is-open .case-part-body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+.case-part-body > div {
+    overflow: hidden;
+}
+.case-part-body p {
+    margin: 4px 0 18px;
+    font-size: 15px;
+    line-height: 1.3;
+    letter-spacing: 0.005em;
+    text-wrap: pretty;
+}
+.case-media {
+    display: flex;
+    flex-direction: column;
+    gap: 54px;
+    /* the whole sheet, the images in the right column (the sheet's padding, the text's
+       column and the gap on the left) */
+    position: absolute;
+    inset: 0;
+    padding: 42px 40px 42px calc(32px + (100% - 120px) / 2.6 + 48px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.case-text button {
+    pointer-events: auto;
+}
+.case-frame {
+    position: relative;
+    flex: none;
+    aspect-ratio: 877 / 689;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8f8f8;
+}
+@media (prefers-reduced-motion: reduce) {
+    .case-sheet {
+        transform: none;
+    }
+}
+/* phones and small windows: one column, the whole sheet scrolls */
+@media (max-width: 809.98px) {
+    .case {
+        padding: 12px;
+    }
+    .case-sheet {
+        display: block;
+        padding: 0 20px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+    .case-text {
+        pointer-events: auto;
+        padding: 24px 0 8px;
+    }
+    .case-title {
+        margin-top: 24px;
+    }
+    .case-parts {
+        margin-top: 32px;
+    }
+    .case-media {
+        position: static;
+        gap: 20px;
+        padding: 16px 0 20px;
+        overflow: visible;
     }
 }

@@ -120,6 +120,84 @@ const loadDesign = (key: string): Partial<Design> => {
     }
 }
 
+/**
+ * The list (higher, left) and an open agent (lower, right), staggered, centred in the
+ * frame around it, which must be a size container: sized in "u", 1cqw on a frame as wide
+ * as the one it was drawn for (1964 x 1254), smaller on a wider one (a 16:9 video) so
+ * both stay in view. Used by the pair view and the case study.
+ */
+function PairCards({ scale = 1, autoSec, out = false }: { scale?: number; autoSec: number; out?: boolean }) {
+    return (
+        <>
+            <style>
+                {"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }" +
+                    "@keyframes wu-pair-out { to { opacity: 0; transform: translateY(14px) scale(0.985) } }"}
+            </style>
+            {[
+                { x: 0, y: 0, open: undefined },
+                { x: 40.8, y: 13.75, open: "reviewer" },
+            ].map((f, i) => (
+                // fades in on load, the right card a little after the left; out the same way
+                <div
+                    key={i}
+                    style={{
+                        ["--u" as string]: `calc(min(1cqw, 1.566cqh) * ${scale})`,
+                        position: "absolute",
+                        left: `calc((100cqw - 75.7 * var(--u)) / 2 + ${f.x} * var(--u))`,
+                        top: `calc((100cqh - (34.9 * 749 / 685 + 13.75) * var(--u)) / 2 + ${f.y} * var(--u))`,
+                        width: "calc(34.9 * var(--u))",
+                        aspectRatio: "685 / 749",
+                        animation: out
+                            ? `wu-pair-out 420ms cubic-bezier(0.55, 0, 0.75, 0.2) ${i * 180}ms both`
+                            : `wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) ${300 + i * 180}ms both`,
+                    }}
+                >
+                    <WeeklyUsageShowcase
+                        panel={false}
+                        mode="fill"
+                        design={{ ...DESIGN, fit: PAIR_FIT, autoPromptSec: autoSec }}
+                        openAgentId={f.open}
+                        agents={PAIR_AGENTS}
+                    />
+                </div>
+            ))}
+        </>
+    )
+}
+
+// The case study (under the Workload card, "Case study"): the card on its own or the
+// pair, on its own photo (already motion-blurred, so no blur or overlay on top)
+const CASE_FIT = 0.775 // how much of its frame the single card fills
+const CASE_PAIR_SCALE = 1.25 // the pair's cards, 1 = as in the pair view
+const CASE_BACKDROP: Partial<Design> = { backdropImage: "/media/usage/case-backdrop.webp", backdropBlur: 0, backdropOverlayOpacity: 0 }
+const CASE_AUTO_SEC = 0 // no prompts by themselves: the pair only moves when someone uses it
+
+export function WorkloadCase({ view }: { view: "single" | "pair" }) {
+    const d: Design = { ...DEFAULT_DESIGN, ...STUDIO, ...CASE_BACKDROP }
+    // Starts over on every open of the case study ("case-study-open", scripts/case-study.ts)
+    const [run, setRun] = useState(0)
+    useEffect(() => {
+        const restart = () => setRun((n) => n + 1)
+        window.addEventListener("case-study-open", restart)
+        return () => window.removeEventListener("case-study-open", restart)
+    }, [])
+    // The photo stays; only the cards fade in on top of it, as in the videos
+    return (
+        <div className="island-root" style={{ position: "absolute", inset: 0, overflow: "hidden", containerType: "size" }}>
+            <div style={{ position: "absolute", inset: -2 * Math.max(2, d.backdropBlur), background: backdropPaint(d), filter: d.backdropBlur > 0 ? `blur(${d.backdropBlur}px)` : undefined }} />
+            <div style={{ position: "absolute", inset: 0, background: d.backdropOverlay, opacity: d.backdropOverlayOpacity }} />
+            {view === "single" ? (
+                <div key={run} style={{ position: "absolute", inset: 0, animation: "wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }}>
+                    <style>{"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }"}</style>
+                    <WeeklyUsageShowcase panel={false} mode="fill" design={{ ...STUDIO, ...CASE_BACKDROP, backdrop: "transparent", backdropImage: "", backdropRatio: "Fill screen", fit: CASE_FIT }} />
+                </div>
+            ) : (
+                <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />
+            )}
+        </div>
+    )
+}
+
 export default function WeeklyUsageIsland() {
     // dev only, the card's own settings panel (it saves in this browser; ask to bake values in):
     //   localhost:4322/?tune=usage         the panel at the right, the card in its carousel card
@@ -291,41 +369,7 @@ export default function WeeklyUsageIsland() {
             <div style={{ position: "relative", flex: 1, overflow: "hidden", containerType: "size" }}>
                 <div style={{ position: "absolute", inset: -2 * Math.max(2, d.backdropBlur), background: backdropPaint(d), filter: d.backdropBlur > 0 ? `blur(${d.backdropBlur}px)` : undefined }} />
                 <div style={{ position: "absolute", inset: 0, background: d.backdropOverlay, opacity: d.backdropOverlayOpacity }} />
-                <style>
-                    {"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }" +
-                        "@keyframes wu-pair-out { to { opacity: 0; transform: translateY(14px) scale(0.985) } }"}
-                </style>
-                {/* The list (higher, left) and an open agent (lower, right), staggered, centred in
-                    the window: sized in "u", 1vw on a window as wide as the one it was drawn for
-                    (1964 x 1254), smaller on a wider one (a 16:9 video) so both stay in view */}
-                {pairIn && [
-                    { x: 0, y: 0, open: undefined },
-                    { x: 40.8, y: 13.75, open: "reviewer" },
-                ].map((f, i) => (
-                    // fades in on load, the right card a little after the left; out the same way
-                    <div
-                        key={i}
-                        style={{
-                            ["--u" as string]: `calc(min(1cqw, 1.566cqh) * ${pairScale})`,
-                            position: "absolute",
-                            left: `calc((100cqw - 75.7 * var(--u)) / 2 + ${f.x} * var(--u))`,
-                            top: `calc((100cqh - (34.9 * 749 / 685 + 13.75) * var(--u)) / 2 + ${f.y} * var(--u))`,
-                            width: "calc(34.9 * var(--u))",
-                            aspectRatio: "685 / 749",
-                            animation: pairOut
-                                ? `wu-pair-out 420ms cubic-bezier(0.55, 0, 0.75, 0.2) ${i * 180}ms both`
-                                : `wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) ${300 + i * 180}ms both`,
-                        }}
-                    >
-                        <WeeklyUsageShowcase
-                            panel={false}
-                            mode="fill"
-                            design={{ ...DESIGN, fit: PAIR_FIT, autoPromptSec: pairAuto }}
-                            openAgentId={f.open}
-                            agents={PAIR_AGENTS}
-                        />
-                    </div>
-                ))}
+                {pairIn && <PairCards scale={pairScale} autoSec={pairAuto} out={pairOut} />}
                 {!pairPanel && !new URLSearchParams(location.search).has("wait") && (
                     <button onClick={() => setPairPanel(true)} style={{ position: "absolute", top: 12, right: 12, padding: "6px 10px", font: "12px Geist, system-ui, sans-serif", background: "#FFFFFF", border: "none", borderRadius: 6, boxShadow: "0 1px 3px rgba(0,0,0,0.12)", cursor: "pointer" }}>
                         Customize

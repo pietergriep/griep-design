@@ -29,6 +29,8 @@
     "esbuild": true
   },
   "devDependencies": {
+    "dialkit": "^2.1.0",
+    "motion": "^14.9.0",
     "wrangler": "^4.147.0"
   }
 }

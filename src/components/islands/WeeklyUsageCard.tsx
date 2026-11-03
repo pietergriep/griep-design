@@ -4520,6 +4520,24 @@ export function WeeklyUsageCard({
         setDetail({ id, from, full: fullBox() })
         setDetailOpen(true)
     }
+    // While an agent is open, it keeps filling the card if the card changes size after it
+    // opened (e.g. it opened before the card had its final height)
+    const detailId = detail?.id
+    useEffect(() => {
+        const sec = sectionEl.current
+        if (!detailId || !sec || typeof ResizeObserver === "undefined") return
+        const ro = new ResizeObserver(() => {
+            const full = fullBox()
+            setDetail((cur) =>
+                cur && (cur.full.width !== full.width || cur.full.height !== full.height || cur.full.top !== full.top || cur.full.left !== full.left)
+                    ? { ...cur, full }
+                    : cur,
+            )
+        })
+        ro.observe(sec)
+        return () => ro.disconnect()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [detailId])
     // Opened from the start: once the tiles have their places
     useEffect(() => {
         if (!openAgentId) return

@@ -41,6 +41,12 @@ const NOTE_ROOM = 70 // px kept free under the cards for the "About" note
 const MIN_FIT = 0.72 // never smaller than this
 const SCALE = 0.9775 // the whole row, cards and components alike, when the window has room
 
+// The carousel / grid switch: the cards move from one layout to the other (each from
+// where it was to where it lands); cards that weren't on screen fade in instead.
+const VIEW_MS = 300
+const VIEW_CURVE = "cubic-bezier(0.22, 1, 0.36, 1)"
+const VIEW_KEY = "work-view" // remembered per visitor (also read in Portfolio.astro's <head>)
+
 const row = document.querySelector<HTMLElement>("[data-carousel]")
 const track = row?.querySelector<HTMLElement>(".track")
 const prevBtn = document.querySelector<HTMLButtonElement>("[data-carousel-prev]")
@@ -73,13 +79,18 @@ if (row && track) {
     // A transform, not CSS zoom (Safari's zoom measures differently). The row is made
     // wider by 1/fit so after scaling it still spans the page, and the space the scale
     // frees up below is taken back with a negative margin.
+    // the grid (html.work-grid): the cards wrap and scroll with the page
+    const isGrid = () => document.documentElement.classList.contains("work-grid")
+
     let fit = 1
     const fitToHeight = () => {
         let next = 1
         const card = track.querySelector<HTMLElement>(".card")
+        if (isGrid()) track.dataset.cols = "measure" // every card at its own width, for a moment
         if (matchMedia(DESKTOP).matches && card) {
             const top = row.getBoundingClientRect().top + scrollY
-            const byHeight = (innerHeight - top - NOTE_ROOM) / card.offsetHeight
+            // the grid scrolls, so there only the width counts
+            const byHeight = isGrid() ? Infinity : (innerHeight - top - NOTE_ROOM) / card.offsetHeight
             // the row's own width, before scaling (its parent's content box)
             const parent = row.parentElement!
             const pcs = getComputedStyle(parent)
@@ -87,8 +98,20 @@ if (row && track) {
             const widest = Math.max(...cards().map((c) => c.offsetWidth))
             const byWidth = widest > 0 ? roomW / widest : 1
             next = Math.min(SCALE, Math.max(MIN_FIT, Math.min(byHeight, byWidth)))
+            // the grid: two columns (stretched across the page) when two cards at their own
+            // width fit at MIN_FIT or more, else one
+            if (isGrid()) {
+                const unit = track.querySelector<HTMLElement>(".card:not(.card-files)")?.offsetWidth ?? 0
+                const gutter = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gutter")) || 0
+                const byTwo = unit > 0 ? (roomW - gutter) / (2 * unit + parseFloat(getComputedStyle(track).columnGap)) : 0
+                if (byTwo >= MIN_FIT) {
+                    track.dataset.cols = "2"
+                    next = Math.min(SCALE, byTwo)
+                }
+            }
             next = Math.round(next * 1000) / 1000
         }
+        if (isGrid() && track.dataset.cols === "measure") track.dataset.cols = "1" // phones, and desktop where two don't fit
         fit = next
         if (fit === 1) {
             row.style.removeProperty("width")
@@ -307,7 +330,7 @@ if (row && track) {
     row.addEventListener(
         "wheel",
         (e) => {
-            if (!hovered) return
+            if (!hovered || isGrid()) return
             // Cards with their own scrolling (data-own-scroll, e.g. the usage card's agent list
             // and chat) keep up / down scrolling to themselves; sideways swipes still move the row
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && (e.target as Element | null)?.closest?.("[data-own-scroll]")) return
@@ -371,7 +394,7 @@ if (row && track) {
     row.addEventListener(
         "touchstart",
         (e) => {
-            if (e.touches.length !== 1) return
+            if (e.touches.length !== 1 || isGrid()) return
             dragging = true
             decided = false
             horizontal = false
@@ -450,6 +473,51 @@ if (row && track) {
     }
     addEventListener("resize", onResize)
     new ResizeObserver(onResize).observe(row)
+
+    // --- Carousel / grid ---------------------------------------------------------------
+    const viewBtns = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-view]"))
+    const showPressed = () => viewBtns.forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.view === "grid") === isGrid())))
+    showPressed()
+    const onScreen = (r: DOMRect) => r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight
+    const setView = (grid: boolean) => {
+        if (grid === isGrid()) return
+        const items = cards()
+        const before = items.map((c) => c.getBoundingClientRect())
+        stop()
+        clearTimeout(snapTimer)
+        document.documentElement.classList.toggle("work-grid", grid)
+        try {
+            localStorage.setItem(VIEW_KEY, grid ? "grid" : "carousel")
+        } catch {}
+        showPressed()
+        fitToHeight()
+        offset = clamp(offset)
+        render()
+        publish()
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
+        items.forEach((c, i) => {
+            const from = before[i]
+            const to = c.getBoundingClientRect()
+            if (!onScreen(to)) return
+            if (onScreen(from)) {
+                // from where it was (its size isn't animated: in the grid the cards stretch,
+                // and scaling would squash what's in them); the row is scaled by fit, so its
+                // own px are screen px / fit
+                c.animate([{ transform: `translate(${(from.left - to.left) / fit}px, ${(from.top - to.top) / fit}px)` }, { transform: "none" }], {
+                    duration: VIEW_MS,
+                    easing: VIEW_CURVE,
+                })
+            } else {
+                c.animate([{ opacity: 0, transform: "translateY(14px) scale(0.985)" }, { opacity: 1, transform: "none" }], {
+                    duration: VIEW_MS,
+                    easing: VIEW_CURVE,
+                    delay: Math.min(i, 6) * 30,
+                    fill: "backwards",
+                })
+            }
+        })
+    }
+    viewBtns.forEach((b) => b.addEventListener("click", () => setView(b.dataset.view === "grid")))
 
     // --- Keep the videos running ---------------------------------------------------
     // (on the Framer site something paused them while scrolling; kept as a safety net)
