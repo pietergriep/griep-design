@@ -591,9 +591,9 @@ html.work-grid .work .work-note-inner {
     background: none;
     color: rgb(140, 140, 140);
     font: inherit;
-    font-size: 14px;
+    font-size: 15.5px;
     font-weight: 400;
-    letter-spacing: var(--track-14);
+    letter-spacing: var(--track-15);
     cursor: pointer;
     transition: color 0.2s ease;
 }
