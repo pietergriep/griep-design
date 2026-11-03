@@ -46,7 +46,6 @@ const SCALE = 0.9775 // the whole row, cards and components alike, when the wind
 const VIEW_MS = 300
 const VIEW_CURVE = "cubic-bezier(0.22, 1, 0.36, 1)"
 const VIEW_KEY = "work-view" // remembered per visitor (also read in Portfolio.astro's <head>)
-
 const row = document.querySelector<HTMLElement>("[data-carousel]")
 const track = row?.querySelector<HTMLElement>(".track")
 const prevBtn = document.querySelector<HTMLButtonElement>("[data-carousel-prev]")
@@ -82,6 +81,8 @@ if (row && track) {
     // the grid (html.work-grid): the cards wrap and scroll with the page
     const isGrid = () => document.documentElement.classList.contains("work-grid")
 
+    const gutterPx = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gutter")) || 0
+
     let fit = 1
     const fitToHeight = () => {
         let next = 1
@@ -89,8 +90,8 @@ if (row && track) {
         if (isGrid()) track.dataset.cols = "measure" // every card at its own width, for a moment
         if (matchMedia(DESKTOP).matches && card) {
             const top = row.getBoundingClientRect().top + scrollY
-            // the grid scrolls, so there only the width counts
-            const byHeight = isGrid() ? Infinity : (innerHeight - top - NOTE_ROOM) / card.offsetHeight
+            // the cards and the note under them fit in the window (the grid's first row too)
+            const byHeight = (innerHeight - top - NOTE_ROOM) / card.offsetHeight
             // the row's own width, before scaling (its parent's content box)
             const parent = row.parentElement!
             const pcs = getComputedStyle(parent)
@@ -98,20 +99,27 @@ if (row && track) {
             const widest = Math.max(...cards().map((c) => c.offsetWidth))
             const byWidth = widest > 0 ? roomW / widest : 1
             next = Math.min(SCALE, Math.max(MIN_FIT, Math.min(byHeight, byWidth)))
-            // the grid: two columns (stretched across the page) when two cards at their own
-            // width fit at MIN_FIT or more, else one
+            // the grid: the cards at the carousel's height fit (so the first row's notes show
+            // on load), as many columns as fit across the page (each card stretching to its
+            // column), else one column as above
             if (isGrid()) {
+                const scale = Math.min(SCALE, Math.max(MIN_FIT, byHeight))
                 const unit = track.querySelector<HTMLElement>(".card:not(.card-files)")?.offsetWidth ?? 0
-                const gutter = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gutter")) || 0
-                const byTwo = unit > 0 ? (roomW - gutter) / (2 * unit + parseFloat(getComputedStyle(track).columnGap)) : 0
-                if (byTwo >= MIN_FIT) {
-                    track.dataset.cols = "2"
-                    next = Math.min(SCALE, byTwo)
+                const gap = parseFloat(getComputedStyle(track).columnGap) || 0
+                const cols = unit > 0 ? Math.floor(((roomW - gutterPx()) / scale + gap) / (unit + gap)) : 1
+                if (cols >= 2) {
+                    track.dataset.cols = String(cols)
+                    next = scale
                 }
             }
             next = Math.round(next * 1000) / 1000
         }
         if (isGrid() && track.dataset.cols === "measure") track.dataset.cols = "1" // phones, and desktop where two don't fit
+        if (isGrid()) {
+            track.style.setProperty("--cols", track.dataset.cols!)
+            // the page's right margin, whatever the scale
+            track.style.paddingRight = `${gutterPx() / next}px`
+        } else track.style.removeProperty("padding-right")
         fit = next
         if (fit === 1) {
             row.style.removeProperty("width")

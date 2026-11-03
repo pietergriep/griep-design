@@ -357,42 +357,41 @@ html.work-grid .work .carousel-buttons {
     transition: opacity 200ms ease, visibility 0s 200ms;
 }
 
-/* a segmented control in the arrows' style: same height, fill and edge; the current
-   view sits on a white segment */
+/* two buttons just like the arrows (same size, fill, edge, gap and icon grey); the
+   current view looks like the arrows on hover: the darker fill and icon */
 .view-switch {
     display: flex;
-    gap: 2px;
-    padding: 2px;
-    border-radius: 8px;
-    background: var(--card);
-    box-shadow: inset 0 0 0 0.5px var(--card-line);
+    gap: 5px;
 }
 
 .vbtn {
-    width: 36px;
-    height: 26px;
-    border-radius: 6px;
+    width: 45px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--card);
+    box-shadow: inset 0 0 0 0.5px var(--card-line);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #919191;
-    transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    transition: background-color 160ms ease, color 160ms ease;
 }
 
 .vbtn svg {
-    width: 18px;
-    height: 18px;
-    stroke-width: 1.5; /* the icons are drawn at 1px for 24px; at 18px that reads too thin */
+    width: 17px;
+    height: 17px;
+    /* the icons are drawn at 1px for 24px; this is about the arrows' stroke at this size */
+    stroke-width: 2.4;
 }
 
 .vbtn[aria-pressed="true"] {
-    background: #fff;
+    background-color: var(--card-hover);
     color: #4d4d4d;
-    box-shadow: 0 0 0 0.5px var(--card-line), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .vbtn[aria-pressed="false"]:hover {
+    .vbtn:hover {
+        background-color: var(--card-hover);
         color: #4d4d4d;
     }
 }
@@ -477,20 +476,17 @@ html.work-grid .work .carousel-buttons {
     will-change: transform;
 }
 
-/* Grid: the same cards in two columns across the page, scrolling with it (carousel.ts
-   leaves the track where it is, and drops to one column, data-cols="1", where two
-   don't fit). The cards stretch to their column, the File Explorer too, though it's
-   wider in the carousel. (data-cols="measure": carousel.ts reading the cards' own
-   widths, for a moment.) */
+/* Grid: the same cards in columns across the page, scrolling with it. carousel.ts
+   leaves the track where it is, sizes the cards so the first row and its notes fit in
+   the window, and sets how many columns fit (--cols). The cards stretch to their
+   column, the File Explorer too, though it's wider in the carousel. (data-cols=
+   "measure": carousel.ts reading the cards' own widths, for a moment.) */
 html.work-grid .work .track {
     transform: none !important;
     width: auto;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
     gap: 30px 10px;
-}
-html.work-grid .work .track[data-cols="1"] {
-    grid-template-columns: minmax(0, 1fr);
 }
 html.work-grid .work .track[data-cols="measure"] {
     grid-template-columns: max-content;
@@ -1296,6 +1292,10 @@ html.case-open {
 .case-text button {
     pointer-events: auto;
 }
+/* takes the focus on open (scripts/case-study.ts), so Back doesn't show a focus ring */
+.case-sheet:focus {
+    outline: none;
+}
 .case-frame {
     position: relative;
     flex: none;
@@ -1324,11 +1324,31 @@ html.case-open {
         pointer-events: auto;
         padding: 24px 0 8px;
     }
+    /* smaller and closer together on phones, like the rest of the page's phone type */
+    .case-back {
+        font-size: 13px;
+        letter-spacing: var(--track-13);
+    }
     .case-title {
-        margin-top: 24px;
+        margin-top: 20px;
+        font-size: 20px;
+    }
+    .case-sub {
+        margin-top: 6px;
+        font-size: 14px;
+        letter-spacing: var(--track-14);
     }
     .case-parts {
-        margin-top: 32px;
+        margin-top: 28px;
+    }
+    .case-part-btn {
+        padding: 10px 0;
+        font-size: 15px;
+    }
+    .case-part-body p {
+        margin: 2px 0 14px;
+        font-size: 14px;
+        line-height: 1.4;
     }
     .case-media {
         position: static;

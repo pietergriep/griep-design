@@ -33,6 +33,9 @@ document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) =
         dialog.classList.remove("is-closing")
         document.documentElement.classList.add("case-open")
         dialog.showModal()
+        // the sheet takes the focus, not the first button (Back would show a focus ring);
+        // Tab still goes to Back first
+        dialog.querySelector<HTMLElement>(".case-sheet")?.focus({ preventScroll: true })
         dialog.querySelectorAll<HTMLElement>(".case-sheet, .case-media").forEach((el) => (el.scrollTop = 0))
         // fresh every time: the cards start over and the text is back on its first part
         window.dispatchEvent(new CustomEvent("case-study-open"))
