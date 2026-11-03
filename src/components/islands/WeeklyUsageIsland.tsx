@@ -172,6 +172,10 @@ const CASE_PAIR_SCALE = 1.25 // the pair's cards, 1 = as in the pair view
 const CASE_BACKDROP: Partial<Design> = { backdropImage: "/media/usage/case-backdrop.webp", backdropBlur: 0, backdropOverlayOpacity: 0 }
 const CASE_AUTO_SEC = 0 // no prompts by themselves: the pair only moves when someone uses it
 const CASE_PAIR_IN = 0.4 // how much of the pair's frame shows before its cards fade in (0–1)
+// phones (the case study's one-column layout, global.css): a card per image, swiped sideways
+const CASE_PHONE = "(max-width: 809.98px)"
+const CASE_PHONE_FIT = 0.9 // how much of its image the card fills
+const CASE_PHONE_OPEN = "reviewer" // the agent open in the second image (as in the pair)
 
 export function WorkloadCase({ view }: { view: "single" | "pair" }) {
     const d: Design = { ...DEFAULT_DESIGN, ...STUDIO, ...CASE_BACKDROP }
@@ -199,19 +203,32 @@ export function WorkloadCase({ view }: { view: "single" | "pair" }) {
         io.observe(root.current)
         return () => io.disconnect()
     }, [seen, run])
+    // phones: one card per image, bigger, the second with an agent open (no room for the pair)
+    const [phone, setPhone] = useState(false)
+    useEffect(() => {
+        const q = matchMedia(CASE_PHONE)
+        const update = () => setPhone(q.matches)
+        update()
+        q.addEventListener("change", update)
+        return () => q.removeEventListener("change", update)
+    }, [])
+    const single = (open?: string) => (
+        <div key={`${run}-${phone}`} style={{ position: "absolute", inset: 0, animation: "wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }}>
+            <style>{"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }"}</style>
+            <WeeklyUsageShowcase
+                panel={false}
+                mode="fill"
+                design={{ ...STUDIO, ...CASE_BACKDROP, backdrop: "transparent", backdropImage: "", backdropRatio: "Fill screen", fit: phone ? CASE_PHONE_FIT : CASE_FIT, ...(open ? { autoPromptSec: CASE_AUTO_SEC } : {}) }}
+                openAgentId={open}
+            />
+        </div>
+    )
     // The photo stays; only the cards fade in on top of it, as in the videos
     return (
         <div ref={root} className="island-root" style={{ position: "absolute", inset: 0, overflow: "hidden", containerType: "size" }}>
             <div style={{ position: "absolute", inset: -2 * Math.max(2, d.backdropBlur), background: backdropPaint(d), filter: d.backdropBlur > 0 ? `blur(${d.backdropBlur}px)` : undefined }} />
             <div style={{ position: "absolute", inset: 0, background: d.backdropOverlay, opacity: d.backdropOverlayOpacity }} />
-            {view === "single" ? (
-                <div key={run} style={{ position: "absolute", inset: 0, animation: "wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }}>
-                    <style>{"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }"}</style>
-                    <WeeklyUsageShowcase panel={false} mode="fill" design={{ ...STUDIO, ...CASE_BACKDROP, backdrop: "transparent", backdropImage: "", backdropRatio: "Fill screen", fit: CASE_FIT }} />
-                </div>
-            ) : (
-                seen && <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />
-            )}
+            {view === "single" ? single() : seen && (phone ? single(CASE_PHONE_OPEN) : <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />)}
         </div>
     )
 }

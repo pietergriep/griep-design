@@ -1350,10 +1350,27 @@ html.case-open {
         font-size: 14px;
         line-height: 1.4;
     }
+    /* the images side by side, swiped sideways, out to the sheet's edges; each a little
+       narrower than the sheet so the next one peeks in */
     .case-media {
         position: static;
-        gap: 20px;
-        padding: 16px 0 20px;
-        overflow: visible;
+        flex-direction: row;
+        gap: 10px;
+        margin: 0 -20px;
+        padding: 16px 20px 20px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory;
+        scroll-padding: 0 20px;
+        scrollbar-width: none;
+    }
+    .case-media::-webkit-scrollbar {
+        display: none;
+    }
+    .case-frame {
+        flex: 0 0 88%;
+        aspect-ratio: 4 / 5;
+        scroll-snap-align: start;
     }
 }
