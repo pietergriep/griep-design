@@ -1311,10 +1311,14 @@ html.case-open {
 }
 /* phones and small windows: one column, the whole sheet scrolls */
 @media (max-width: 809.98px) {
+    /* full screen on phones: no padding or blur around the sheet (for now) */
     .case {
-        padding: 12px;
+        padding: 0;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
     }
     .case-sheet {
+        border-radius: 0;
         display: block;
         padding: 0 20px;
         overflow-y: auto;

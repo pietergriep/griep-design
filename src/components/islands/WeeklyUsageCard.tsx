@@ -1545,6 +1545,8 @@ function AnimatedPercent({ value }: { value: number }) {
     return <>{Math.round(useAnimatedNumber(value, 700, false))}%</>
 }
 
+const ADJUST_AT = 4
+
 function StripeBar({ value, color }: { value: number; color: string }) {
     const d = useD()
     const segments = Math.max(1, Math.round(d.segments))
@@ -1568,7 +1570,14 @@ function StripeBar({ value, color }: { value: number; color: string }) {
 
     const barUnits = Math.max(1, d.cardWidth - 2 * d.cardPadding)
     const span = Math.floor(width)
-    const stripe = Math.max(1, Math.round((span / barUnits) * d.stripeWidth) + Math.round(d.stripeAdjust))
+    // whole device pixels: on a 2x or 3x screen a stripe can be 1.5px, so a small card (a
+    // phone) keeps the stripes' proportion instead of rounding them down to a thin 1px
+    const dpr = typeof window !== "undefined" ? Math.max(1, Math.round(window.devicePixelRatio || 1)) : 1
+    const snap = (v: number) => Math.round(v * dpr) / dpr
+    // "Stripe adjust" is in px for a stripe of ADJUST_AT px (the desktop card); smaller bars
+    // take off proportionally less, so a phone's stripes aren't trimmed to a hairline
+    const raw = (span / barUnits) * d.stripeWidth
+    const stripe = Math.max(1 / dpr, snap(raw + Math.round(d.stripeAdjust) * Math.min(1, raw / ADJUST_AT)))
     const stepPx = segments > 1 ? (span - stripe) / (segments - 1) : 0
 
     return (
@@ -1590,7 +1599,7 @@ function StripeBar({ value, color }: { value: number; color: string }) {
                     key={i}
                     style={{
                         ...(width
-                            ? { position: "absolute", top: 0, bottom: 0, left: Math.round(i * stepPx), width: stripe }
+                            ? { position: "absolute", top: 0, bottom: 0, left: snap(i * stepPx), width: stripe }
                             : { width: u(d.stripeWidth), flexShrink: 0 }),
                         borderRadius: u(d.stripeRadius),
                         background: i < filled ? color : d.barTrack,
