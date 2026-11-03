@@ -23,13 +23,20 @@ document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) =
             dialog.close()
         }, OUT_MS)
     }
+    // Closed with the keyboard, the focus goes back to "Case study"; closed with a tap or a
+    // click it doesn't (a phone would show it selected, with a focus ring)
+    let byKeyboard = false
+    dialog.addEventListener("keydown", () => (byKeyboard = true))
+    dialog.addEventListener("pointerdown", () => (byKeyboard = false))
     dialog.addEventListener("close", () => {
         document.documentElement.classList.remove("case-open")
-        btn.focus({ preventScroll: true })
+        if (byKeyboard) btn.focus({ preventScroll: true })
+        else btn.blur() // the dialog itself hands the focus back to the button that opened it
     })
 
     btn.addEventListener("click", () => {
         clearTimeout(timer)
+        byKeyboard = false
         dialog.classList.remove("is-closing")
         document.documentElement.classList.add("case-open")
         dialog.showModal()
