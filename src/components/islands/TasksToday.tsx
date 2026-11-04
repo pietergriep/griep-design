@@ -40,6 +40,8 @@ export const tasksTodayConfig = {
     show: true,
     label: "Add task",
     background: "#252525",
+    hoverBackground: "#3a3a3a", // on hover the button lightens a little (it doesn't grow)
+    hoverMs: [150, 0, 400, 10],
     radius: [5, 2, 10, 0.5],
     paddingY: [4, 2, 8, 0.5],
     paddingLeft: [4, 2, 8, 0.5],
@@ -159,7 +161,7 @@ export const tasksTodayConfig = {
     pendingColor: "#d3d3d3",
     // the current task's marker (seen when the list moves it away from the label): a ring
     // that fills clockwise from the top as the task goes on (Now → Progress, like its bar)
-    nowStroke: [0.85, 0.3, 2, 0.05], // the ring's thickness
+    nowStroke: [1, 0.3, 2, 0.05], // the ring's thickness
     nowTrackOpacity: [0.23, 0, 1, 0.01], // the part still to come: the same green, this faint
     nowRoundCaps: false,
     // what the green part is: the time gone, like the bar (from 12 o'clock, clockwise), or the
@@ -200,7 +202,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-20", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-22", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -289,16 +291,19 @@ function Header({ v, transition }: { v: Values; transition: Transition }) {
       {b.show && (
       <motion.button
         type="button"
-        whileHover={{ scale: 1.04 }}
+        whileHover={{ backgroundColor: b.hoverBackground }}
         whileTap={{ scale: 0.95 }}
-        transition={{ type: "spring", visualDuration: 0.2, bounce: 0.3 }}
+        transition={{
+          scale: { type: "spring", visualDuration: 0.2, bounce: 0.3 },
+          backgroundColor: { duration: b.hoverMs / 1000, ease: "easeOut" },
+        }}
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: u(b.gap),
           padding: `${u(b.paddingY)} ${u(b.paddingRight)} ${u(b.paddingY)} ${u(b.paddingLeft)}`,
-          background: b.background,
+          backgroundColor: b.background,
           borderRadius: u(b.radius),
           border: "none",
           cursor: "pointer",

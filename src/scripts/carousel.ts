@@ -51,7 +51,7 @@ const VIEW_KEY = "work-view" // remembered per visitor (also read in Portfolio.a
 const SCROLL_DRIVEN = true
 // false: on desktop a sideways trackpad swipe over the cards does nothing (scrolling,
 // the wheel and the arrows move them); phones and tablets still swipe with a finger
-const SIDEWAYS_SCROLL = false
+const SIDEWAYS_SCROLL = true
 const PIN_BOTTOM = 24 // px kept free under "Learn more" while the first screen is pinned
 const PIN_HOLD = 320 // px of scroll the last card stays put for, before the page carries on
 const PIN_SETTLE_MS = 200 // quiet time after scrolling before the row eases to the nearest card
