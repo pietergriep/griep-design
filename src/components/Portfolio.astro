@@ -57,6 +57,12 @@ const SHOW_VIEW_SWITCH = false
             ;(function () {
                 var html = document.documentElement
                 html.classList.add("js")
+                // a refresh starts at the top (and so on the first card): the browser doesn't
+                // put the page back where it was, which with the scroll-driven carousel would
+                // also bring back the card you were on
+                try {
+                    if ("scrollRestoration" in history) history.scrollRestoration = "manual"
+                } catch (e) {}
                 // the work in a grid, if that's the view picked last time (scripts/carousel.ts)
                 try {
                     if (html.dataset.viewSwitch && localStorage.getItem("work-view") === "grid") html.classList.add("work-grid")
