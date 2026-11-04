@@ -42,12 +42,14 @@ const tuneSave = {
     },
 }
 
-// Dev server only: tuning pages, left out of builds (localhost:4322/tune/wallet)
+// Dev server only: tuning pages, left out of builds (localhost:4322/tune/wallet, /tune/tasks)
 const tunePages = {
     name: "tune-pages",
     hooks: {
         "astro:config:setup": ({ command, injectRoute }) => {
-            if (command === "dev") injectRoute({ pattern: "/tune/wallet", entrypoint: fileURLToPath(new URL("./src/dev/wallet.astro", import.meta.url)) })
+            if (command !== "dev") return
+            injectRoute({ pattern: "/tune/wallet", entrypoint: fileURLToPath(new URL("./src/dev/wallet.astro", import.meta.url)) })
+            injectRoute({ pattern: "/tune/tasks", entrypoint: fileURLToPath(new URL("./src/dev/tasks.astro", import.meta.url)) })
         },
     },
 }

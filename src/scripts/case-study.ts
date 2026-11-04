@@ -3,6 +3,9 @@
 // (the dialog's own background) and stops scrolling while it's open. Inside, the text's
 // parts open one at a time.
 const OUT_MS = 200 // matches the closing transition in global.css
+// the opening transition (on phones the page fades out first, so it starts 120ms later):
+// the cards start over only after it, so it runs smoothly
+const IN_MS = () => (matchMedia("(max-width: 809.98px)").matches ? 370 : 250)
 
 document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) => {
     const dialog = document.getElementById(btn.dataset.caseOpen!) as HTMLDialogElement | null
@@ -18,9 +21,13 @@ document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) =
         if (!dialog.open || dialog.classList.contains("is-closing")) return
         dialog.classList.add("is-closing")
         dialog.classList.remove("is-in")
+        clearTimeout(timer) // closed before the cards started over: they don't
         timer = window.setTimeout(() => {
             dialog.classList.remove("is-closing")
             dialog.close()
+            delete dialog.dataset.ready
+            // the cards empty out while it's closed (see WorkloadCase)
+            window.dispatchEvent(new CustomEvent("case-study-close"))
         }, OUT_MS)
     }
     // Closed with the keyboard, the focus goes back to "Case study"; closed with a tap or a
@@ -44,10 +51,17 @@ document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) =
         // Tab still goes to Back first
         dialog.querySelector<HTMLElement>(".case-sheet")?.focus({ preventScroll: true })
         dialog.querySelectorAll<HTMLElement>(".case-sheet, .case-media").forEach((el) => (el.scrollTop = 0))
-        // fresh every time: the cards start over and the text is back on its first part
-        window.dispatchEvent(new CustomEvent("case-study-open"))
+        // fresh every time: the text is back on its first part, and the cards start over once
+        // the sheet has faded in (building them is heavy; during the fade a phone stutters)
         parts.forEach((part, i) => setPart(part, i === 0))
-        requestAnimationFrame(() => dialog.classList.add("is-in"))
+        timer = window.setTimeout(() => {
+            dialog.dataset.ready = "" // for cards that hydrate later (see WorkloadCase)
+            window.dispatchEvent(new CustomEvent("case-study-open"))
+        }, IN_MS())
+        // the closed look is drawn once first, so the fade always plays (from display: none,
+        // one frame isn't always enough)
+        void dialog.offsetWidth
+        requestAnimationFrame(() => requestAnimationFrame(() => dialog.classList.add("is-in")))
     })
     // Escape: the same fade out instead of closing at once
     dialog.addEventListener("cancel", (e) => {

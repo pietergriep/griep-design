@@ -46,6 +46,14 @@ const SCALE = 0.9775 // the whole row, cards and components alike, when the wind
 const VIEW_MS = 300
 const VIEW_CURVE = "cubic-bezier(0.22, 1, 0.36, 1)"
 const VIEW_KEY = "work-view" // remembered per visitor (also read in Portfolio.astro's <head>)
+// true: scrolling down moves the row sideways (the work sticks until the last card);
+// false: the row only moves sideways (swipe, wheel over it, arrows)
+const SCROLL_DRIVEN = false
+const PIN_BOTTOM = 24 // px kept free under "Learn more" while the first screen is pinned
+const PIN_HOLD = 320 // px of scroll the last card stays put for, before the page carries on
+const PIN_SETTLE_MS = 200 // quiet time after scrolling before the row eases to the nearest card
+const GRID_COLS = 3 // cards per row in the grid
+const GRID_MIN_FIT = 0.5 // smaller than this and the grid drops a column
 const row = document.querySelector<HTMLElement>("[data-carousel]")
 const track = row?.querySelector<HTMLElement>(".track")
 const prevBtn = document.querySelector<HTMLButtonElement>("[data-carousel-prev]")
@@ -99,17 +107,18 @@ if (row && track) {
             const widest = Math.max(...cards().map((c) => c.offsetWidth))
             const byWidth = widest > 0 ? roomW / widest : 1
             next = Math.min(SCALE, Math.max(MIN_FIT, Math.min(byHeight, byWidth)))
-            // the grid: the cards at the carousel's height fit (so the first row's notes show
-            // on load), as many columns as fit across the page (each card stretching to its
-            // column), else one column as above
+            // the grid: GRID_COLS cards per row, scaled down so they fit across the page (each
+            // stretching to its column), never bigger than the carousel's height fit; fewer
+            // columns where that would make them smaller than GRID_MIN_FIT, one as above
             if (isGrid()) {
-                const scale = Math.min(SCALE, Math.max(MIN_FIT, byHeight))
                 const unit = track.querySelector<HTMLElement>(".card:not(.card-files)")?.offsetWidth ?? 0
                 const gap = parseFloat(getComputedStyle(track).columnGap) || 0
-                const cols = unit > 0 ? Math.floor(((roomW - gutterPx()) / scale + gap) / (unit + gap)) : 1
-                if (cols >= 2) {
+                for (let cols = GRID_COLS; cols >= 2 && unit > 0; cols--) {
+                    const scale = Math.min(SCALE, byHeight, (roomW - gutterPx()) / (cols * unit + (cols - 1) * gap))
+                    if (scale < GRID_MIN_FIT) continue
                     track.dataset.cols = String(cols)
                     next = scale
+                    break
                 }
             }
             next = Math.round(next * 1000) / 1000
@@ -175,6 +184,99 @@ if (row && track) {
     render()
     publish()
 
+    // --- Scrolling down moves the row (desktop) ----------------------------------------
+    // The first screen sticks where it sits on load (higher, if the cards wouldn't fit), and
+    // the page's own scroll moves the row: one px of scroll, one px of row. .work-pin is
+    // made as tall as that takes, plus PIN_HOLD, a stretch where the last card stays put
+    // before the page carries on. Once the scroll stops among the cards, the page eases to
+    // the nearest one, as the row's own snap did. Trackpad and mouse wheel just scroll; the
+    // arrows and a sideways swipe scroll the page to the right spot. Phones keep the
+    // sideways swipe.
+    const pin = document.querySelector<HTMLElement>("[data-work-pin]")
+    const stage = pin?.querySelector<HTMLElement>(".work-stage") ?? null
+    const work = row.closest<HTMLElement>(".work")
+    const pinned = () => SCROLL_DRIVEN && !!pin && !!stage && !!work && !isGrid() && !matchMedia(PHONE).matches
+    let pinStart = 0 // the page's scroll where the row starts moving
+    const layoutPin = () => {
+        if (!pin || !stage || !work) return
+        if (!pinned()) {
+            pin.style.removeProperty("height")
+            stage.style.removeProperty("top")
+            return
+        }
+        pin.style.removeProperty("height")
+        const natural = pin.getBoundingClientRect().top + scrollY
+        // what has to fit on screen: down to the "Learn more" line under the cards (not the
+        // room kept for an open note, nor the gap above the footer); on a short window the
+        // intro goes partly off the top instead
+        const note = track.querySelector<HTMLElement>(".work-note-btn")
+        const stageTop = stage.getBoundingClientRect().top
+        const shown = note ? note.getBoundingClientRect().bottom - stageTop + PIN_BOTTOM : stage.offsetHeight
+        const top = Math.min(natural, innerHeight - shown)
+        stage.style.top = `${top}px`
+        pin.style.height = `${stage.offsetHeight + maxOffset() * fit + PIN_HOLD}px`
+        pinStart = natural - top
+    }
+    const fromScroll = () => {
+        if (!pinned()) return
+        offset = clamp((scrollY - pinStart) / fit)
+        render()
+        publish()
+    }
+    const smoothScroll = !matchMedia("(prefers-reduced-motion: reduce)").matches
+    // the page's scroll, eased to a spot with the row's own timing and curves (frame by
+    // frame, so it isn't the browser's own smooth scroll)
+    let pageRaf = 0
+    let pageAnimating = false
+    const stopPage = () => {
+        if (pageRaf) cancelAnimationFrame(pageRaf)
+        pageRaf = 0
+        pageAnimating = false
+    }
+    const scrollPageTo = (y: number, ms: number, curve: (p: number) => number) => {
+        stopPage()
+        const from = scrollY
+        if (Math.abs(y - from) < 1 || ms <= 0 || !smoothScroll) return scrollTo({ top: y, behavior: "instant" })
+        const t0 = performance.now()
+        pageAnimating = true
+        const step = (now: number) => {
+            const p = Math.min(1, (now - t0) / ms)
+            scrollTo({ top: from + (y - from) * curve(p), behavior: "instant" })
+            if (p < 1) pageRaf = requestAnimationFrame(step)
+            else stopPage()
+        }
+        pageRaf = requestAnimationFrame(step)
+    }
+    const scrollToOffset = (target: number, kind: "snap" | "step" | "fling" | "now") => {
+        const y = pinStart + clamp(target) * fit
+        if (kind === "now") return scrollPageTo(y, 0, (p) => p)
+        if (kind === "step") return scrollPageTo(y, STEP_MS, stepEase)
+        if (kind === "fling") return scrollPageTo(y, FLING_MS, easeOutCubic)
+        scrollPageTo(y, SNAP_MS, snapEase)
+    }
+    // once the scroll stops among the cards (not before the first, nor in the pause after
+    // the last), ease to the nearest one
+    let settleTimer = 0
+    const settleSoon = () => {
+        clearTimeout(settleTimer)
+        if (!pinned() || pageAnimating) return
+        settleTimer = window.setTimeout(() => {
+            const at = (scrollY - pinStart) / fit
+            if (at <= 0 || at >= maxOffset()) return
+            scrollToOffset(nearestRest(at), "snap")
+        }, PIN_SETTLE_MS)
+    }
+    addEventListener(
+        "scroll",
+        () => {
+            fromScroll()
+            settleSoon()
+        },
+        { passive: true },
+    )
+    // scrolling by hand takes over from an ease that's under way
+    ;["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => addEventListener(t, () => pageAnimating && stopPage(), { passive: true }))
+
     // --- Motion --------------------------------------------------------------
     let raf = 0
     let animating = false
@@ -236,6 +338,7 @@ if (row && track) {
     }
     const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3)
     const animateTo = (target: number, kind: "snap" | "step" | "fling" = "snap") => {
+        if (pinned()) return scrollToOffset(target, kind) // the page scrolls there; the row follows
         ease = kind === "step" ? stepEase : kind === "fling" ? easeOutCubic : snapEase
         duration = kind === "step" ? STEP_MS : kind === "fling" ? FLING_MS : SNAP_MS
         from = offset
@@ -339,6 +442,15 @@ if (row && track) {
         "wheel",
         (e) => {
             if (!hovered || isGrid()) return
+            // pinned: up / down just scrolls the page (which moves the row); a sideways
+            // trackpad swipe scrolls it too
+            if (pinned()) {
+                if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                    e.preventDefault()
+                    scrollBy(0, e.deltaX)
+                }
+                return
+            }
             // Cards with their own scrolling (data-own-scroll, e.g. the usage card's agent list
             // and chat) keep up / down scrolling to themselves; sideways swipes still move the row
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && (e.target as Element | null)?.closest?.("[data-own-scroll]")) return
@@ -437,14 +549,16 @@ if (row && track) {
             e.preventDefault()
             const max = maxOffset()
             let raw = startOffset - dx / fit
-            if (raw < 0) raw *= RESISTANCE
-            else if (raw > max) raw = max + (raw - max) * RESISTANCE
-            offset = raw
             const now = performance.now()
             const dt = now - lastT
             if (dt > 0) velocity = velocity * 0.4 + ((lastX - t.clientX) / fit / dt) * 0.6
             lastX = t.clientX
             lastT = now
+            // pinned: a sideways swipe scrolls the page to where the row should be
+            if (pinned()) return scrollToOffset(raw, "now")
+            if (raw < 0) raw *= RESISTANCE
+            else if (raw > max) raw = max + (raw - max) * RESISTANCE
+            offset = raw
             render()
             publish()
         },
@@ -478,6 +592,9 @@ if (row && track) {
         offset = clamp(list[index]?.offsetLeft ?? 0)
         render()
         publish()
+        // pinned, the row follows the scroll instead
+        layoutPin()
+        fromScroll()
     }
     addEventListener("resize", onResize)
     new ResizeObserver(onResize).observe(row)

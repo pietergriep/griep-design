@@ -172,6 +172,9 @@ const CASE_PAIR_SCALE = 1.25 // the pair's cards, 1 = as in the pair view
 const CASE_BACKDROP: Partial<Design> = { backdropImage: "/media/usage/case-backdrop.webp", backdropBlur: 0, backdropOverlayOpacity: 0 }
 const CASE_AUTO_SEC = 0 // no prompts by themselves: the pair only moves when someone uses it
 const CASE_PAIR_IN = 0.4 // how much of the pair's frame shows before its cards fade in (0–1)
+// ms before a card fades in: it's only built once the sheet has faded in (scripts/case-study.ts),
+// so most of the wait is already behind it
+const CASE_CARD_DELAY = 50
 // phones (the case study's one-column layout, global.css): a card per image, swiped sideways
 const CASE_PHONE = "(max-width: 809.98px)"
 const CASE_PHONE_FIT = 0.9 // how much of its image the card fills
@@ -179,18 +182,29 @@ const CASE_PHONE_OPEN = "reviewer" // the agent open in the second image (as in 
 
 export function WorkloadCase({ view }: { view: "single" | "pair" }) {
     const d: Design = { ...DEFAULT_DESIGN, ...STUDIO, ...CASE_BACKDROP }
-    // Starts over on every open of the case study ("case-study-open", scripts/case-study.ts)
+    // Starts over on every open of the case study ("case-study-open", scripts/case-study.ts,
+    // sent once the sheet has faded in); empty while it's closed ("case-study-close"), so the
+    // fade never waits on building the cards
     const [run, setRun] = useState(0)
+    const [active, setActive] = useState(false)
     // the pair waits until it scrolls into view (CASE_PAIR_IN of it showing), each open again
     const [seen, setSeen] = useState(view === "single")
     const root = useRef<HTMLDivElement>(null)
     useEffect(() => {
+        // hydrated after the open was announced: start straight away
+        if (document.querySelector("dialog.case[data-ready]")) setActive(true)
         const restart = () => {
             setRun((n) => n + 1)
+            setActive(true)
             if (view === "pair") setSeen(false)
         }
+        const empty = () => setActive(false)
         window.addEventListener("case-study-open", restart)
-        return () => window.removeEventListener("case-study-open", restart)
+        window.addEventListener("case-study-close", empty)
+        return () => {
+            window.removeEventListener("case-study-open", restart)
+            window.removeEventListener("case-study-close", empty)
+        }
     }, [view])
     useEffect(() => {
         if (seen || !root.current) return
@@ -213,7 +227,7 @@ export function WorkloadCase({ view }: { view: "single" | "pair" }) {
         return () => q.removeEventListener("change", update)
     }, [])
     const single = (open?: string) => (
-        <div key={`${run}-${phone}`} style={{ position: "absolute", inset: 0, animation: "wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }}>
+        <div key={`${run}-${phone}`} style={{ position: "absolute", inset: 0, animation: `wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) ${CASE_CARD_DELAY}ms both` }}>
             <style>{"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }"}</style>
             <WeeklyUsageShowcase
                 panel={false}
@@ -228,7 +242,7 @@ export function WorkloadCase({ view }: { view: "single" | "pair" }) {
         <div ref={root} className="island-root" style={{ position: "absolute", inset: 0, overflow: "hidden", containerType: "size" }}>
             <div style={{ position: "absolute", inset: -2 * Math.max(2, d.backdropBlur), background: backdropPaint(d), filter: d.backdropBlur > 0 ? `blur(${d.backdropBlur}px)` : undefined }} />
             <div style={{ position: "absolute", inset: 0, background: d.backdropOverlay, opacity: d.backdropOverlayOpacity }} />
-            {view === "single" ? single() : seen && (phone ? single(CASE_PHONE_OPEN) : <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />)}
+            {active && (view === "single" ? single() : seen && (phone ? single(CASE_PHONE_OPEN) : <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />))}
         </div>
     )
 }

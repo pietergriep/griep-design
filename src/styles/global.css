@@ -8,6 +8,15 @@
     font-display: swap;
 }
 
+/* Geist Mono (from the geist package, SIL OFL), cut down to Latin like Geist: the times
+   in "Tasks today" */
+@font-face {
+    font-family: "Geist Mono";
+    src: url("/fonts/GeistMono-Variable.latin.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
 /* Inter Display (Inter 4.1, SIL OFL — license in /fonts). Only the two weights
    the site uses; nothing on the page asks for bold. */
 @font-face {
@@ -332,6 +341,16 @@ main {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+}
+
+/* Scrolling down moves the cards sideways: the first screen (intro and work) sticks
+   (carousel.ts sets where, and makes .work-pin as tall as the scroll it takes to reach
+   the last card), then the page carries on */
+.work-pin {
+    position: relative;
+}
+.work-pin[style*="height"] > .work-stage {
+    position: sticky;
 }
 
 /* the arrows on the left (they fade out in the grid), the carousel / grid switch on
@@ -801,11 +820,29 @@ html.work-grid .work .work-note-inner {
     width: 647px; /* the planner widget (575px, +25%, then -10%; +25% again in the grid) */
 }
 
+/* "Tasks today" (islands/TasksToday.tsx): as wide as the widget was in its picture */
+.card-tasks {
+    --tasks-w: 390px;
+}
+/* the component was written for a page that resets paragraphs and buttons */
+.tasks-today p {
+    margin: 0;
+}
+.tasks-today button {
+    font: inherit;
+}
+.tasks-today-list::-webkit-scrollbar {
+    display: none;
+}
+
 /* In the grid's wider cards the planner and the portfolio widget read small, so there
    they're 25% bigger (not on phones, where the cards are as wide as the screen) */
 @media (min-width: 600px) {
     html.work-grid .work .card-wide-image img {
         width: 809px;
+    }
+    html.work-grid .work .card-tasks {
+        --tasks-w: 488px;
     }
     html.work-grid .work .card-gradient-widget .island-root {
         transform: scale(1.25);
@@ -1048,6 +1085,10 @@ html.work-grid .work .work-note-inner {
     .card-wide-image img {
         width: 500px;
     }
+    .card-tasks {
+        /* the component draws itself at its Scale (1.14) of this: 302px wide, as before */
+        --tasks-w: calc(302px / 1.14);
+    }
     .badge {
         font-size: 12px;
         letter-spacing: 0;
@@ -1243,7 +1284,7 @@ html.case-open {
     background: none;
     text-align: left;
     font: inherit;
-    font-size: 17px;
+    font-size: 15px;
     letter-spacing: 0.005em;
     color: rgb(140, 140, 140);
     cursor: pointer;
@@ -1308,22 +1349,29 @@ html.case-open {
 }
 /* phones and small windows: one column, the whole sheet scrolls */
 @media (max-width: 809.98px) {
-    /* full screen on phones: no padding or blur around the sheet (for now). It slides up
-       from the bottom and back down, never see-through, so the page and the sheet never
-       show on top of each other; the page behind only dims */
+    /* full screen on phones: no padding, blur or dark tint around the sheet (for now).
+       The page fades out first, then the sheet fades in (with the same slight grow as
+       on desktop), so the two never show through each other; closing, the other way round */
     .case {
         padding: 0;
+        background: transparent;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
-        opacity: 1;
-        background: rgba(0, 0, 0, 0);
-        transition: background-color 300ms ease;
     }
     .case.is-in {
-        background: rgba(0, 0, 0, 0.16);
+        transition-delay: 120ms;
     }
-    .case.is-closing {
-        transition-duration: 200ms;
+    .case.is-in .case-sheet {
+        transition-delay: 120ms;
+    }
+    main,
+    .footer {
+        transition: opacity 200ms ease-out;
+    }
+    html.case-open main,
+    html.case-open .footer {
+        opacity: 0;
+        transition: opacity 150ms ease-in;
     }
     .case-sheet {
         border-radius: 0;
@@ -1331,12 +1379,6 @@ html.case-open {
         padding: 0 20px;
         overflow-y: auto;
         overscroll-behavior: contain;
-        transform: translateY(100%);
-        transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
-    }
-    /* out in OUT_MS (scripts/case-study.ts) */
-    .case.is-closing .case-sheet {
-        transition: transform 200ms cubic-bezier(0.32, 0, 0.67, 0);
     }
     /* the images move as the text's parts open and close: each its own layer, so they
        move instead of being redrawn every frame */

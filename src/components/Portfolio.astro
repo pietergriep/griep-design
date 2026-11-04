@@ -9,6 +9,7 @@ import RouteFinder from "./islands/RouteFinderIsland.tsx"
 import BusinessCard from "./islands/BusinessCardIsland.tsx"
 import WeeklyUsage from "./islands/WeeklyUsageIsland.tsx"
 import DCAFlow from "./islands/DCAFlowIsland.tsx"
+import TasksToday from "./islands/TasksTodayIsland.tsx"
 import WorkImage from "./WorkImage.astro"
 import WorkNote from "./WorkNote.astro"
 import CaseStudy from "./CaseStudy.astro"
@@ -88,6 +89,9 @@ const SHOW_VIEW_SWITCH = false
         </header>
 
         <main>
+            <!-- the first screen stays put while scrolling down moves the cards sideways (scripts/carousel.ts) -->
+            <div class="work-pin" data-work-pin>
+            <div class="work-stage">
             <section class="intro">
                 <div class="intro-who blur-in">
                     <p class="name">Pieter Griep</p>
@@ -196,10 +200,10 @@ const SHOW_VIEW_SWITCH = false
                     </div>
 
                     <div class="work-item">
-                        <div class="card card-image card-wide-image">
-                            <WorkImage name="LWyU3Kwt63ukHhi1DEkQvMJm5Y" />
+                        <div class="card card-image card-tasks" data-own-scroll>
+                            <TasksToday client:visible />
                         </div>
-                        <WorkNote text="A planner widget for the day. Each task shows its time as a bar that fills as it happens, the current one is outlined with the minutes left, and finished tasks fade back with a check." />
+                        <WorkNote text="A planner widget for the day. Scroll the list and it snaps task by task along a timeline, where a label reads Done, Now or Soon for whichever one sits beside it. The current task steps forward, with a bar and a ring showing how far along it is and a badge with the minutes left." />
                     </div>
 
                     {SHOW_LIMIT_SCREEN && (
@@ -220,6 +224,8 @@ const SHOW_VIEW_SWITCH = false
                     </div>
                 </div>
             </section>
+            </div>
+            </div>
         </main>
 
         <CaseStudy />
