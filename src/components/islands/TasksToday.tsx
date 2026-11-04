@@ -6,6 +6,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 export const BASE_WIDTH = 231;
 export const BASE_HEIGHT = 164;
 
+/** The site's phone layout (as in scripts/carousel.ts). */
+const PHONE = "(max-width: 599.98px)";
+
 /** Figma px → scaled CSS length. */
 const u = (n: number) => `calc(var(--u) * ${n})`;
 
@@ -185,13 +188,16 @@ export const tasksTodayConfig = {
     // on load: the header, then the tasks one by one from the top down, then the current
     // task's bar (and its ring) fills
     intro: true,
-    enter: { type: "spring", visualDuration: 0.6, bounce: 0.2 },
+    enter: { type: "spring", visualDuration: 0.5, bounce: 0.2 },
     enterY: [-30, -100, 100, 1], // where a task comes in from, in % of its height (− = above)
-    stagger: [0.1, 0, 0.3, 0.01], // between one task and the next
-    // the intro waits until this much of the component is on screen (so a card peeking in
-    // at the edge of the carousel, or loading off to the side on a phone, doesn't play it unseen)
-    inView: [0.6, 0.1, 1, 0.05],
-    inViewMs: [400, 0, 1000, 10], // ...for this long (not just passing by while the carousel moves)
+    stagger: [0.08, 0, 0.3, 0.01], // between one task and the next
+    // On a phone the intro waits until this much of the component is on screen, for this
+    // long (it loads before you reach it), and runs a little slower. On desktop it plays as
+    // soon as the component loads, with the timing above.
+    phoneInView: [0.6, 0.1, 1, 0.05],
+    phoneInViewMs: [400, 0, 1000, 10],
+    phoneEnter: { type: "spring", visualDuration: 0.6, bounce: 0.2 },
+    phoneStagger: [0.1, 0, 0.3, 0.01],
     barDelay: [0.45, 0, 1.5, 0.01], // after the last task starts coming in, the current task's bar (and ring) fills
     progress: { type: "spring", visualDuration: 0.6, bounce: 0 },
     hoverLift: [1, 0, 4, 0.1],
@@ -206,7 +212,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-26", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-27", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -228,8 +234,10 @@ export function TasksToday({ className, style }: { className?: string; style?: C
   // its intro plays where it can be seen
   const box = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
-  const threshold = values.Motion.inView;
-  const dwell = values.Motion.inViewMs;
+  const [phone, setPhone] = useState(false);
+  useLayoutEffect(() => setPhone(matchMedia(PHONE).matches), []);
+  const threshold = phone ? values.Motion.phoneInView : 0;
+  const dwell = phone ? values.Motion.phoneInViewMs : 0;
   useEffect(() => {
     const el = box.current;
     if (!el || inView) return;
@@ -248,6 +256,7 @@ export function TasksToday({ className, style }: { className?: string; style?: C
     };
   }, [inView, threshold, dwell]);
   const shown = inView || !values.Motion.intro;
+  const v = phone ? { ...values, Motion: { ...values.Motion, enter: values.Motion.phoneEnter, stagger: values.Motion.phoneStagger } } : values;
 
   const pct = values.Scale * 100;
   return (
@@ -260,7 +269,7 @@ export function TasksToday({ className, style }: { className?: string; style?: C
         }}
       >
         <div style={{ visibility: shown ? "visible" : "hidden" }}>
-          <Card key={`${run}-${shown}`} v={values} />
+          <Card key={`${run}-${shown}`} v={v} />
         </div>
       </div>
     </div>
