@@ -1086,8 +1086,8 @@ html.work-grid .work .work-note-inner {
         width: 500px;
     }
     .card-tasks {
-        /* the component draws itself at its Scale (1.25) of this: 302px wide, as before */
-        --tasks-w: calc(302px / 1.25);
+        /* the component draws itself at its Scale (1.14) of this: 302px wide, as before */
+        --tasks-w: calc(302px / 1.14);
     }
     .badge {
         font-size: 12px;
