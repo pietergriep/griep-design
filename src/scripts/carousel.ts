@@ -48,7 +48,10 @@ const VIEW_CURVE = "cubic-bezier(0.22, 1, 0.36, 1)"
 const VIEW_KEY = "work-view" // remembered per visitor (also read in Portfolio.astro's <head>)
 // true: scrolling down moves the row sideways (the work sticks until the last card);
 // false: the row only moves sideways (swipe, wheel over it, arrows)
-const SCROLL_DRIVEN = false
+const SCROLL_DRIVEN = true
+// false: on desktop a sideways trackpad swipe over the cards does nothing (scrolling,
+// the wheel and the arrows move them); phones and tablets still swipe with a finger
+const SIDEWAYS_SCROLL = false
 const PIN_BOTTOM = 24 // px kept free under "Learn more" while the first screen is pinned
 const PIN_HOLD = 320 // px of scroll the last card stays put for, before the page carries on
 const PIN_SETTLE_MS = 200 // quiet time after scrolling before the row eases to the nearest card
@@ -442,6 +445,10 @@ if (row && track) {
         "wheel",
         (e) => {
             if (!hovered || isGrid()) return
+            if (!SIDEWAYS_SCROLL && !matchMedia(PHONE).matches && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                e.preventDefault() // (also keeps the browser from swiping back a page)
+                return
+            }
             // pinned: up / down just scrolls the page (which moves the row); a sideways
             // trackpad swipe scrolls it too
             if (pinned()) {

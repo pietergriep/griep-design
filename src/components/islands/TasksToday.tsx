@@ -78,7 +78,7 @@ export const tasksTodayConfig = {
     rowGap: [5, 2.5, 10, 0.5], // title → times
     timeSize: [6, 3, 12, 0.5],
     timeWeight: [500, 300, 800, 10],
-    timeTracking: [0, -0.48, 0.24, 0.01],
+    timeTracking: [0.12, -0.48, 0.24, 0.01],
     timeGap: [1.5, 0, 4, 0.1], // either side of the dash
     // the progress bar down the left of each card: it fills from the top as the task goes on
     barWidth: [1.7, 1, 4, 0.1],
@@ -200,7 +200,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-18", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-19", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
