@@ -410,11 +410,15 @@ if (row && track) {
     // A mouse wheel has no sideways, so over the row it moves the row instead: down
     // goes forward, up goes back (see WHEEL_MODE); at either end the wheel scrolls the
     // page again, so nobody gets stuck in the row.
-    // Chrome and Safari report a trackpad's wheelDeltaY as exactly -3 × deltaY; a mouse
-    // wheel's isn't (and Firefox's mouse wheel counts in lines).
+    // On a Mac, Chrome and Safari report a trackpad's wheelDeltaY as exactly -3 × deltaY;
+    // a mouse wheel's isn't (and Firefox's mouse wheel counts in lines). Windows doesn't
+    // follow that rule (its wheelDelta is 1.2 × deltaY for both), so there a mouse is told
+    // apart by its big notches (100 or more per event) from a touchpad's small steps.
+    const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform)
     const isMouseWheel = (e: WheelEvent) => {
         if (e.deltaMode !== 0) return true
         if (e.deltaX !== 0) return false
+        if (!IS_MAC) return Math.abs(e.deltaY) >= 50
         const legacy = (e as WheelEvent & { wheelDeltaY?: number }).wheelDeltaY
         return typeof legacy === "number" && legacy !== 0 && legacy !== -3 * e.deltaY
     }
@@ -532,6 +536,7 @@ if (row && track) {
                 e.preventDefault()
                 e.stopPropagation()
                 stop()
+                endWheel() // (a glide from mouse-wheel input would pull against this)
                 offset = clamp(offset + e.deltaY / fit)
                 render()
                 publish()
@@ -542,6 +547,7 @@ if (row && track) {
             e.preventDefault()
             e.stopPropagation()
             stop()
+            endWheel()
             offset = clamp(offset + e.deltaX / fit)
             render()
             publish()
