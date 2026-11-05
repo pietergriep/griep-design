@@ -21,6 +21,7 @@ const SNAP_AFTER_MS = 250 // quiet time after wheel / trackpad input before snap
 const WHEEL_MODE: "free" | "step" = "free"
 const WHEEL_SPEED = 1.6 // px of row per px of wheel delta (a notch is ~100)
 const WHEEL_EASE_MS = 90 // how quickly the row catches up with the wheel (time constant)
+const TOUCHPAD_EASE_MS = 140 // the same for a Windows touchpad (see moveBy): softer, for its uneven steps
 const WHEEL_SNAP_AFTER_MS = 260 // a mouse wheel's notches come further apart than a trackpad's
 // false: the wheel glides the row and leaves it where it stops, no snapping to a card
 // afterwards (trackpads still snap; true brings the wheel's snap back)
@@ -472,7 +473,7 @@ if (row && track) {
         // or the row eases backwards)
         const dt = Math.max(0, Math.min(64, now - wheelLast))
         wheelLast = now
-        offset += (wheelTarget - offset) * (1 - Math.exp(-dt / WHEEL_EASE_MS))
+        offset += (wheelTarget - offset) * (1 - Math.exp(-dt / glideEase))
         if (Math.abs(wheelTarget - offset) < 0.5) offset = wheelTarget
         render()
         publish()
@@ -487,6 +488,9 @@ if (row && track) {
     // A Windows touchpad's aren't: between steps of ~10 px come single ones of 200-540 px
     // (?wheellog), so there the row glides to where the input points (WHEEL_EASE_MS)
     // instead of jumping that far in one frame.
+    // how quickly a glide catches up (its time constant): the mouse wheel's, or the softer one
+    // for a Windows touchpad, whose odd 500+ px steps would lurch at the wheel's speed
+    let glideEase = WHEEL_EASE_MS
     const where = () => (wheelRaf && wheelTarget !== null ? wheelTarget : offset)
     const moveBy = (d: number) => {
         const base = where()
@@ -504,6 +508,7 @@ if (row && track) {
             render()
             publish()
         } else {
+            glideEase = TOUCHPAD_EASE_MS
             wheelTarget = clamp(base + d)
             if (!wheelRaf) {
                 wheelLast = performance.now()
@@ -580,6 +585,7 @@ if (row && track) {
                 stop()
                 clearTimeout(snapTimer)
                 const delta = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY
+                glideEase = WHEEL_EASE_MS
                 wheelTarget = clamp(pos + (delta * WHEEL_SPEED) / fit)
                 if (!wheelRaf) {
                     wheelLast = performance.now()
@@ -599,8 +605,11 @@ if (row && track) {
                 const now = performance.now()
                 if (pageHasWheel(e)) return
                 lastWheelAt = now
-                // at either end the same swipe carries straight on into the page
-                if (dir > 0 ? where() >= maxOffset() - 1 : where() <= 1) {
+                // at either end the same swipe carries straight on into the page, once the row
+                // has really arrived there (not while it's still gliding the last bit, or the
+                // row and the page would move together)
+                const end = dir > 0 ? maxOffset() - 1 : 1
+                if (dir > 0 ? where() >= end && offset >= end : where() <= end && offset <= end) {
                     wheelOwned = false
                     return
                 }
