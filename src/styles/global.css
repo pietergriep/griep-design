@@ -1350,8 +1350,9 @@ html.case-open {
 /* phones and small windows: one column, the whole sheet scrolls */
 @media (max-width: 809.98px) {
     /* full screen on phones: no padding, blur or dark tint around the sheet (for now).
-       The page fades out first, then the sheet fades in (with the same slight grow as
-       on desktop), so the two never show through each other; closing, the other way round */
+       The page fades out first, then the sheet fades in, so the two never show through
+       each other; closing, the other way round. Only fades: nothing moves (the slight
+       grow desktop has read as the content jumping on a phone) */
     .case {
         padding: 0;
         background: transparent;
@@ -1374,6 +1375,8 @@ html.case-open {
         transition: opacity 150ms ease-in;
     }
     .case-sheet {
+        transform: none;
+        transition: none;
         border-radius: 0;
         display: block;
         padding: 0 20px;
