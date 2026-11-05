@@ -374,6 +374,8 @@ if (row && track) {
         if (delta) swipeDir = Math.sign(delta)
         clearTimeout(snapTimer)
         snapTimer = window.setTimeout(() => {
+            if (wheelRaf && wheelTarget !== null) offset = wheelTarget // (the glide's last few px)
+            endWheel()
             const to = settleRest()
             swipeFrom = null
             swipeDir = 0
@@ -466,7 +468,9 @@ if (row && track) {
     let wheelLast = 0
     const wheelFrame = (now: number) => {
         if (wheelTarget === null) return (wheelRaf = 0)
-        const dt = Math.min(64, now - wheelLast)
+        // (the frame's time can be a little before the event that started the glide: never negative,
+        // or the row eases backwards)
+        const dt = Math.max(0, Math.min(64, now - wheelLast))
         wheelLast = now
         offset += (wheelTarget - offset) * (1 - Math.exp(-dt / WHEEL_EASE_MS))
         if (Math.abs(wheelTarget - offset) < 0.5) offset = wheelTarget
@@ -478,6 +482,28 @@ if (row && track) {
         wheelTarget = null
         if (wheelRaf) cancelAnimationFrame(wheelRaf)
         wheelRaf = 0
+    }
+    // Trackpad input. A Mac trackpad's steps are even, so the row follows them directly.
+    // A Windows touchpad's aren't: between steps of ~10 px come single ones of 200-540 px
+    // (?wheellog), so there the row glides to where the input points (WHEEL_EASE_MS)
+    // instead of jumping that far in one frame.
+    const where = () => (wheelRaf && wheelTarget !== null ? wheelTarget : offset)
+    const moveBy = (d: number) => {
+        const base = where() // (before stop(), which ends the glide)
+        stop()
+        if (IS_MAC) {
+            endWheel()
+            offset = clamp(offset + d)
+            render()
+            publish()
+        } else {
+            wheelTarget = clamp(base + d)
+            if (!wheelRaf) {
+                wheelLast = performance.now()
+                wheelRaf = requestAnimationFrame(wheelFrame)
+            }
+        }
+        snapSoon(d)
     }
     // Each scroll picks up / down or sideways at its start and keeps it until a pause of
     // AXIS_GAP_MS. A Mac trackpad does this itself; a Windows touchpad doesn't, and a scroll
@@ -567,30 +593,20 @@ if (row && track) {
                 if (pageHasWheel(e)) return
                 lastWheelAt = now
                 // at either end the same swipe carries straight on into the page
-                if (dir > 0 ? offset >= maxOffset() - 1 : offset <= 1) {
+                if (dir > 0 ? where() >= maxOffset() - 1 : where() <= 1) {
                     wheelOwned = false
                     return
                 }
                 wheelOwned = true
                 e.preventDefault()
                 e.stopPropagation()
-                stop()
-                endWheel() // (a glide from mouse-wheel input would pull against this)
-                offset = clamp(offset + e.deltaY / fit)
-                render()
-                publish()
-                snapSoon(e.deltaY / fit)
+                moveBy(e.deltaY / fit)
                 return
             }
             if (upDown(e) || e.deltaX === 0) return
             e.preventDefault()
             e.stopPropagation()
-            stop()
-            endWheel()
-            offset = clamp(offset + e.deltaX / fit)
-            render()
-            publish()
-            snapSoon(e.deltaX / fit)
+            moveBy(e.deltaX / fit)
     }
     // Up / down: the row hears it first (capture), so a scroll that's moving the row isn't
     // taken over by a list sliding under the pointer. Sideways: after the card's own
