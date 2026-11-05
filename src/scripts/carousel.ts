@@ -462,6 +462,14 @@ if (row && track) {
         return false
     }
     const pageHasWheel = (e: WheelEvent) => !e.cancelable
+    // Scrolling up with the page scrolled down (past the last card, into the footer): the page
+    // comes back up first, then the row moves. The mirror of going down, where the row goes
+    // first and then the page.
+    const pageFirst = (dir: number) => {
+        if (dir > 0 || scrollY <= 1) return false
+        wheelOwned = false
+        return true
+    }
     let lastWheelStep = 0
     // free mode: the row eases toward wheelTarget, frame by frame
     let wheelTarget: number | null = null
@@ -565,6 +573,7 @@ if (row && track) {
                 const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
                 const now = performance.now()
                 if (pageHasWheel(e)) return
+                if (pageFirst(dir)) return
                 const spinning = now - lastWheelAt < WHEEL_HANDOFF_MS
                 lastWheelAt = now
                 if (dir > 0 ? pos >= maxOffset() - 1 : pos <= 1) {
@@ -604,6 +613,7 @@ if (row && track) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const now = performance.now()
                 if (pageHasWheel(e)) return
+                if (pageFirst(dir)) return
                 lastWheelAt = now
                 // at either end the same swipe carries straight on into the page, once the row
                 // has really arrived there (not while it's still gliding the last bit, or the
