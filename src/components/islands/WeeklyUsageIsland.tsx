@@ -226,14 +226,31 @@ export function WorkloadCase({ view }: { view: "single" | "pair" }) {
         q.addEventListener("change", update)
         return () => q.removeEventListener("change", update)
     }, [])
+    const fadeInWhenBuilt = (el: HTMLDivElement | null) => {
+        if (!el || el.dataset.fading) return
+        el.dataset.fading = ""
+        requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+                el.style.opacity = ""
+                el.style.animation = `wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) ${CASE_CARD_DELAY}ms both`
+            }),
+        )
+    }
     const single = (open?: string) => (
-        <div key={`${run}-${phone}`} style={{ position: "absolute", inset: 0, animation: `wu-rec-in 520ms cubic-bezier(0.22, 1, 0.36, 1) ${CASE_CARD_DELAY}ms both` }}>
+        <div
+            key={`${run}-${phone}`}
+            // hidden while the card is built (heavy, on a phone it takes a while), then faded
+            // in: started any earlier, the fade's clock runs during the build and it jumps in
+            ref={fadeInWhenBuilt}
+            style={{ position: "absolute", inset: 0, opacity: 0 }}
+        >
             <style>{"@keyframes wu-rec-in { from { opacity: 0; transform: translateY(14px) scale(0.985) } }"}</style>
             <WeeklyUsageShowcase
                 panel={false}
                 mode="fill"
                 design={{ ...STUDIO, ...CASE_BACKDROP, backdrop: "transparent", backdropImage: "", backdropRatio: "Fill screen", fit: phone ? CASE_PHONE_FIT : CASE_FIT, ...(open ? { autoPromptSec: CASE_AUTO_SEC } : {}) }}
                 openAgentId={open}
+                openInstantly={!!open}
             />
         </div>
     )

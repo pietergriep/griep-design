@@ -2561,7 +2561,10 @@ function AgentTile({
     onSend,
     onStatus,
     onTaskComplete,
+    instant = false,
 }: {
+    /** Shown open at once: no grow, the chat built straight away */
+    instant?: boolean
     agent: Agent
     status: QueueStatus
     looping: boolean
@@ -2585,7 +2588,7 @@ function AgentTile({
 }) {
     const d = useD()
     const reduce = prefersReducedMotion()
-    const ms = reduce ? 0 : d.expandMs
+    const ms = reduce || instant ? 0 : d.expandMs
     const ease = EXPAND_EASE
     // Lifted: positioned at its resting box for the current state. The grow/shrink
     // itself is a keyframe animation (below), so it can overshoot and settle.
@@ -4014,6 +4017,8 @@ export interface WeeklyUsageCardProps extends Partial<CardContent> {
     sectionRef?: Ref<HTMLElement>
     /** Opens this agent's chat as soon as the card is on screen (e.g. for a side-by-side video) */
     openAgentId?: string
+    /** With `openAgentId`: shown already open, without the list first or the grow (the phone case study) */
+    openInstantly?: boolean
     style?: CSSProperties
 }
 
@@ -4029,6 +4034,7 @@ export function WeeklyUsageCard({
     sectionRef,
     style,
     openAgentId,
+    openInstantly = false,
 }: WeeklyUsageCardProps) {
     const d = useMemo(() => withFixes({ ...DEFAULT_DESIGN, ...fixHexColors(design), a11yFixes: true }), [design])
     const dRef = useRef(d)
@@ -4161,7 +4167,8 @@ export function WeeklyUsageCard({
     const sectionEl = useRef<HTMLElement | null>(null)
     // Each tile sits in a slot; while its tile is lifted the slot keeps the space
     const slotEls = useRef<Record<string, HTMLElement | null>>({})
-    const [detail, setDetail] = useState<{ id: string; from: Box; full: Box } | null>(null)
+    // instant: opened without the grow (openInstantly); closing still animates
+    const [detail, setDetail] = useState<{ id: string; from: Box; full: Box; instant?: boolean } | null>(null)
     const [detailOpen, setDetailOpen] = useState(false)
     const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -4520,13 +4527,13 @@ export function WeeklyUsageCard({
             height: sec.clientHeight - pt - parseFloat(cs.paddingBottom),
         }
     }
-    const openAgent = (id: string) => {
+    const openAgent = (id: string, instant = false) => {
         const from = tileBox(id)
         if (!from) return
         clearTimeout(closeTimer.current)
         // Open in the same frame as the click: the grow animation runs from the tile's
         // box itself (keyframes), so there's no need to render it small first
-        setDetail({ id, from, full: fullBox() })
+        setDetail({ id, from, full: fullBox(), instant })
         setDetailOpen(true)
     }
     // While an agent is open, it keeps filling the card if the card changes size after it
@@ -4550,6 +4557,11 @@ export function WeeklyUsageCard({
     // Opened from the start: once the tiles have their places
     useEffect(() => {
         if (!openAgentId) return
+        if (openInstantly) {
+            // the first frame the tiles have their places, before anyone sees the list
+            let raf = requestAnimationFrame(() => (raf = requestAnimationFrame(() => openAgent(openAgentId, true))))
+            return () => cancelAnimationFrame(raf)
+        }
         const id = setTimeout(() => openAgent(openAgentId), 400)
         return () => clearTimeout(id)
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4841,6 +4853,7 @@ export function WeeklyUsageCard({
                                             icon={icon}
                                             expanded={isOpen}
                                             open={isOpen && detailOpen}
+                                            instant={isOpen && detailOpen && !!detail!.instant}
                                             box={isOpen ? detail!.from : null}
                                             full={isOpen ? detail!.full : null}
                                             onClosed={releaseAgent}
