@@ -432,14 +432,16 @@ if (row && track) {
     // goes forward, up goes back (see WHEEL_MODE); at either end the wheel scrolls the
     // page again, so nobody gets stuck in the row.
     // On a Mac, Chrome and Safari report a trackpad's wheelDeltaY as exactly -3 × deltaY;
-    // a mouse wheel's isn't (and Firefox's mouse wheel counts in lines). Windows doesn't
-    // follow that rule (its wheelDelta is 1.2 × deltaY for both), so there a mouse is told
-    // apart by its big notches (100 or more per event) from a touchpad's small steps.
+    // a mouse wheel's isn't (and Firefox's mouse wheel counts in lines). Elsewhere there's
+    // no telling them apart: a Windows touchpad sends steps from 1 to 500 px within one
+    // swipe (recorded with ?wheellog), so treating the big ones as a mouse flipped every
+    // swipe between the two ways of moving and the row jumped back and forth. There, all
+    // pixel input moves the row directly (a mouse wheel too, 100 px a notch).
     const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform)
     const isMouseWheel = (e: WheelEvent) => {
         if (e.deltaMode !== 0) return true
         if (e.deltaX !== 0) return false
-        if (!IS_MAC) return Math.abs(e.deltaY) >= 50
+        if (!IS_MAC) return false
         const legacy = (e as WheelEvent & { wheelDeltaY?: number }).wheelDeltaY
         return typeof legacy === "number" && legacy !== 0 && legacy !== -3 * e.deltaY
     }
