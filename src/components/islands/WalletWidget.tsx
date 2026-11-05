@@ -28,13 +28,13 @@ const MORNING = ["#5eb0f8", "#7ca6d9", "#92a6cf", "#9fa9c4", "#c2afaa", "#dcb393
 // each moment's colours (setting name prefix, label, defaults top / middle / bottom; the
 // morning has all nine)
 const MOMENTS = [
-    ["night", "Night", ["#1b2558", "#29326d", "#3e4582"]],
-    ["dawn", "Dawn", ["#2d3a74", "#8070ab", "#f1926e"]],
+    ["night", "Night", ["#192141", "#262d52", "#383d63"]],
+    ["dawn", "Dawn", ["#2a3358", "#6d6489", "#c38670"]],
     ["morning", "Morning", MORNING], // the design
-    ["midday", "Midday", ["#3d8bf0", "#5fa3f1", "#8bbcf2"]],
-    ["golden", "Golden hour", ["#4a86dc", "#a9b0c4", "#f6c15e"]], // yellow
-    ["sunset", "Sunset", ["#36438f", "#a88c8a", "#f4a74a"]], // more amber than pink
-    ["dusk", "Dusk", ["#222b63", "#353c7a", "#78657c"]], // short
+    ["midday", "Midday", ["#3d8bf0", "#5fa3f1", "#8bbcf2"]], // morning and midday stay bright; the rest of the day is softer
+    ["golden", "Golden hour", ["#2f6894", "#8995ac", "#d5a86e"]], // subtle: a soft blue into warm sand
+    ["sunset", "Sunset", ["#323d6c", "#8d7b7a", "#c79661"]], // more amber than pink
+    ["dusk", "Dusk", ["#1f2749", "#30365c", "#655967"]], // short
 ] as const
 type Moment = (typeof MOMENTS)[number][0]
 const PARTS = ["Top", "Middle", "Bottom"]
