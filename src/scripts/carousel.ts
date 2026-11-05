@@ -445,6 +445,9 @@ if (row && track) {
         "wheel",
         (e) => {
             if (!hovered || isGrid()) return
+            // a sideways swipe moves the row only over the cards themselves, not the gaps
+            // between them or the notes under them
+            if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && !(e.target as Element | null)?.closest?.(".card")) return
             if (!SIDEWAYS_SCROLL && !matchMedia(PHONE).matches && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
                 e.preventDefault() // (also keeps the browser from swiping back a page)
                 return
