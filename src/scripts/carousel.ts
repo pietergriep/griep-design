@@ -489,8 +489,15 @@ if (row && track) {
     // instead of jumping that far in one frame.
     const where = () => (wheelRaf && wheelTarget !== null ? wheelTarget : offset)
     const moveBy = (d: number) => {
-        const base = where() // (before stop(), which ends the glide)
-        stop()
+        const base = where()
+        if (IS_MAC) stop()
+        else {
+            // only a snap in progress stops; a glide keeps running and just gets a new target
+            // (restarting it on every step reset its clock, and it never moved until the input paused)
+            animating = false
+            if (raf) cancelAnimationFrame(raf)
+            raf = 0
+        }
         if (IS_MAC) {
             endWheel()
             offset = clamp(offset + d)
