@@ -492,7 +492,7 @@ export default function BusinessCard({
     siteWeight = 400,
     siteTracking = -2,
     siteAlign = "baseline",
-    titleText = "product designer",
+    titleText = "designer & engineer",
     titleFont = "",
     titleSize = 12.5,
     titleWeight = 500,
@@ -508,15 +508,15 @@ export default function BusinessCard({
     copyFade = 0.22,
     copyBlur = 0.25,
     emailHoverOpacity = 0.5,
-    bioText = "Hi, I’m Pieter. I am a Dutch Product Designer based in Barcelona.\n\nI design and build interfaces down to the last interaction, from app screens and widgets to the small components that make a product feel right. Got a project in mind? Say hola.\n",
+    bioText = "Hi, I’m Pieter Griep, a 28-year-old Dutch Product Designer and Design\u00a0Engineer based in Barcelona.\n\nI design and build interfaces down to the last interaction, from app screens and widgets to the small components that make a product feel right. Got a project in mind? Say hola.\n",
     bioSize = 16,
     bioWeight = 400,
     bioTracking = -2,
     bioLineHeight = 1.35,
     bioMaxWidth = 457,
-    bioHighlight = "product designer",
-    bioHighlightColor = "#191919",
-    bioHighlightOpacity = 0.35,
+    bioHighlight = "Product Designer and Design\u00a0Engineer", // (\u00a0: "Design Engineer" stays on one line)
+    bioHighlightColor = "#2f6bff", // the signature's blue
+    bioHighlightOpacity = 1,
     bioEmail = true,
     bioArrow = false,
     bioArrowSize = 0.83,
@@ -1148,7 +1148,12 @@ export default function BusinessCard({
                                 letterSpacing={(titleTracking / 100) * titleSize}
                                 fill={titleColor || inkColor}
                             >
-                                {titleText}
+                                {/* a line break in the text starts a new line, 1.3× the size below */}
+                                {titleText.split("\n").map((line, i) => (
+                                    <tspan key={i} x={textInsetX} dy={i ? titleSize * 1.3 : 0}>
+                                        {line}
+                                    </tspan>
+                                ))}
                             </text>
                             <text
                                 x={W - textInsetX + (siteTracking / 100) * siteSize}
