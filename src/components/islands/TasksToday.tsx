@@ -113,7 +113,6 @@ export const tasksTodayConfig = {
     // how long the task still runs: the badge says it, and the bar and the rail's ring fill
     // with the rest (23 of the 55 minutes left = 58% gone)
     minutesLeft: [23, 0, 120, 1],
-    chipHue: [245, 0, 360, 1], // blue
     badgeHue: [150, 0, 360, 1], // green
     chipGap: [3, 1.5, 6, 0.5], // the badge above the tag
   },
@@ -126,7 +125,6 @@ export const tasksTodayConfig = {
     titleWeight: [400, 300, 800, 10],
     titleColor: "#000000",
     timeColor: "#000000",
-    chipHue: [245, 0, 360, 1], // blue
   },
   Pill: {
     padding: [3, 1.5, 6, 0.5], // above and below
@@ -138,13 +136,13 @@ export const tasksTodayConfig = {
     tracking: [0, -0.48, 0.24, 0.01],
     // every chip is one oklch colour: the text at full strength, the fill the same colour at
     // fillAlpha. Same lightness and chroma for all, so no tag reads louder than another;
-    // only the hue changes (each task's hue is in its own section)
+    // only the hue changes (the Done task's chip hue is under Done)
     lightness: [0.69, 0.4, 0.9, 0.01],
     chroma: [0.24, 0, 0.37, 0.01],
     fillAlpha: [0.2, 0, 1, 0.01],
     // the rest of the day, above and below the three tasks: Team standup, Design review (Work), Gym (Health)
-    workHue: [245, 0, 360, 1], // blue
-    workLightness: [0.76, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
+    workHue: [253, 0, 360, 1], // blue
+    workLightness: [0.78, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
     healthHue: [25, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
     // a symbol before the text: the clock on the badge, and one per tag (work.svg, friend.svg, health.svg)
     icons: true,
@@ -205,7 +203,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-31", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-32", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -363,7 +361,8 @@ const EARLIER: Item[] = [
 const LATER: Item[] = [{ state: "upcoming", title: "Gym", tag: "Health", start: "18:30", end: "19:30" }];
 
 function agenda(v: Values): Item[] {
-  const pick = (state: State, s: { title: string; tag: string; start: string; end: string; chipHue: number }): Item => ({
+  // Work chips all take Pill → Work Hue; only the Done task (a Friends chip) has a hue of its own
+  const pick = (state: State, s: { title: string; tag: string; start: string; end: string; chipHue?: number }): Item => ({
     state,
     title: s.title,
     tag: s.tag,
@@ -813,7 +812,7 @@ function Time({ v, color, children }: { v: Values; color: string; children: Reac
 
 /** A tag's hue (the chips' colours, set in the panel under Pill). */
 function hueOf(v: Values, item: Item) {
-  if (item.hue !== undefined) return item.hue; // one of the three tasks: its own setting
+  if (item.hue !== undefined) return item.hue; // the Done task: its own setting
   return item.tag === "Health" ? v.Pill.healthHue : v.Pill.workHue;
 }
 
