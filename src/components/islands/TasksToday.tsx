@@ -143,7 +143,7 @@ export const tasksTodayConfig = {
     // the rest of the day, above and below the three tasks: Team standup, Design review (Work), Gym (Health)
     workHue: [253, 0, 360, 1], // blue
     workLightness: [0.78, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
-    healthHue: [25, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
+    healthHue: [20, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
     // a symbol before the text: the clock on the badge, and one per tag (work.svg, friend.svg, health.svg)
     icons: true,
     iconSize: [5.95, 3, 12, 0.05], // its height (the clock's 5.95 in Figma)
@@ -203,7 +203,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-32", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-33", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
