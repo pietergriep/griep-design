@@ -77,7 +77,7 @@ export const tasksTodayConfig = {
     radius: [8, 4, 16, 0.5],
     titleSize: [8, 4.5, 18, 0.5],
     titleLineHeight: [1, 0.5, 2, 0.01],
-    titleTracking: [-0.13, -0.72, 0.36, 0.01],
+    titleTracking: [-0.07, -0.72, 0.36, 0.01],
     rowGap: [5, 2.5, 10, 0.5], // title → times
     timeSize: [6, 3, 12, 0.5],
     timeWeight: [500, 300, 800, 10],
@@ -115,6 +115,13 @@ export const tasksTodayConfig = {
     minutesLeft: [23, 0, 120, 1],
     badgeHue: [150, 0, 360, 1], // green
     chipGap: [3, 1.5, 6, 0.5], // the badge above the tag
+    // the title sits at shimmerBase and a band at shimmerPeak sweeps through it, left to right
+    shimmer: true,
+    shimmerBase: [0.3, 0, 1, 0.05], // the title's opacity
+    shimmerPeak: [1, 0, 1, 0.05], // the band's
+    shimmerWidth: [28, 4, 40, 1], // the band, in % of the sweep (about 3x that of the title)
+    shimmerMs: [2000, 600, 8000, 100], // one sweep
+    shimmerPause: [200, 0, 5000, 100], // the wait before the next
   },
   Upcoming: {
     title: "Board meeting",
@@ -133,7 +140,7 @@ export const tasksTodayConfig = {
     radius: [7, 3.5, 14, 0.5],
     size: [6, 3, 12, 0.5],
     weight: [500, 300, 800, 10], // Figma's 510
-    tracking: [0, -0.48, 0.24, 0.01],
+    tracking: [0.04, -0.48, 0.24, 0.01],
     // every chip is one oklch colour: the text at full strength, the fill the same colour at
     // fillAlpha. Same lightness and chroma for all, so no tag reads louder than another;
     // only the hue changes (the Done task's chip hue is under Done)
@@ -146,7 +153,7 @@ export const tasksTodayConfig = {
     healthHue: [20, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
     // a symbol before the text: the clock on the badge, and one per tag (work.svg, friend.svg, health.svg)
     icons: true,
-    iconSize: [5.95, 3, 12, 0.05], // its height (the clock's 5.95 in Figma)
+    iconSize: [6.65, 3, 12, 0.05], // its height (the clock's 5.95 in Figma)
     iconGap: [1.5, 0.5, 4, 0.1],
     iconPaddingY: [2, 1, 4, 0.5], // above and below, on a chip with a symbol (the badge's 2 in Figma)
   },
@@ -203,7 +210,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-33", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-37", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -729,8 +736,10 @@ function TaskRow({
                 letterSpacing: u(t.titleTracking),
                 color: s.titleColor,
                 whiteSpace: "nowrap",
+                ...(state === "now" ? shimmerStyle(v) : {}),
               }}
             >
+              {state === "now" && <ShimmerKeyframes v={v} />}
               {item.title}
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: u(t.timeGap) }}>
@@ -810,6 +819,37 @@ function Time({ v, color, children }: { v: Values; color: string; children: Reac
     </span>
   );
 }
+
+/**
+ * The current task's title: at Shimmer Base opacity, with a band at Shimmer Peak sweeping
+ * through it (the text is a gradient three times its width, slid from one end to the other).
+ */
+const SHIMMER_SIZE = 3;
+function shimmerStyle(v: Values): CSSProperties {
+  const n = v.Now;
+  if (!n.shimmer || reducedMotion()) return {};
+  const c = v.Now.titleColor;
+  const at = (a: number) => `color-mix(in srgb, ${c} ${Math.round(a * 100)}%, transparent)`;
+  const w = n.shimmerWidth / 2;
+  return {
+    color: "transparent",
+    backgroundImage: `linear-gradient(90deg, ${at(n.shimmerBase)} 0%, ${at(n.shimmerBase)} ${50 - w}%, ${at(n.shimmerPeak)} 50%, ${at(n.shimmerBase)} ${50 + w}%, ${at(n.shimmerBase)} 100%)`,
+    backgroundSize: `${SHIMMER_SIZE * 100}% 100%`,
+    backgroundRepeat: "no-repeat",
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    animation: `${shimmerName(v)} ${n.shimmerMs + n.shimmerPause}ms linear infinite`,
+  };
+}
+const shimmerName = (v: Values) => `tt-shimmer-${Math.round((v.Now.shimmerMs / (v.Now.shimmerMs + v.Now.shimmerPause)) * 1000)}`;
+/** The sweep takes shimmerMs of each round; it waits at the end for the rest (the pause). */
+function ShimmerKeyframes({ v }: { v: Values }) {
+  const n = v.Now;
+  if (!n.shimmer || reducedMotion()) return null;
+  const end = (n.shimmerMs / (n.shimmerMs + n.shimmerPause)) * 100;
+  return <style>{`@keyframes ${shimmerName(v)} { 0% { background-position: 100% 0 } ${end.toFixed(1)}%, 100% { background-position: 0% 0 } }`}</style>;
+}
+const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** A tag's hue (the chips' colours, set in the panel under Pill). */
 function hueOf(v: Values, item: Item) {
