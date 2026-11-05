@@ -465,6 +465,10 @@ if (row && track) {
     // Scrolling up with the page scrolled down (past the last card, into the footer): the page
     // comes back up first, then the row moves. The mirror of going down, where the row goes
     // first and then the page.
+    // Going up with the page already at the top, the page has nothing left to scroll: the row
+    // may take the rest of a swipe the page started (after bringing the page back up), even
+    // though the browser no longer lets it be blocked (e.cancelable false): one swipe does both.
+    const pageAtTop = (dir: number) => dir < 0 && scrollY <= 1
     const pageFirst = (dir: number) => {
         if (dir > 0 || scrollY <= 1) return false
         wheelOwned = false
@@ -572,7 +576,7 @@ if (row && track) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
                 const now = performance.now()
-                if (pageHasWheel(e)) return
+                if (pageHasWheel(e) && !pageAtTop(dir)) return
                 if (pageFirst(dir)) return
                 const spinning = now - lastWheelAt < WHEEL_HANDOFF_MS
                 lastWheelAt = now
@@ -583,7 +587,7 @@ if (row && track) {
                     return
                 }
                 wheelOwned = true
-                e.preventDefault()
+                if (e.cancelable) e.preventDefault()
                 e.stopPropagation()
                 if (WHEEL_MODE === "step") {
                     if (now - lastWheelStep < WHEEL_STEP_GAP) return
@@ -612,7 +616,7 @@ if (row && track) {
             if (TRACKPAD_VERTICAL && e.deltaY !== 0 && upDown(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const now = performance.now()
-                if (pageHasWheel(e)) return
+                if (pageHasWheel(e) && !pageAtTop(dir)) return
                 if (pageFirst(dir)) return
                 lastWheelAt = now
                 // at either end the same swipe carries straight on into the page, once the row
@@ -624,7 +628,7 @@ if (row && track) {
                     return
                 }
                 wheelOwned = true
-                e.preventDefault()
+                if (e.cancelable) e.preventDefault()
                 e.stopPropagation()
                 moveBy(e.deltaY / fit)
                 return
