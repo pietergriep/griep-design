@@ -13,6 +13,7 @@ const SNAP_MS = 700
 // coasts in (an ease-out), so there's no pause after letting go
 const FLING_MS = 520
 const SNAP_CURVE: [number, number, number, number] = STEP_CURVE
+const SNAP_NUDGE = 40 // px: a trackpad scroll shorter than this settles on the nearest card, not the next one
 const SNAP_AFTER_MS = 250 // quiet time after wheel / trackpad input before snapping
 // A mouse wheel over the row: "free" glides it (each notch adds WHEEL_SPEED px, eased
 // toward, then it settles on the nearest card after WHEEL_SNAP_AFTER_MS); "step"
@@ -355,9 +356,29 @@ if (row && track) {
     }
 
     let snapTimer = 0
-    const snapSoon = () => {
+    // Where a trackpad scroll started and which way it last went: when it stops, the row
+    // settles on the next card that way (not the nearest, which could be back where it
+    // came from and read as the row jumping back). A nudge of under SNAP_NUDGE px still
+    // settles on the nearest.
+    let swipeFrom: number | null = null
+    let swipeDir = 0
+    const settleRest = () => {
+        const moved = swipeFrom === null ? 0 : offset - swipeFrom
+        if (Math.abs(moved) < SNAP_NUDGE || !swipeDir) return nearestRest(offset)
+        const points = restPoints()
+        const ahead = swipeDir > 0 ? points.find((p) => p >= offset - 1) : [...points].reverse().find((p) => p <= offset + 1)
+        return ahead ?? nearestRest(offset)
+    }
+    const snapSoon = (delta = 0) => {
+        if (swipeFrom === null) swipeFrom = offset - delta
+        if (delta) swipeDir = Math.sign(delta)
         clearTimeout(snapTimer)
-        snapTimer = window.setTimeout(() => animateTo(nearestRest(offset)), SNAP_AFTER_MS)
+        snapTimer = window.setTimeout(() => {
+            const to = settleRest()
+            swipeFrom = null
+            swipeDir = 0
+            animateTo(to)
+        }, SNAP_AFTER_MS)
     }
 
     // --- Buttons + logo ----------------------------------------------------------
@@ -540,7 +561,7 @@ if (row && track) {
                 offset = clamp(offset + e.deltaY / fit)
                 render()
                 publish()
-                snapSoon()
+                snapSoon(e.deltaY / fit)
                 return
             }
             if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || e.deltaX === 0) return
@@ -551,7 +572,7 @@ if (row && track) {
             offset = clamp(offset + e.deltaX / fit)
             render()
             publish()
-            snapSoon()
+            snapSoon(e.deltaX / fit)
     }
     // Up / down: the row hears it first (capture), so a scroll that's moving the row isn't
     // taken over by a list sliding under the pointer. Sideways: after the card's own
