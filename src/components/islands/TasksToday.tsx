@@ -11,7 +11,7 @@ const u = (n: number) => `calc(var(--u) * ${n})`;
 
 /* Defaults: Figma Dev Mode values (Frame 232, Nov 4). Ranges ≈ 0.5×–2× the default. */
 export const tasksTodayConfig = {
-  Scale: [1.14, 0.4, 2, 0.01],
+  Scale: [1.18, 0.4, 2, 0.01],
   Card: {
     background: "#ffffff",
     borderWidth: [0.5, 0, 2, 0.1],
@@ -42,7 +42,7 @@ export const tasksTodayConfig = {
     background: "#252525",
     hoverBackground: "#3a3a3a", // on hover the button lightens a little (it doesn't grow)
     hoverMs: [150, 0, 400, 10],
-    pressScale: [0.95, 0.8, 1, 0.01], // on press the button's shape shrinks; the label stays put
+    pressScale: [0.95, 0.8, 1, 0.01], // on press the whole button shrinks a little
     radius: [5, 2, 10, 0.5],
     paddingY: [4, 2, 8, 0.5],
     paddingLeft: [4, 2, 8, 0.5],
@@ -205,7 +205,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-30", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-31", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -298,7 +298,12 @@ function Header({ v, transition }: { v: Values; transition: Transition }) {
         animate="rest"
         whileHover="hover"
         whileTap="press"
+        variants={{ rest: { scale: 1 }, hover: { scale: 1 }, press: { scale: b.pressScale } }}
+        transition={{ scale: { type: "spring", visualDuration: 0.2, bounce: 0.3 } }}
         style={{
+          // kept on its own layer the whole time: otherwise the label is redrawn when the
+          // press animation ends and visibly snaps into place
+          willChange: "transform",
           position: "relative",
           display: "flex",
           alignItems: "center",
@@ -310,19 +315,15 @@ function Header({ v, transition }: { v: Values; transition: Transition }) {
           cursor: "pointer",
         }}
       >
-        {/* the button's shape, behind the label: it lightens on hover and shrinks on press,
-            while the plus and the text stay exactly where they are */}
+        {/* the button's colour, behind the label: it lightens on hover */}
         <motion.span
           aria-hidden
           variants={{
-            rest: { scale: 1, backgroundColor: b.background },
-            hover: { scale: 1, backgroundColor: b.hoverBackground },
-            press: { scale: b.pressScale, backgroundColor: b.hoverBackground },
+            rest: { backgroundColor: b.background },
+            hover: { backgroundColor: b.hoverBackground },
+            press: { backgroundColor: b.hoverBackground },
           }}
-          transition={{
-            scale: { type: "spring", visualDuration: 0.2, bounce: 0.3 },
-            backgroundColor: { duration: b.hoverMs / 1000, ease: "easeOut" },
-          }}
+          transition={{ backgroundColor: { duration: b.hoverMs / 1000, ease: "easeOut" } }}
           style={{ position: "absolute", inset: 0, borderRadius: u(b.radius), zIndex: 0 }}
         />
         {/* Figma's plus (node 99:17) */}
