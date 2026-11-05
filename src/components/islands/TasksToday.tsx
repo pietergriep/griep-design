@@ -573,6 +573,7 @@ function TaskList({ v }: { v: Values }) {
     <div style={{ position: "relative", width: "100%" }}>
       <div
         ref={viewport}
+        data-own-scroll
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

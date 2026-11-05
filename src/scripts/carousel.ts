@@ -405,14 +405,11 @@ if (row && track) {
         })
     )
 
-    // --- Trackpad / wheel (only while hovered) ------------------------------------
+    // --- Trackpad / wheel (over the row) ------------------------------------
     // A trackpad moves the row with sideways swipes (up/down still scrolls the page).
     // A mouse wheel has no sideways, so over the row it moves the row instead: down
     // goes forward, up goes back (see WHEEL_MODE); at either end the wheel scrolls the
     // page again, so nobody gets stuck in the row.
-    let hovered = false
-    row.addEventListener("mouseenter", () => (hovered = true))
-    row.addEventListener("mouseleave", () => (hovered = false))
     // Chrome and Safari report a trackpad's wheelDeltaY as exactly -3 × deltaY; a mouse
     // wheel's isn't (and Firefox's mouse wheel counts in lines).
     const isMouseWheel = (e: WheelEvent) => {
@@ -424,6 +421,17 @@ if (row && track) {
     const WHEEL_STEP_GAP = 260 // ms between card steps, so one flick of the wheel moves one card
     let lastWheelAt = 0 // the previous mouse-wheel event, to tell one spin from the next
     let wheelOwned = false // the current spin has been moving the row
+    // Once the browser has handed a scroll to the page it won't let the row stop it
+    // (e.cancelable is false): leave that one to the page, or both would move
+    const inOwnScroll = (t: Element | null) => {
+        for (let el = t; el && el !== row; el = el.parentElement) {
+            if (el.hasAttribute("data-own-scroll")) return true
+            const oy = getComputedStyle(el).overflowY
+            if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 1) return true
+        }
+        return false
+    }
+    const pageHasWheel = (e: WheelEvent) => !e.cancelable
     let lastWheelStep = 0
     // free mode: the row eases toward wheelTarget, frame by frame
     let wheelTarget: number | null = null
@@ -444,10 +452,10 @@ if (row && track) {
         if (wheelRaf) cancelAnimationFrame(wheelRaf)
         wheelRaf = 0
     }
-    row.addEventListener(
-        "wheel",
-        (e) => {
-            if (!hovered || isGrid()) return
+    const onWheel = (e: WheelEvent) => {
+            // (no hover check: the wheel goes to whatever is under the pointer, also when the
+            // page moved the row under a still pointer and no mouseenter came)
+            if (isGrid()) return
             if (!SIDEWAYS_SCROLL && !matchMedia(PHONE).matches && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
                 e.preventDefault() // (also keeps the browser from swiping back a page)
                 return
@@ -461,23 +469,29 @@ if (row && track) {
                 }
                 return
             }
-            // Cards with their own scrolling (data-own-scroll, e.g. the usage card's agent list
-            // and chat) keep up / down scrolling to themselves; sideways swipes still move the row
-            if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && (e.target as Element | null)?.closest?.("[data-own-scroll]")) return
+            // Lists inside a card that scroll (the usage card's agent list and chat, the tasks
+            // list: data-own-scroll or an overflowing box) keep up / down scrolling to
+            // themselves; the rest of the card moves the row. Sideways swipes always move it
+            // A scroll that's moving the row keeps moving it when a list slides under the
+            // pointer: the row listens first (capture) and the list never sees it
+            const rowHasIt = wheelOwned && performance.now() - lastWheelAt < WHEEL_HANDOFF_MS
+            if (!rowHasIt && Math.abs(e.deltaY) > Math.abs(e.deltaX) && inOwnScroll(e.target as Element | null)) return
             if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX) && isMouseWheel(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
                 const now = performance.now()
+                if (pageHasWheel(e)) return
                 const spinning = now - lastWheelAt < WHEEL_HANDOFF_MS
                 lastWheelAt = now
                 if (dir > 0 ? pos >= maxOffset() - 1 : pos <= 1) {
                     // at the end: the same spin is still absorbed; a fresh scroll moves the page
-                    if (wheelOwned && spinning) e.preventDefault()
+                    if (wheelOwned && spinning) { e.preventDefault(); e.stopPropagation() }
                     else wheelOwned = false
                     return
                 }
                 wheelOwned = true
                 e.preventDefault()
+                e.stopPropagation()
                 if (WHEEL_MODE === "step") {
                     if (now - lastWheelStep < WHEEL_STEP_GAP) return
                     lastWheelStep = now
@@ -504,15 +518,17 @@ if (row && track) {
             if (TRACKPAD_VERTICAL && e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const now = performance.now()
+                if (pageHasWheel(e)) return
                 const spinning = now - lastWheelAt < WHEEL_HANDOFF_MS
                 lastWheelAt = now
                 if (dir > 0 ? offset >= maxOffset() - 1 : offset <= 1) {
-                    if (wheelOwned && spinning) e.preventDefault()
+                    if (wheelOwned && spinning) { e.preventDefault(); e.stopPropagation() }
                     else wheelOwned = false
                     return
                 }
                 wheelOwned = true
                 e.preventDefault()
+                e.stopPropagation()
                 stop()
                 offset = clamp(offset + e.deltaY / fit)
                 render()
@@ -528,9 +544,13 @@ if (row && track) {
             render()
             publish()
             snapSoon()
-        },
-        { passive: false }
-    )
+    }
+    // Up / down: the row hears it first (capture), so a scroll that's moving the row isn't
+    // taken over by a list sliding under the pointer. Sideways: after the card's own
+    // handlers, as before
+    const upDown = (e: WheelEvent) => Math.abs(e.deltaY) > Math.abs(e.deltaX)
+    row.addEventListener("wheel", (e) => upDown(e) && onWheel(e), { passive: false, capture: true })
+    row.addEventListener("wheel", (e) => !upDown(e) && onWheel(e), { passive: false })
 
     // --- Touch -----------------------------------------------------------------
     let dragging = false
