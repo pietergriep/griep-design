@@ -42,6 +42,7 @@ export const tasksTodayConfig = {
     background: "#252525",
     hoverBackground: "#3a3a3a", // on hover the button lightens a little (it doesn't grow)
     hoverMs: [150, 0, 400, 10],
+    pressScale: [0.95, 0.8, 1, 0.01], // on press the button's shape shrinks; the label stays put
     radius: [5, 2, 10, 0.5],
     paddingY: [4, 2, 8, 0.5],
     paddingLeft: [4, 2, 8, 0.5],
@@ -143,6 +144,7 @@ export const tasksTodayConfig = {
     fillAlpha: [0.2, 0, 1, 0.01],
     // the rest of the day, above and below the three tasks: Team standup, Design review (Work), Gym (Health)
     workHue: [245, 0, 360, 1], // blue
+    workLightness: [0.76, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
     healthHue: [25, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
     // a symbol before the text: the clock on the badge, and one per tag (work.svg, friend.svg, health.svg)
     icons: true,
@@ -154,8 +156,9 @@ export const tasksTodayConfig = {
     x: [14.8, 7, 30, 0.05],
     lineWidth: [0.5, 0.25, 1, 0.05],
     lineColor: "#e7e7e7",
-    halo: [3, 0, 6, 0.5],
-    markerSize: [10, 5, 20, 0.5],
+    // the line stops this far short of each marker (instead of a white ring hiding it)
+    halo: [2.5, 0, 6, 0.5],
+    markerSize: [9, 5, 20, 0.5],
     doneColor: "#3ac860",
     checkColor: "#ffffff",
     pendingColor: "#d3d3d3",
@@ -202,7 +205,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-28", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-30", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -291,23 +294,39 @@ function Header({ v, transition }: { v: Values; transition: Transition }) {
       {b.show && (
       <motion.button
         type="button"
-        // no size change on hover or press (the scaling made the label shift); only the colour
-        whileHover={{ backgroundColor: b.hoverBackground }}
-        transition={{ backgroundColor: { duration: b.hoverMs / 1000, ease: "easeOut" } }}
+        initial="rest"
+        animate="rest"
+        whileHover="hover"
+        whileTap="press"
         style={{
+          position: "relative",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: u(b.gap),
           padding: `${u(b.paddingY)} ${u(b.paddingRight)} ${u(b.paddingY)} ${u(b.paddingLeft)}`,
-          backgroundColor: b.background,
-          borderRadius: u(b.radius),
+          background: "none",
           border: "none",
           cursor: "pointer",
         }}
       >
+        {/* the button's shape, behind the label: it lightens on hover and shrinks on press,
+            while the plus and the text stay exactly where they are */}
+        <motion.span
+          aria-hidden
+          variants={{
+            rest: { scale: 1, backgroundColor: b.background },
+            hover: { scale: 1, backgroundColor: b.hoverBackground },
+            press: { scale: b.pressScale, backgroundColor: b.hoverBackground },
+          }}
+          transition={{
+            scale: { type: "spring", visualDuration: 0.2, bounce: 0.3 },
+            backgroundColor: { duration: b.hoverMs / 1000, ease: "easeOut" },
+          }}
+          style={{ position: "absolute", inset: 0, borderRadius: u(b.radius), zIndex: 0 }}
+        />
         {/* Figma's plus (node 99:17) */}
-        <svg viewBox="0 0 4 4" style={{ width: u(b.iconSize), height: u(b.iconSize), display: "block" }} aria-hidden>
+        <svg viewBox="0 0 4 4" style={{ position: "relative", width: u(b.iconSize), height: u(b.iconSize), display: "block" }} aria-hidden>
           <path
             d="M2.22222 1.77778H4V2.22222H2.22222V4H1.77778V2.22222H0V1.77778H1.77778V0H2.22222V1.77778Z"
             fill={b.color}
@@ -315,6 +334,7 @@ function Header({ v, transition }: { v: Values; transition: Transition }) {
         </svg>
         <span
           style={{
+            position: "relative",
             fontSize: u(b.size),
             fontWeight: b.weight,
             lineHeight: b.lineHeight,
@@ -527,9 +547,9 @@ function TaskList({ v }: { v: Values }) {
   const g = u(r.labelGap);
   const at = "calc(50% + var(--tag-y, 0px))";
   const lineGap = `linear-gradient(to bottom, #000 calc(${at} - ${g}), transparent calc(${at} - ${g}), transparent calc(${at} + ${g}), #000 calc(${at} + ${g}))`;
-  // the rail line runs from the first card's middle to the last's: at either end it stops
-  // at the tag (or the marker) instead of running on past it
-  const [lineSpan, setLineSpan] = useState({ top: 0, height: 0 });
+  // the rail is a line from each card's marker to the next one's, stopping short of both
+  // (Rail → halo), so the markers sit in gaps in the line rather than on top of it
+  const [mids, setMids] = useState<number[]>([]);
   useLayoutEffect(() => {
     const el = content.current;
     if (!el) return;
@@ -537,8 +557,7 @@ function TaskList({ v }: { v: Values }) {
       const rows = el.querySelectorAll<HTMLElement>("[data-task]");
       if (!rows.length) return;
       const mid = (row: HTMLElement) => row.offsetTop + row.offsetHeight / 2;
-      const top = mid(rows[0]);
-      setLineSpan({ top, height: mid(rows[rows.length - 1]) - top });
+      setMids(Array.from(rows, mid));
     };
     m();
     const ro = new ResizeObserver(m);
@@ -576,17 +595,31 @@ function TaskList({ v }: { v: Values }) {
           aria-hidden
           style={{ position: "absolute", top: 0, bottom: 0, left: u(bleed), right: 0, pointerEvents: "none", maskImage: lineGap, WebkitMaskImage: lineGap }}
         >
-          <motion.span
-            style={{
-              y,
-              position: "absolute",
-              left: `calc(${u(railLeft)} - ${u(r.lineWidth / 2)})`,
-              top: lineSpan.top,
-              height: lineSpan.height,
-              width: u(r.lineWidth),
-              background: r.lineColor,
-            }}
-          />
+          <motion.div style={{ y, position: "absolute", inset: 0 }}>
+            {mids.slice(1).map((next, i) => {
+              const gap = r.markerSize / 2 + r.halo; // from a marker's middle to where the line starts
+              // on load each piece draws down once the card below it has come in
+              const order = Math.max(0, i + 1 - Math.max(0, start - 1));
+              return (
+                <motion.span
+                  key={i}
+                  initial={v.Motion.intro ? { scaleY: 0 } : false}
+                  animate={{ scaleY: 1 }}
+                  transition={{ ...(v.Motion.progress as Transition), delay: v.Motion.intro ? 0.25 + order * v.Motion.stagger : 0 }}
+                  style={{
+                    position: "absolute",
+                    left: `calc(${u(railLeft)} - ${u(r.lineWidth / 2)})`,
+                    top: `calc(${mids[i]}px + ${u(gap)})`,
+                    height: `max(0px, calc(${next - mids[i]}px - ${u(gap * 2)}))`,
+                    width: u(r.lineWidth),
+                    background: r.lineColor,
+                    borderRadius: u(r.lineWidth / 2),
+                    originY: 0,
+                  }}
+                />
+              );
+            })}
+          </motion.div>
         </div>
         {/* padded by the fade, so the first and last cards rest just clear of it */}
         <motion.div
@@ -645,13 +678,13 @@ function TaskRow({
         <Pill v={v} hue={v.Now.badgeHue} icon="clock">
           {`${v.Now.minutesLeft} min`}
         </Pill>
-        <Pill v={v} hue={hueOf(v, item)} icon={iconOf(item.tag)}>
+        <Pill v={v} hue={hueOf(v, item)} lightness={item.tag === "Work" ? v.Pill.workLightness : undefined} icon={iconOf(item.tag)}>
           {item.tag}
         </Pill>
       </div>
     ) : (
       <div style={{ opacity: state === "done" ? v.Done.pillOpacity : 1 }}>
-        <Pill v={v} hue={hueOf(v, item)} icon={iconOf(item.tag)}>
+        <Pill v={v} hue={hueOf(v, item)} lightness={item.tag === "Work" ? v.Pill.workLightness : undefined} icon={iconOf(item.tag)}>
           {item.tag}
         </Pill>
       </div>
@@ -798,9 +831,10 @@ function iconOf(tag: string): IconName | undefined {
   return tag === "Work" ? "work" : tag === "Friends" ? "friends" : tag === "Health" ? "health" : undefined;
 }
 
-function Pill({ v, children, hue, icon }: { v: Values; children: ReactNode; hue: number; icon?: IconName }) {
+function Pill({ v, children, hue, lightness, icon }: { v: Values; children: ReactNode; hue: number; lightness?: number; icon?: IconName }) {
   const p = v.Pill;
-  const color = `oklch(${p.lightness} ${p.chroma} ${hue})`;
+  const L = lightness ?? p.lightness;
+  const color = `oklch(${L} ${p.chroma} ${hue})`;
   const sym = p.icons && icon ? ICONS[icon] : undefined;
   return (
     <span
@@ -810,7 +844,7 @@ function Pill({ v, children, hue, icon }: { v: Values; children: ReactNode; hue:
         justifyContent: "center",
         gap: u(p.iconGap),
         padding: `${u(sym ? p.iconPaddingY : p.padding)} ${u(p.paddingRight)} ${u(sym ? p.iconPaddingY : p.padding)} ${u(p.paddingLeft)}`,
-        background: `oklch(${p.lightness} ${p.chroma} ${hue} / ${p.fillAlpha})`,
+        background: `oklch(${L} ${p.chroma} ${hue} / ${p.fillAlpha})`,
         borderRadius: u(p.radius),
         overflow: "clip",
       }}
@@ -884,7 +918,6 @@ function Progress({ v, state, delay }: { v: Values; state: State; delay: number 
 
 function Marker({ v, state, left, delay, barDelay }: { v: Values; state: State; left: number; delay: number; barDelay: number }) {
   const r = v.Rail;
-  const halo = v.Card.background;
   const pop: Transition = { type: "spring", visualDuration: 0.4, bounce: 0.45, delay: delay + 0.1 };
   const size = r.markerSize;
   const box = size + r.halo * 2;
@@ -905,7 +938,6 @@ function Marker({ v, state, left, delay, barDelay }: { v: Values; state: State; 
       }}
     >
       <svg viewBox={`0 0 ${box} ${box}`} style={{ width: "100%", height: "100%", display: "block" }}>
-        <circle cx={box / 2} cy={box / 2} r={box / 2} fill={halo} />
         <g transform={`translate(${r.halo} ${r.halo}) scale(${size / 10})`}>
           {state === "done" ? (
             <>
