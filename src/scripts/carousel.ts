@@ -8,12 +8,12 @@
 // touch quicker (x1, y1, x2, y2 like a CSS cubic-bezier).
 const STEP_MS = 600
 const STEP_CURVE: [number, number, number, number] = [0.4, 0, 0.2, 1]
-const SNAP_MS = 550
+const SNAP_MS = 700
 // a finger's swipe ends while the row is still moving: it carries on at that speed and
 // coasts in (an ease-out), so there's no pause after letting go
 const FLING_MS = 520
 const SNAP_CURVE: [number, number, number, number] = STEP_CURVE
-const SNAP_AFTER_MS = 130 // quiet time after wheel input before snapping
+const SNAP_AFTER_MS = 250 // quiet time after wheel / trackpad input before snapping
 // A mouse wheel over the row: "free" glides it (each notch adds WHEEL_SPEED px, eased
 // toward, then it settles on the nearest card after WHEEL_SNAP_AFTER_MS); "step"
 // moves exactly one card per notch.
@@ -476,6 +476,9 @@ if (row && track) {
             // pointer: the row listens first (capture) and the list never sees it
             const rowHasIt = wheelOwned && performance.now() - lastWheelAt < WHEEL_HANDOFF_MS
             if (!rowHasIt && Math.abs(e.deltaY) > Math.abs(e.deltaX) && inOwnScroll(e.target as Element | null)) return
+            // Up / down moves the row only over the cards; under them (the notes, "Learn more")
+            // and in the gaps it scrolls the page
+            if (!rowHasIt && Math.abs(e.deltaY) > Math.abs(e.deltaX) && !(e.target as Element | null)?.closest?.(".card")) return
             if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX) && isMouseWheel(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
@@ -519,11 +522,10 @@ if (row && track) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const now = performance.now()
                 if (pageHasWheel(e)) return
-                const spinning = now - lastWheelAt < WHEEL_HANDOFF_MS
                 lastWheelAt = now
+                // at either end the same swipe carries straight on into the page
                 if (dir > 0 ? offset >= maxOffset() - 1 : offset <= 1) {
-                    if (wheelOwned && spinning) { e.preventDefault(); e.stopPropagation() }
-                    else wheelOwned = false
+                    wheelOwned = false
                     return
                 }
                 wheelOwned = true

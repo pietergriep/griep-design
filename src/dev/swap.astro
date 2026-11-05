@@ -1,0 +1,54 @@
+---
+// Dev server only (injected in astro.config.mjs, never built): the swap card on its own
+// with its tuning panel at localhost:4322/tune/swap. "Save" writes to instances.json,
+// which the portfolio reads too.
+import "../styles/global.css"
+import instances from "../data/instances.json"
+import SwapCard from "../components/islands/SwapCardIsland.tsx"
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="robots" content="noindex" />
+        <title>Swap · tune</title>
+        <link rel="preload" href="/fonts/Geist-Variable.latin.woff2" as="font" type="font/woff2" crossorigin />
+    </head>
+    <body class="tune-page">
+        <a class="tune-back" href="/">← Portfolio</a>
+        <main class="tune-stage">
+            <div class="card card-swap">
+                <SwapCard client:load variants={instances.SwapCard} />
+            </div>
+        </main>
+        <script>
+            import "../scripts/tune.ts"
+        </script>
+        <style is:global>
+            /* the card as it sits in the carousel, left of the panel; no page fade-in here */
+            body.tune-page {
+                animation: none;
+                opacity: 1;
+            }
+            .tune-back {
+                position: fixed;
+                top: 20px;
+                left: var(--gutter);
+                font-size: 14px;
+                color: rgb(140, 140, 140);
+                text-decoration: none;
+            }
+            .tune-back:hover {
+                color: rgb(20, 20, 20);
+            }
+            .tune-stage {
+                min-height: 100dvh;
+                padding: 0 336px 0 0; /* clear of the panel on the right */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        </style>
+    </body>
+</html>

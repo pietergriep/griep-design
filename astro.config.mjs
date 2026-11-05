@@ -42,7 +42,7 @@ const tuneSave = {
     },
 }
 
-// Dev server only: tuning pages, left out of builds (localhost:4322/tune/wallet, /tune/tasks)
+// Dev server only: tuning pages, left out of builds (localhost:4322/tune/wallet, /tune/tasks, /tune/swap)
 const tunePages = {
     name: "tune-pages",
     hooks: {
@@ -50,6 +50,7 @@ const tunePages = {
             if (command !== "dev") return
             injectRoute({ pattern: "/tune/wallet", entrypoint: fileURLToPath(new URL("./src/dev/wallet.astro", import.meta.url)) })
             injectRoute({ pattern: "/tune/tasks", entrypoint: fileURLToPath(new URL("./src/dev/tasks.astro", import.meta.url)) })
+            injectRoute({ pattern: "/tune/swap", entrypoint: fileURLToPath(new URL("./src/dev/swap.astro", import.meta.url)) })
         },
     },
 }

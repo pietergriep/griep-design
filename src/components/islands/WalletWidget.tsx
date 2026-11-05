@@ -126,14 +126,15 @@ function skyAt(sky: Sky, hour: number): string {
     return `linear-gradient(180deg, ${a.map((c, k) => `${labToCss(mix(c, b[k], t))} ${STOPS[k]}%`).join(", ")})`
 }
 
-// 0 outside the afternoon, 1 from 14:30 to 16:30, easing in from 13:30 and out by 17:30:
-// when the sunlight shows
-function sunAt(hour: number) {
+// 0 outside the afternoon, 1 from 14:30 until an hour before `end` (a decimal hour, the
+// "Sun gone by" setting), easing in from 13:30 and out over that last hour: when the
+// sunlight shows
+function sunAt(hour: number, end: number) {
     const h = ((hour % 24) + 24) % 24
-    if (h < 13.5 || h > 17.5) return 0
-    if (h < 14.5) return ease(h - 13.5)
-    if (h > 16.5) return ease(17.5 - h)
-    return 1
+    if (h < 13.5 || h > end) return 0
+    const fadeIn = h < 14.5 ? ease(h - 13.5) : 1
+    const fadeOut = h > end - 1 ? ease(end - h) : 1
+    return Math.min(fadeIn, fadeOut)
 }
 
 // 0 by day, 1 deep in the night (fades with dusk and dawn): when shooting stars may show
@@ -188,10 +189,12 @@ interface Props {
     /** The balance's dollar sign: size and the space after it, in design px. */
     dollarSize: number
     dollarGap: number
-    /** Afternoon sunlight (about 14:00–17:00): a warm glow and soft rays from the top right. */
+    /** Afternoon sunlight (from 13:30 until Sun gone by): a warm glow and soft rays from the top right. */
     sunShades: boolean
     /** 0–1 */
     sunStrength: number
+    /** The hour the sun has faded out by, as a decimal (15.8 = 15:48); it fades over the hour before. */
+    sunEnd: number
     /** Seconds between shooting stars: a random wait between these two. */
     starEveryMin: number
     starEveryMax: number
@@ -231,6 +234,7 @@ export default function WalletWidget(props: Props) {
         dollarGap = 2,
         sunShades = true,
         sunStrength = 1,
+        sunEnd = 15.8,
         starEveryMin = 7,
         starEveryMax = 18,
         starDuration = 900,
@@ -273,7 +277,7 @@ export default function WalletWidget(props: Props) {
     const skyColours = useMemo(() => skyFrom(props as any), colours) // eslint-disable-line react-hooks/exhaustive-deps
     const sky = skyAt(skyColours, shown)
     const night = nightAt(shown)
-    const sun = sunShades ? sunAt(shown) * sunStrength : 0
+    const sun = sunShades ? sunAt(shown, sunEnd) * sunStrength : 0
 
     // the night sky: plain dots scattered at random, new each visit; thinner towards the
     // bottom, where the horizon glow is, and kept off the text so none reads as a full stop.
@@ -635,6 +639,7 @@ addPropertyControls(WalletWidget, {
     dayPreview: { type: ControlType.Number, title: "Day preview (s per day, 0 = off)", defaultValue: 0, min: 0, max: 120, step: 1 },
     sunShades: { type: ControlType.Boolean, title: "Afternoon sun", defaultValue: true },
     sunStrength: { type: ControlType.Number, title: "Sun strength", defaultValue: 1, min: 0, max: 1, step: 0.05 },
+    sunEnd: { type: ControlType.Number, title: "Sun gone by (hour)", defaultValue: 15.8, min: 14.5, max: 19, step: 0.05 },
     stars: { type: ControlType.Number, title: "Stars", defaultValue: 22, min: 0, max: 60, step: 1 },
     starBrightness: { type: ControlType.Number, title: "Star brightness", defaultValue: 0.8, min: 0, max: 1, step: 0.05 },
     twinkle: { type: ControlType.Boolean, title: "Twinkle", defaultValue: true },

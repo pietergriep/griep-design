@@ -79,7 +79,8 @@ const CONFS: Record<string, Conf> = {
         },
     },
 }
-const which = new URLSearchParams(location.search).get("tune") || "files"
+// ?tune=swap, or a page of its own at /tune/swap
+const which = new URLSearchParams(location.search).get("tune") || location.pathname.match(/^\/tune\/([^/]+)/)?.[1] || "files"
 const CONF = CONFS[which] ?? CONFS[Object.keys(CONFS).find((k) => CONFS[k].island.toLowerCase() === which.toLowerCase()) ?? "files"]
 const ISLAND = CONF.island
 const TITLE = CONF.title

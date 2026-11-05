@@ -23,7 +23,7 @@ const FOLDERS: [string, string[]][] = [
     ["Live price", ["live", "liveEvery", "liveDrift"]],
     ["Card", ["radius"]],
     ["Balance", ["dollarSize", "dollarGap"]],
-    ["Afternoon sun", ["sunShades", "sunStrength"]],
+    ["Afternoon sun", ["sunShades", "sunStrength", "sunEnd"]],
     ["Stars", ["stars", "starBrightness", "twinkle"]],
     ["Shooting stars", ["shootingStars", "starEveryMin", "starEveryMax", "starDuration", "starLength"]],
 ]
