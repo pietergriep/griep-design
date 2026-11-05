@@ -88,5 +88,41 @@ document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) =
         { passive: false },
     )
 
-    parts.forEach((part) => part.addEventListener("click", () => parts.forEach((other) => setPart(other, other === part))))
+    // Phones: the height animation (grid rows) redoes the whole sheet's layout every frame,
+    // and stutters. There the parts switch at once and everything that moves glides there
+    // with a transform instead (FLIP); the closing text fades out where it was, the opening
+    // text fades in.
+    const FLIP_MS = 300
+    const FLIP_EASE = "cubic-bezier(0.23, 1, 0.32, 1)"
+    const sections = Array.from(dialog.querySelectorAll<HTMLElement>(".case-part"))
+    const flipTo = (part: HTMLButtonElement) => {
+        const target = part.closest<HTMLElement>(".case-part")
+        if (!target || target.classList.contains("is-open")) return
+        const moving = [...sections, media].filter((el): el is HTMLElement => !!el)
+        const before = moving.map((el) => el.getBoundingClientRect().top)
+        // the text that closes: a copy stays where it was and fades out
+        for (const sec of sections) {
+            if (!sec.classList.contains("is-open")) continue
+            const body = sec.querySelector<HTMLElement>(".case-part-body")
+            if (!body) continue
+            const r = body.getBoundingClientRect()
+            // the whole body, so its paragraphs keep their type (.case-part-body p)
+            const ghost = body.cloneNode(true) as HTMLElement
+            Object.assign(ghost.style, { position: "fixed", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, display: "block", opacity: "1", transition: "none", margin: "0", pointerEvents: "none", overflow: "hidden" })
+            dialog.append(ghost)
+            ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: "ease-out", fill: "forwards" }).finished.then(() => ghost.remove(), () => ghost.remove())
+        }
+        dialog.classList.add("case-instant")
+        parts.forEach((other) => setPart(other, other === part))
+        moving.forEach((el, i) => {
+            const dy = before[i] - el.getBoundingClientRect().top
+            if (Math.abs(dy) > 0.5) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: FLIP_MS, easing: FLIP_EASE })
+        })
+        target.querySelector<HTMLElement>(".case-part-body > div")?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 80, easing: "ease-out", fill: "backwards" })
+        requestAnimationFrame(() => dialog.classList.remove("case-instant"))
+    }
+    const phone = () => matchMedia("(max-width: 809.98px)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches
+    parts.forEach((part) =>
+        part.addEventListener("click", () => (phone() ? flipTo(part) : parts.forEach((other) => setPart(other, other === part)))),
+    )
 })

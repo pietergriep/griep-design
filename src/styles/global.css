@@ -1311,6 +1311,10 @@ html.case-open {
 .case-part-body > div {
     overflow: hidden;
 }
+/* phones switch the parts at once and glide the rest with transforms (scripts/case-study.ts) */
+.case-instant .case-part-body {
+    transition: none;
+}
 .case-part-body p {
     margin: 4px 0 18px;
     font-size: 16px;
