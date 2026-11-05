@@ -477,18 +477,34 @@ if (row && track) {
         if (wheelRaf) cancelAnimationFrame(wheelRaf)
         wheelRaf = 0
     }
+    // Each scroll picks up / down or sideways at its start and keeps it until a pause of
+    // AXIS_GAP_MS. A Mac trackpad does this itself; a Windows touchpad doesn't, and a scroll
+    // down there carries small sideways moves, either way, which pushed the row back and forth.
+    const AXIS_GAP_MS = 150
+    let axisUpDown = true
+    let axisAt = -Infinity
+    const axisOf = new WeakMap<WheelEvent, boolean>()
+    const upDown = (e: WheelEvent) => {
+        const known = axisOf.get(e)
+        if (known !== undefined) return known
+        const now = performance.now()
+        if (now - axisAt > AXIS_GAP_MS) axisUpDown = Math.abs(e.deltaY) > Math.abs(e.deltaX)
+        axisAt = now
+        axisOf.set(e, axisUpDown)
+        return axisUpDown
+    }
     const onWheel = (e: WheelEvent) => {
             // (no hover check: the wheel goes to whatever is under the pointer, also when the
             // page moved the row under a still pointer and no mouseenter came)
             if (isGrid()) return
-            if (!SIDEWAYS_SCROLL && !matchMedia(PHONE).matches && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+            if (!SIDEWAYS_SCROLL && !matchMedia(PHONE).matches && !upDown(e)) {
                 e.preventDefault() // (also keeps the browser from swiping back a page)
                 return
             }
             // pinned: up / down just scrolls the page (which moves the row); a sideways
             // trackpad swipe scrolls it too
             if (pinned()) {
-                if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                if (!upDown(e)) {
                     e.preventDefault()
                     scrollBy(0, e.deltaX)
                 }
@@ -500,11 +516,11 @@ if (row && track) {
             // A scroll that's moving the row keeps moving it when a list slides under the
             // pointer: the row listens first (capture) and the list never sees it
             const rowHasIt = wheelOwned && performance.now() - lastWheelAt < WHEEL_HANDOFF_MS
-            if (!rowHasIt && Math.abs(e.deltaY) > Math.abs(e.deltaX) && inOwnScroll(e.target as Element | null)) return
+            if (!rowHasIt && upDown(e) && inOwnScroll(e.target as Element | null)) return
             // Up / down moves the row only over the cards; under them (the notes, "Learn more")
             // and in the gaps it scrolls the page
-            if (!rowHasIt && Math.abs(e.deltaY) > Math.abs(e.deltaX) && !(e.target as Element | null)?.closest?.(".card")) return
-            if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX) && isMouseWheel(e)) {
+            if (!rowHasIt && upDown(e) && !(e.target as Element | null)?.closest?.(".card")) return
+            if (e.deltaY !== 0 && upDown(e) && isMouseWheel(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const pos = wheelTarget ?? (animating ? to : offset) // where the row is (heading)
                 const now = performance.now()
@@ -543,7 +559,7 @@ if (row && track) {
             }
             // A trackpad scrolling up / down over the row moves it too (TRACKPAD_VERTICAL); at
             // either end the page takes over again, once the swipe's momentum has died down
-            if (TRACKPAD_VERTICAL && e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            if (TRACKPAD_VERTICAL && e.deltaY !== 0 && upDown(e)) {
                 const dir = e.deltaY > 0 ? 1 : -1
                 const now = performance.now()
                 if (pageHasWheel(e)) return
@@ -564,7 +580,7 @@ if (row && track) {
                 snapSoon(e.deltaY / fit)
                 return
             }
-            if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || e.deltaX === 0) return
+            if (upDown(e) || e.deltaX === 0) return
             e.preventDefault()
             e.stopPropagation()
             stop()
@@ -577,9 +593,37 @@ if (row && track) {
     // Up / down: the row hears it first (capture), so a scroll that's moving the row isn't
     // taken over by a list sliding under the pointer. Sideways: after the card's own
     // handlers, as before
-    const upDown = (e: WheelEvent) => Math.abs(e.deltaY) > Math.abs(e.deltaX)
-    row.addEventListener("wheel", (e) => upDown(e) && onWheel(e), { passive: false, capture: true })
-    row.addEventListener("wheel", (e) => !upDown(e) && onWheel(e), { passive: false })
+    // griep.design/?wheellog: records each wheel event over the row and what the row did,
+    // with a button to copy it (for scrolling that misbehaves on someone else's machine)
+    const wheelLog: unknown[][] | null = new URLSearchParams(location.search).has("wheellog") ? [] : null
+    const handle = (e: WheelEvent) => {
+        const before = offset
+        onWheel(e)
+        if (!wheelLog) return
+        const t = Math.round(performance.now())
+        wheelLog.push([t, +e.deltaX.toFixed(2), +e.deltaY.toFixed(2), e.deltaMode, upDown(e) ? "y" : "x", isMouseWheel(e) ? "m" : "t", e.cancelable ? 1 : 0, e.defaultPrevented ? 1 : 0, Math.round(before), Math.round(offset)])
+        if (wheelLog.length > 600) wheelLog.shift()
+        if (logCount) logCount.textContent = `${wheelLog.length} events`
+    }
+    let logCount: HTMLElement | null = null
+    if (wheelLog) {
+        const box = document.createElement("div")
+        box.style.cssText = "position:fixed;left:12px;bottom:12px;z-index:99999;display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:#111;color:#fff;font:12px system-ui"
+        logCount = document.createElement("span")
+        logCount.textContent = "0 events"
+        const copy = document.createElement("button")
+        copy.textContent = "Copy log"
+        copy.style.cssText = "border:0;border-radius:6px;padding:4px 8px;background:#fff;color:#111;font:inherit"
+        copy.onclick = () => {
+            const head = `${navigator.userAgent} | dpr ${devicePixelRatio} | t,dx,dy,mode,axis,mouse/track,cancelable,prevented,from,to`
+            const text = head + "\n" + wheelLog.map((r) => r.join(",")).join("\n")
+            navigator.clipboard?.writeText(text).then(() => (copy.textContent = "Copied"), () => prompt("Copy this:", text))
+        }
+        box.append(logCount, copy)
+        document.body.append(box)
+    }
+    row.addEventListener("wheel", (e) => upDown(e) && handle(e), { passive: false, capture: true })
+    row.addEventListener("wheel", (e) => !upDown(e) && handle(e), { passive: false })
 
     // --- Touch -----------------------------------------------------------------
     let dragging = false
