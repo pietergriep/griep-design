@@ -193,7 +193,7 @@ export const tasksTodayConfig = {
     tagTextWeight: [500, 300, 800, 10], // Figma's 590: the site loads Inter Display 400 and 500 only
   },
   // Beside the title: a chip with how many activities are done out of the day's, "3 / 6",
-  // kept up to date as the day moves on (Figma: Frame 63). In real px, not the card's units
+  // kept up to date as the day moves on (Figma: Frame 63). In px as on the desktop card (see px)
   Count: {
     show: true,
     size: [10, 8, 24, 0.5],
@@ -323,6 +323,10 @@ function Card({ v }: { v: Values }) {
 }
 
 /** Beside the title: "3 / 6", the activities done out of the day's, as the day moves on */
+// Its sizes are px as on the desktop card (460 wide on the portfolio), and scale with the card
+// like everything else, so it keeps its size next to the title on a phone (302 wide) too
+const DESKTOP_CARD = 460;
+const px = (n: number) => `calc(var(--u) * ${n / (DESKTOP_CARD / BASE_WIDTH)})`;
 function CountChip({ v }: { v: Values }) {
   const c = v.Count;
   const { items } = useContext(DayContext);
@@ -332,14 +336,14 @@ function CountChip({ v }: { v: Values }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        padding: `${c.paddingY}px ${c.paddingX}px`,
+        padding: `${px(c.paddingY)} ${px(c.paddingX)}`,
         background: c.fill,
-        borderRadius: `${c.radius}px`,
+        borderRadius: px(c.radius),
         // drawn inside, like a Figma stroke, so it takes no room
-        boxShadow: `inset 0 0 0 ${c.borderWidth}px ${c.borderColor}`,
-        fontSize: `${c.size}px`,
+        boxShadow: `inset 0 0 0 ${px(c.borderWidth)} ${c.borderColor}`,
+        fontSize: px(c.size),
         lineHeight: 1,
-        letterSpacing: `${c.tracking}px`,
+        letterSpacing: px(c.tracking),
         whiteSpace: "nowrap",
       }}
     >
