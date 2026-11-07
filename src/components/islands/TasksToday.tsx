@@ -1,6 +1,6 @@
 import { useDialKit, type DialConfig } from "dialkit";
 import { animate, motion, useMotionValue, type MotionValue, type Transition } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 
 /** Figma frame "Frame 232" (node 99:2) is 231 × 164. Every length below is authored in Figma px. */
 export const BASE_WIDTH = 231;
@@ -29,7 +29,7 @@ export const tasksTodayConfig = {
     shadowColor: "#00000000",
   },
   Title: {
-    text: "Tasks today",
+    text: "Activities today",
     size: [9, 4.5, 18, 0.5],
     weight: [500, 300, 800, 10],
     lineHeight: [1, 0.5, 2, 0.01],
@@ -38,7 +38,7 @@ export const tasksTodayConfig = {
   },
   Button: {
     show: true,
-    label: "Add task",
+    label: "Add activity",
     background: "#252525",
     hoverBackground: "#3a3a3a", // on hover the button lightens a little (it doesn't grow)
     hoverMs: [150, 0, 400, 10],
@@ -113,6 +113,9 @@ export const tasksTodayConfig = {
     // how long the task still runs: the badge says it, and the bar and the rail's ring fill
     // with the rest (23 of the 55 minutes left = 58% gone)
     minutesLeft: [23, 0, 120, 1],
+    // the badge counts down from minutesLeft in real time, a minute at a time, with the bar
+    // and the ring; at 0 this task is done and the next one is Now, with its own countdown
+    speed: [1, 1, 300, 1], // how fast that time runs (1 = real time; turn it up to see a switch)
     badgeHue: [150, 0, 360, 1], // green
     chipGap: [3, 1.5, 6, 0.5], // the badge above the tag
     // the title sits at shimmerBase and a band at shimmerPeak sweeps through it, left to right
@@ -189,6 +192,48 @@ export const tasksTodayConfig = {
     tagTextSize: [7.5, 3.5, 15, 0.5],
     tagTextWeight: [500, 300, 800, 10], // Figma's 590: the site loads Inter Display 400 and 500 only
   },
+  // Beside the title: a chip with how many activities are done out of the day's, "3 / 6",
+  // kept up to date as the day moves on (Figma: Frame 63). In real px, not the card's units
+  Count: {
+    show: true,
+    size: [10, 8, 24, 0.5],
+    firstWeight: [400, 300, 800, 10], // the done count
+    restWeight: [400, 300, 800, 10], // " / 6"
+    firstColor: "#262626",
+    restColor: "#a3a3a3",
+    tracking: [0, -0.5, 0.5, 0.01],
+    paddingX: [4.5, 0, 16, 0.25],
+    paddingY: [4.5, 0, 10, 0.25],
+    radius: [5, 0, 24, 0.5],
+    fill: "#f5f5f5",
+    borderWidth: [0, 0, 2, 0.25],
+    borderColor: "#ECECEC",
+    gap: [3.5, 0, 16, 0.25], // from the title
+    slashGap: [0.15, 0, 1, 0.05], // space either side of the slash, in em
+  },
+  // Before the list: a sentence about the day, with the tags as pills in it ([Work] becomes
+  // the Work pill), then it fades out and the activities come in
+  Day: {
+    show: false, // (tried; the status line under the title replaced it)
+    // one line per part of the day (\n): earlier, now, still to come
+    text: "Good afternoon, Pieter.\nEarlier today you had 2 meetings and lunch with Alex [Friends].\nRight now you're on a [Work] client call.\nStill to come: a board meeting and the [Health] gym.",
+    size: [9.5, 6, 18, 0.5],
+    weight: [400, 300, 800, 10],
+    greetingWeight: [500, 300, 800, 10], // the first line
+    lineHeight: [1.4, 1, 2.2, 0.01],
+    lineGap: [4, 0, 12, 0.5], // between the lines (each part of the day)
+    mutedOpacity: [0.6, 0.2, 1, 0.05], // the text of the lines after the greeting (the pills stay full)
+    tracking: [-0.15, -0.5, 0.3, 0.01],
+    color: "#0c0a0a",
+    pillGap: [1.5, 0, 6, 0.25], // space either side of a pill in the sentence
+    width: [190, 100, 210, 1], // the sentence's width (the card is 231)
+    top: [6, 0, 40, 0.5], // from the top of the list area
+    delay: [0.1, 0, 2, 0.05], // s before the first line comes in
+    stagger: [0.15, 0, 1.5, 0.05], // s between the lines coming in
+    hold: [3.1, 0.5, 8, 0.1], // s it stays, once the last line is in
+    outMs: [300, 100, 800, 10], // its fade out, before the activities come in
+    y: [6, 0, 20, 0.5], // how far it rises in, and on out
+  },
   Motion: {
     // on load: the header, then the tasks one by one from the top down, then the current
     // task's bar (and its ring) fills
@@ -210,7 +255,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-37", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-56", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -246,6 +291,7 @@ export function TasksToday({ className, style }: { className?: string; style?: C
 
 function Card({ v }: { v: Values }) {
   const c = v.Card;
+  const day = useDay(v);
   const enter = v.Motion.enter as Transition;
   return (
     <div
@@ -268,11 +314,127 @@ function Card({ v }: { v: Values }) {
         } as CSSProperties
       }
     >
-      <Header v={v} transition={enter} />
-      <TaskList v={v} />
+      <DayContext.Provider value={day}>
+        <Header v={v} transition={enter} />
+        <DayThenList v={v} />
+      </DayContext.Provider>
     </div>
   );
 }
+
+/** Beside the title: "3 / 6", the activities done out of the day's, as the day moves on */
+function CountChip({ v }: { v: Values }) {
+  const c = v.Count;
+  const { items } = useContext(DayContext);
+  const done = items.filter((i) => i.state === "done").length;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: `${c.paddingY}px ${c.paddingX}px`,
+        background: c.fill,
+        borderRadius: `${c.radius}px`,
+        // drawn inside, like a Figma stroke, so it takes no room
+        boxShadow: `inset 0 0 0 ${c.borderWidth}px ${c.borderColor}`,
+        fontSize: `${c.size}px`,
+        lineHeight: 1,
+        letterSpacing: `${c.tracking}px`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span style={{ ...textBoxTrim, fontWeight: c.firstWeight, color: c.firstColor }}>{done}</span>
+      <span style={{ ...textBoxTrim, fontWeight: c.restWeight, color: c.restColor, marginLeft: `${c.slashGap}em` }}>
+        /<span style={{ marginLeft: `${c.slashGap}em` }}>{items.length}</span>
+      </span>
+    </span>
+  );
+}
+
+/**
+ * The list area: first the day's sentence, then the activities. The list is there from the
+ * start (hidden), so the card already has its height; it's mounted again once the sentence
+ * has gone, which plays its intro.
+ */
+function DayThenList({ v }: { v: Values }) {
+  const d = v.Day;
+  const [phase, setPhase] = useState<"day" | "out" | "list">(d.show ? "day" : "list");
+  useEffect(() => {
+    if (phase !== "day") return;
+    const lines = dayLines(v).length;
+    const id = setTimeout(() => setPhase("out"), (d.delay + (lines - 1) * d.stagger + d.hold) * 1000);
+    return () => clearTimeout(id);
+  }, [phase, d.delay, d.stagger, d.hold, d.text]);
+  useEffect(() => {
+    if (phase !== "out") return;
+    const id = setTimeout(() => setPhase("list"), d.outMs);
+    return () => clearTimeout(id);
+  }, [phase, d.outMs]);
+  const listIn = phase === "list";
+  return (
+    <div style={{ position: "relative" }}>
+      <div key={listIn ? "in" : "waiting"} style={{ visibility: listIn ? "visible" : "hidden" }} aria-hidden={listIn ? undefined : true}>
+        <TaskList v={v} />
+      </div>
+      {!listIn && (
+        <motion.div
+          // the lines come in one by one (daySentence); the whole goes out together
+          initial={false}
+          animate={phase === "out" ? { opacity: 0, y: u(-d.y) } : { opacity: 1, y: 0 }}
+          transition={{ duration: d.outMs / 1000, ease: [0.4, 0, 1, 1] }}
+          style={{
+            position: "absolute",
+            top: u(d.top),
+            left: 0,
+            width: u(d.width),
+            margin: 0,
+            fontSize: u(d.size),
+            fontWeight: d.weight,
+            lineHeight: d.lineHeight,
+            letterSpacing: u(d.tracking),
+            color: d.color,
+            textWrap: "pretty",
+            display: "flex",
+            flexDirection: "column",
+            gap: u(d.lineGap),
+          }}
+        >
+          {daySentence(v)}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+/** The Day text, a line per \n (a typed "\n" in the panel works too), each [Tag] as that tag's
+ *  pill (its colour and symbol, as in the list). The first line is the greeting. */
+function daySentence(v: Values): ReactNode[] {
+  const d = v.Day;
+  const items = agenda(v);
+  return dayLines(v).map((line, li) => (
+    <motion.p
+      key={li}
+      initial={v.Motion.intro ? { opacity: 0, y: u(d.y) } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...(v.Motion.enter as Transition), delay: d.delay + li * d.stagger }}
+      style={{ margin: 0, ...(li === 0 ? { fontWeight: d.greetingWeight } : { color: `color-mix(in srgb, ${d.color} ${Math.round(d.mutedOpacity * 100)}%, transparent)` }) }}>
+      {line.split(/(\[[^\]]+\])/).map((part, i) => {
+        const m = part.match(/^\[(.+)\]$/);
+        if (!m) return part;
+        const tag = m[1];
+        const item = items.find((it) => it.tag === tag) ?? { state: "upcoming" as State, title: "", tag, start: "", end: "" };
+        return (
+          <span key={i} style={{ display: "inline-flex", verticalAlign: "middle", margin: `0 ${u(d.pillGap)}`, position: "relative", top: "-0.08em" }}>
+            <Pill v={v} hue={hueOf(v, item)} lightness={tag === "Work" ? v.Pill.workLightness : undefined} icon={iconOf(tag)}>
+              {tag}
+            </Pill>
+          </span>
+        );
+      })}
+    </motion.p>
+  ));
+}
+const dayLines = (v: Values) => v.Day.text.replace(/\\n/g, "\n").split("\n");
 
 function Header({ v, transition }: { v: Values; transition: Transition }) {
   const t = v.Title;
@@ -284,18 +446,21 @@ function Header({ v, transition }: { v: Values; transition: Transition }) {
       transition={transition}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}
     >
-      <p
-        style={{
-          fontSize: u(t.size),
-          fontWeight: t.weight,
-          lineHeight: t.lineHeight,
-          letterSpacing: u(t.letterSpacing),
-          color: t.color,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {t.text}
-      </p>
+      <div style={{ display: "flex", alignItems: "center", gap: u(v.Count.gap) }}>
+        <p
+          style={{
+            fontSize: u(t.size),
+            fontWeight: t.weight,
+            lineHeight: t.lineHeight,
+            letterSpacing: u(t.letterSpacing),
+            color: t.color,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {t.text}
+        </p>
+        {v.Count.show && <CountChip v={v} />}
+      </div>
       {b.show && (
       <motion.button
         type="button"
@@ -394,9 +559,18 @@ function TaskList({ v }: { v: Values }) {
   const l = v.List;
   const r = v.Rail;
   const railLeft = r.x - v.Card.paddingLeft; // rail centre, relative to the list box
-  const items = agenda(v);
-  const count = items.length;
-  const start = Math.max(0, items.findIndex((i) => i.state === "now"));
+  const count = agenda(v).length;
+  const start = Math.max(0, agenda(v).findIndex((i) => i.state === "now"));
+  // the day as it moves on (useDay, shared with the title's status line): the list moves to
+  // each new current task
+  const { items, cur, clock } = useContext(DayContext);
+  const firstCur = useRef(cur);
+  useEffect(() => {
+    if (cur === firstCur.current || cur >= count) return;
+    firstCur.current = cur;
+    settleTo(cur);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur, count]);
   const [index, setIndex] = useState(start);
   const pos = useMotionValue(start);
   const y = useMotionValue(0);
@@ -577,6 +751,7 @@ function TaskList({ v }: { v: Values }) {
   const bottom = `min(${fade}, var(--fade-bottom, 0px))`;
   const mask = `linear-gradient(to bottom, transparent, #000 ${top}, #000 calc(100% - ${bottom}), transparent)`;
   return (
+    <NowClock.Provider value={clock}>
     <div style={{ position: "relative", width: "100%" }}>
       <div
         ref={viewport}
@@ -650,8 +825,70 @@ function TaskList({ v }: { v: Values }) {
       </div>
       <Label v={v} state={items[index]?.state ?? "now"} y={tagY} left={railLeft} />
     </div>
+    </NowClock.Provider>
   );
 }
+
+/**
+ * The delay for the intro only: once it has passed, changes (the countdown, the panel) move at
+ * once. Otherwise each new value restarted the wait and a fast-changing bar never moved.
+ */
+function useIntroDelay(v: Values, delay: number) {
+  const [done, setDone] = useState(!v.Motion.intro);
+  useEffect(() => {
+    if (done) return;
+    const id = setTimeout(() => setDone(true), delay * 1000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return done ? 0 : delay;
+}
+
+/** The current task's countdown, shared by its badge, bar and ring (see TaskList) */
+const NowClock = createContext({ minutes: 0, progress: 0 });
+
+/**
+ * The day moving on: the current task counts down (Now → Minutes Left for the first, then each
+ * next one's full length); at 0 it's done and the next is Now. Shared by the list and the
+ * title's status line.
+ */
+type Day = { items: Item[]; cur: number; clock: { minutes: number; progress: number } };
+const DayContext = createContext<Day>({ items: [], cur: 0, clock: { minutes: 0, progress: 0 } });
+function useDay(v: Values): Day {
+  const base = agenda(v);
+  const count = base.length;
+  const start = Math.max(0, base.findIndex((i) => i.state === "now"));
+  const [step, setStep] = useState(0);
+  const [since, setSince] = useState(() => Date.now()); // when the current task's countdown began
+  const [tick, setTick] = useState(since);
+  useEffect(() => {
+    setStep(0);
+    setSince(Date.now());
+  }, [v.Now.minutesLeft]);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick(Date.now()), 1000 / Math.max(1, Math.min(v.Now.speed, 20)));
+    return () => clearInterval(id);
+  }, [v.Now.speed]);
+  const cur = start + step;
+  const items: Item[] = base.map((it, i) => (i < start ? it : { ...it, state: i < cur ? "done" : i === cur ? "now" : "upcoming" }));
+  const total = cur >= count ? 0 : step === 0 ? v.Now.minutesLeft * 60 : lengthMin(base[cur]) * 60;
+  const left = Math.max(0, total - Math.floor(((tick - since) / 1000) * v.Now.speed));
+  const minutes = Math.ceil(left / 60);
+  const progress = cur < count ? Math.max(0, Math.min(1, 1 - minutes / Math.max(1, lengthMin(base[cur])))) : 1;
+  useEffect(() => {
+    if (cur >= count || left > 0) return;
+    setStep((n) => n + 1);
+    setSince(Date.now());
+  }, [left, cur, count]);
+  return { items, cur, clock: { minutes, progress } };
+}
+const lengthMin = (it: Item) => {
+  const mins = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+  return Math.max(1, mins(it.end) - mins(it.start));
+};
 
 function TaskRow({
   v,
@@ -683,9 +920,7 @@ function TaskRow({
   const right: ReactNode =
     state === "now" ? (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: u(v.Now.chipGap) }}>
-        <Pill v={v} hue={v.Now.badgeHue} icon="clock">
-          {`${v.Now.minutesLeft} min`}
-        </Pill>
+        <NowBadge v={v} />
         <Pill v={v} hue={hueOf(v, item)} lightness={item.tag === "Work" ? v.Pill.workLightness : undefined} icon={iconOf(item.tag)}>
           {item.tag}
         </Pill>
@@ -838,6 +1073,10 @@ function shimmerStyle(v: Values): CSSProperties {
     backgroundRepeat: "no-repeat",
     WebkitBackgroundClip: "text",
     backgroundClip: "text",
+    // the gradient only paints inside the box, which at line-height 1 cuts off descenders
+    // (the g in meeting): grow it above and below, without moving the text
+    paddingBlock: "0.2em",
+    marginBlock: "-0.2em",
     animation: `${shimmerName(v)} ${n.shimmerMs + n.shimmerPause}ms linear infinite`,
   };
 }
@@ -872,7 +1111,38 @@ function iconOf(tag: string): IconName | undefined {
   return tag === "Work" ? "work" : tag === "Friends" ? "friends" : tag === "Health" ? "health" : undefined;
 }
 
-function Pill({ v, children, hue, lightness, icon }: { v: Values; children: ReactNode; hue: number; lightness?: number; icon?: IconName }) {
+/**
+ * The current task's badge: the time left counting down from Now → Minutes Left in real time,
+ * a minute at a time.
+ */
+function NowBadge({ v }: { v: Values }) {
+  const n = v.Now;
+  const { minutes } = useContext(NowClock);
+  const text = `${minutes} min`;
+  return (
+    <Pill
+      v={v}
+      hue={n.badgeHue}
+      icon="clock"
+    >
+      {text}
+    </Pill>
+  );
+}
+
+function Pill({
+  v,
+  children,
+  hue,
+  lightness,
+  icon,
+}: {
+  v: Values;
+  children: ReactNode;
+  hue: number;
+  lightness?: number;
+  icon?: IconName;
+}) {
   const p = v.Pill;
   const L = lightness ?? p.lightness;
   const color = `oklch(${L} ${p.chroma} ${hue})`;
@@ -934,7 +1204,9 @@ function nowProgress(v: Values) {
 /** The bar down the left of a card: full for a finished task, part-filled from the top for the current one. */
 function Progress({ v, state, delay }: { v: Values; state: State; delay: number }) {
   const t = v.Task;
-  const fill = state === "done" ? 1 : state === "now" ? nowProgress(v) : 0;
+  const { progress } = useContext(NowClock);
+  const fill = state === "done" ? 1 : state === "now" ? progress : 0;
+  const wait = useIntroDelay(v, delay);
   return (
     <div
       aria-hidden
@@ -950,7 +1222,7 @@ function Progress({ v, state, delay }: { v: Values; state: State; delay: number 
       <motion.div
         initial={v.Motion.intro && state === "now" ? { height: "0%" } : false}
         animate={{ height: `${fill * 100}%` }}
-        transition={{ ...(v.Motion.progress as Transition), delay: v.Motion.intro ? delay : 0 }}
+        transition={{ ...(v.Motion.progress as Transition), delay: wait }}
         style={{ width: "100%", background: t.barColor, borderRadius: u(t.barRadius) }}
       />
     </div>
@@ -959,6 +1231,8 @@ function Progress({ v, state, delay }: { v: Values; state: State; delay: number 
 
 function Marker({ v, state, left, delay, barDelay }: { v: Values; state: State; left: number; delay: number; barDelay: number }) {
   const r = v.Rail;
+  const { progress } = useContext(NowClock);
+  const ringWait = useIntroDelay(v, barDelay);
   const pop: Transition = { type: "spring", visualDuration: 0.4, bounce: 0.45, delay: delay + 0.1 };
   const size = r.markerSize;
   const box = size + r.halo * 2;
@@ -1001,10 +1275,10 @@ function Marker({ v, state, left, delay, barDelay }: { v: Values; state: State; 
                 stroke={r.doneColor}
                 strokeWidth={r.nowStroke}
                 strokeLinecap={r.nowRoundCaps ? "round" : "butt"}
-                transform={`rotate(${-90 + (r.nowRingShows === "time gone" ? 0 : nowProgress(v) * 360)} 5 5)`}
+                transform={`rotate(${-90 + (r.nowRingShows === "time gone" ? 0 : progress * 360)} 5 5)`}
                 initial={v.Motion.intro ? { pathLength: 0 } : false}
-                animate={{ pathLength: r.nowRingShows === "time gone" ? nowProgress(v) : 1 - nowProgress(v) }}
-                transition={{ ...(v.Motion.progress as Transition), delay: v.Motion.intro ? barDelay : 0 }}
+                animate={{ pathLength: r.nowRingShows === "time gone" ? progress : 1 - progress }}
+                transition={{ ...(v.Motion.progress as Transition), delay: ringWait }}
               />
             </>
           ) : (
