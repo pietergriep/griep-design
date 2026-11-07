@@ -273,21 +273,36 @@ export function TasksToday({ className, style }: { className?: string; style?: C
     latest.current = values;
   });
 
+  // Phones: the carousel shows a sliver of the next card, which is enough to load this one,
+  // and its intro had played before anyone swiped to it. There the card waits, hidden (with
+  // its size, so nothing shifts), until IN_VIEW of it is on screen, then plays in.
+  const box = useRef<HTMLDivElement>(null);
+  const [seen, setSeen] = useState(() => typeof matchMedia === "undefined" || !matchMedia(PHONE_QUERY).matches);
+  useEffect(() => {
+    if (seen || !box.current) return;
+    const io = new IntersectionObserver((es) => es.some((e) => e.intersectionRatio >= IN_VIEW) && setSeen(true), { threshold: IN_VIEW });
+    io.observe(box.current);
+    return () => io.disconnect();
+  }, [seen]);
+
   const pct = values.Scale * 100;
   return (
-    <div className={className} style={{ width: "100%", ...style }}>
+    <div ref={box} className={className} style={{ width: "100%", ...style }}>
       <div
         style={{
           width: `${pct}%`,
           marginInline: `calc((100% - ${pct}%) / 2)`,
           containerType: "inline-size",
+          visibility: seen ? undefined : "hidden",
         }}
       >
-        <Card key={run} v={values} />
+        <Card key={`${run}-${seen}`} v={values} />
       </div>
     </div>
   );
 }
+const PHONE_QUERY = "(max-width: 809.98px)";
+const IN_VIEW = 0.6; // how much of the card is on screen before it plays in (phones)
 
 function Card({ v }: { v: Values }) {
   const c = v.Card;
