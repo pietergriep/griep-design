@@ -206,7 +206,7 @@ export const tasksTodayConfig = {
     paddingY: [4.5, 0, 10, 0.25],
     radius: [5, 0, 24, 0.5],
     fill: "#f7f7f7",
-    borderWidth: [0, 0, 2, 0.25],
+    borderWidth: [0.5, 0, 2, 0.25],
     borderColor: "#ECECEC",
     gap: [3.5, 0, 16, 0.25], // from the title
     slashGap: [0.15, 0, 1, 0.05], // space either side of the slash, in em
@@ -255,7 +255,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-57", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-58", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
