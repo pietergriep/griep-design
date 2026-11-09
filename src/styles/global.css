@@ -1425,6 +1425,8 @@ html.case-open {
         margin: 2px 0 14px;
         font-size: 13px;
         line-height: 1.4;
+        /* lines run to the edge; Safari's pretty wrapping breaks them early on a phone */
+        text-wrap: wrap;
     }
     /* the images side by side, swiped sideways, out to the sheet's edges; each a little
        narrower than the sheet so the next one peeks in */
