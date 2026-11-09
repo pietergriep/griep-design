@@ -1423,7 +1423,7 @@ html.case-open {
     }
     .case-part-body p {
         margin: 2px 0 14px;
-        font-size: 14px;
+        font-size: 13px;
         line-height: 1.4;
     }
     /* the images side by side, swiped sideways, out to the sheet's edges; each a little
