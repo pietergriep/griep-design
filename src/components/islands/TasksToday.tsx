@@ -118,11 +118,11 @@ export const tasksTodayConfig = {
     speed: [1, 1, 300, 1], // how fast that time runs (1 = real time; turn it up to see a switch)
     badgeHue: [150, 0, 360, 1], // green
     chipGap: [3, 1.5, 6, 0.5], // the badge above the tag
-    // the title sits at shimmerBase and a band at shimmerPeak sweeps through it, left to right
-    shimmer: true,
-    shimmerBase: [0.3, 0, 1, 0.05], // the title's opacity
-    shimmerPeak: [1, 0, 1, 0.05], // the band's
-    shimmerWidth: [28, 4, 40, 1], // the band, in % of the sweep (about 3x that of the title)
+    // a band sweeps through the time chip's fill, left to right: the fill at Pill → Fill Alpha,
+    // the band the same green at shimmerPeak (the clock and minutes stay as they are)
+    shimmer: false, // off for now
+    shimmerPeak: [0.4, 0, 1, 0.01], // the band's fill alpha
+    shimmerWidth: [28, 4, 40, 1], // the band, in % of the sweep (about the chip's width)
     shimmerMs: [2000, 600, 8000, 100], // one sweep
     shimmerPause: [200, 0, 5000, 100], // the wait before the next
   },
@@ -147,12 +147,12 @@ export const tasksTodayConfig = {
     // every chip is one oklch colour: the text at full strength, the fill the same colour at
     // fillAlpha. Same lightness and chroma for all, so no tag reads louder than another;
     // only the hue changes (the Done task's chip hue is under Done)
-    lightness: [0.69, 0.4, 0.9, 0.01],
+    lightness: [0.75, 0.4, 0.9, 0.01],
     chroma: [0.24, 0, 0.37, 0.01],
-    fillAlpha: [0.2, 0, 1, 0.01],
+    fillAlpha: [0.16, 0, 1, 0.01],
     // the rest of the day, above and below the three tasks: Team standup, Design review (Work), Gym (Health)
     workHue: [253, 0, 360, 1], // blue
-    workLightness: [0.78, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
+    workLightness: [0.82, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
     healthHue: [20, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
     // a symbol before the text: the clock on the badge, and one per tag (work.svg, friend.svg, health.svg)
     icons: true,
@@ -990,10 +990,8 @@ function TaskRow({
                 letterSpacing: u(t.titleTracking),
                 color: s.titleColor,
                 whiteSpace: "nowrap",
-                ...(state === "now" ? shimmerStyle(v) : {}),
               }}
             >
-              {state === "now" && <ShimmerKeyframes v={v} />}
               {item.title}
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: u(t.timeGap) }}>
@@ -1075,27 +1073,20 @@ function Time({ v, color, children }: { v: Values; color: string; children: Reac
 }
 
 /**
- * The current task's title: at Shimmer Base opacity, with a band at Shimmer Peak sweeping
- * through it (the text is a gradient three times its width, slid from one end to the other).
+ * The time chip's fill: the chip's colour at Fill Alpha, with a band at Shimmer Peak sweeping
+ * through it (a gradient three times the chip's width, slid from one end to the other).
  */
 const SHIMMER_SIZE = 3;
-function shimmerStyle(v: Values): CSSProperties {
+function shimmerStyle(v: Values, L: number, hue: number): CSSProperties {
   const n = v.Now;
+  const p = v.Pill;
   if (!n.shimmer || reducedMotion()) return {};
-  const c = v.Now.titleColor;
-  const at = (a: number) => `color-mix(in srgb, ${c} ${Math.round(a * 100)}%, transparent)`;
+  const at = (a: number) => `oklch(${L} ${p.chroma} ${hue} / ${a})`;
   const w = n.shimmerWidth / 2;
   return {
-    color: "transparent",
-    backgroundImage: `linear-gradient(90deg, ${at(n.shimmerBase)} 0%, ${at(n.shimmerBase)} ${50 - w}%, ${at(n.shimmerPeak)} 50%, ${at(n.shimmerBase)} ${50 + w}%, ${at(n.shimmerBase)} 100%)`,
+    background: `linear-gradient(90deg, ${at(p.fillAlpha)} 0%, ${at(p.fillAlpha)} ${50 - w}%, ${at(n.shimmerPeak)} 50%, ${at(p.fillAlpha)} ${50 + w}%, ${at(p.fillAlpha)} 100%)`,
     backgroundSize: `${SHIMMER_SIZE * 100}% 100%`,
     backgroundRepeat: "no-repeat",
-    WebkitBackgroundClip: "text",
-    backgroundClip: "text",
-    // the gradient only paints inside the box, which at line-height 1 cuts off descenders
-    // (the g in meeting): grow it above and below, without moving the text
-    paddingBlock: "0.2em",
-    marginBlock: "-0.2em",
     animation: `${shimmerName(v)} ${n.shimmerMs + n.shimmerPause}ms linear infinite`,
   };
 }
@@ -1139,13 +1130,12 @@ function NowBadge({ v }: { v: Values }) {
   const { minutes } = useContext(NowClock);
   const text = `${minutes} min`;
   return (
-    <Pill
-      v={v}
-      hue={n.badgeHue}
-      icon="clock"
-    >
-      {text}
-    </Pill>
+    <>
+      <ShimmerKeyframes v={v} />
+      <Pill v={v} hue={n.badgeHue} icon="clock">
+        {text}
+      </Pill>
+    </>
   );
 }
 
@@ -1155,12 +1145,14 @@ function Pill({
   hue,
   lightness,
   icon,
+  shimmer,
 }: {
   v: Values;
   children: ReactNode;
   hue: number;
   lightness?: number;
   icon?: IconName;
+  shimmer?: boolean; // a band sweeps through the fill (the time chip)
 }) {
   const p = v.Pill;
   const L = lightness ?? p.lightness;
@@ -1177,6 +1169,7 @@ function Pill({
         background: `oklch(${L} ${p.chroma} ${hue} / ${p.fillAlpha})`,
         borderRadius: u(p.radius),
         overflow: "clip",
+        ...(shimmer ? shimmerStyle(v, L, hue) : {}),
       }}
     >
       {sym && (
