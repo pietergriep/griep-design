@@ -7,20 +7,28 @@ import { WorkloadCase } from "./islands/WeeklyUsageIsland.tsx"
 const PARTS = [
     {
         title: "The idea",
-        text: "Each model gets its own agent, with its own chat history and its own skills. A project is selected behind the scenes, and every agent works on it at the same time. You give them tasks at once, move between them easily, and see your weekly usage at a glance.",
+        text: [
+            "Each model gets its own agent, with its own chat history and its own skills. A project is selected behind the scenes, and every agent works on it at the same time. You give them tasks at once, move between them easily, and see your weekly usage at a glance.",
+            "Usage changed the most along the way. At first each model had its own big percentage, showing how much it used. In the end I went with one weekly number, because that’s how most AI tools work: usage resets every week, so you need to know where you stand at all times.",
+        ],
     },
     {
         title: "The problem",
         text: [
             "I work with Claude every day and pick the model that fits the task, Sonnet for copy and Opus for more advanced work, for example. But when I switch, it all still happens in the same chat.",
+            "The idea came while I was working on one of my components. Switching between models, and doing every model’s tasks in that one chat, kept getting in the way.",
             "Every prompt costs tokens, so you want to be conscious of writing the right prompts and picking the right model, to spend as few as possible. That’s why usage is easy to see, and why each agent suggests its next prompt: it steers you the right way, instead of wasting tokens on the wrong ones.",
+            "That part comes from my own work. On my components I’ve wasted tokens on prompts that weren’t the most efficient, and I thought that could be better.",
         ],
     },
     {
         title: "The challenge",
         text: [
-            "The hardest part was the layout of the agents. In Figma I tried a few options, including a 2x2 grid instead of a scrollable list. Everything fit on one screen, but with so much going on at once it was harder to take in.",
-            "The list also does something the grid can’t: it’s ordered by usage, so the agent using the most always sits on top and you see it first. A grid has no clear top, so that ordering gets lost. And with a list, an agent has room to open in one smooth motion, without pushing the others around.",
+            "I started by sketching in Figma and ended up with eight different explorations. The hardest part was the layout of the agents. I tried a few options, including a 2x2 grid instead of a scrollable list. Everything fit on one screen, but with so much going on at once it was harder to take in.",
+            "The list also does something the grid can’t: it’s ordered by usage, so the agent using the most always sits on top and you see it first. A grid has no clear top, so that ordering gets lost. And with a list, an agent has room to open in one smooth motion, without pushing the others around. That’s the detail I like most: an agent opens to full screen, so you see its whole context.",
+            "The trickiest part once it ran in the browser was the two status lines at the bottom of each agent, showing what it’s working on right now. It took a few more iterations to get right.",
+            "What I learned: testing layouts side by side matters. The grid fit everything on one screen, but the list was easier to take in. What looks efficient isn’t always what’s easiest to read.",
+            "If I kept going, I’d design the screen for adding agents: which model to use, what each one is for, and so on.",
         ],
     },
 ]

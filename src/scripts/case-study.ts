@@ -50,7 +50,7 @@ document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) =
         // the sheet takes the focus, not the first button (Back would show a focus ring);
         // Tab still goes to Back first
         dialog.querySelector<HTMLElement>(".case-sheet")?.focus({ preventScroll: true })
-        dialog.querySelectorAll<HTMLElement>(".case-sheet, .case-media").forEach((el) => (el.scrollTop = 0))
+        dialog.querySelectorAll<HTMLElement>(".case-sheet, .case-media, .case-text").forEach((el) => (el.scrollTop = 0))
         // fresh every time: the text is back on its first part, and the cards start over once
         // the sheet has faded in (building them is heavy; during the fade a phone stutters)
         parts.forEach((part, i) => setPart(part, i === 0))
@@ -74,13 +74,16 @@ document.querySelectorAll<HTMLButtonElement>("[data-case-open]").forEach((btn) =
         if (e.target === dialog) close()
     })
 
-    // The wheel over the text's buttons scrolls the images too (the rest of the text lets
-    // the wheel through to them, see .case-text). On phones the whole sheet scrolls instead.
+    // The wheel over the text scrolls the images, unless the open part is taller than the
+    // sheet: then the text scrolls on its own (see .case-text). On phones the whole sheet
+    // scrolls instead.
     const media = dialog.querySelector<HTMLElement>(".case-media")
-    dialog.querySelector(".case-text")?.addEventListener(
+    const text = dialog.querySelector<HTMLElement>(".case-text")
+    text?.addEventListener(
         "wheel",
         (e) => {
             const we = e as WheelEvent
+            if (text.scrollHeight > text.clientHeight + 1 && getComputedStyle(text).overflowY !== "visible") return
             if (!media || media.scrollHeight <= media.clientHeight || getComputedStyle(media).overflowY === "visible") return
             we.preventDefault()
             media.scrollTop += we.deltaMode === 1 ? we.deltaY * 16 : we.deltaY
