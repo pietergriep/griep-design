@@ -120,8 +120,8 @@ export const tasksTodayConfig = {
     chipGap: [3, 1.5, 6, 0.5], // the badge above the tag
     // a band sweeps through the time chip's fill, left to right: the fill at Pill → Fill Alpha,
     // the band the same green at shimmerPeak (the clock and minutes stay as they are)
-    shimmer: false, // off for now
-    shimmerPeak: [0.4, 0, 1, 0.01], // the band's fill alpha
+    shimmer: true,
+    shimmerPeak: [1, 0, 1, 0.01], // the band's fill alpha
     shimmerWidth: [28, 4, 40, 1], // the band, in % of the sweep (about the chip's width)
     shimmerMs: [2000, 600, 8000, 100], // one sweep
     shimmerPause: [200, 0, 5000, 100], // the wait before the next
@@ -137,7 +137,7 @@ export const tasksTodayConfig = {
     timeColor: "#000000",
   },
   Pill: {
-    padding: [3, 1.5, 6, 0.5], // above and below
+    padding: [4, 1.5, 6, 0.5], // above and below
     paddingLeft: [3.5, 1, 8, 0.25],
     paddingRight: [3.5, 1, 8, 0.25],
     radius: [7, 3.5, 14, 0.5],
@@ -147,16 +147,16 @@ export const tasksTodayConfig = {
     // every chip is one oklch colour: the text at full strength, the fill the same colour at
     // fillAlpha. Same lightness and chroma for all, so no tag reads louder than another;
     // only the hue changes (the Done task's chip hue is under Done)
-    lightness: [0.75, 0.4, 0.9, 0.01],
-    chroma: [0.24, 0, 0.37, 0.01],
+    lightness: [0.7, 0.4, 0.9, 0.01],
+    chroma: [0.26, 0, 0.37, 0.01],
     fillAlpha: [0.16, 0, 1, 0.01],
     // the rest of the day, above and below the three tasks: Team standup, Design review (Work), Gym (Health)
-    workHue: [253, 0, 360, 1], // blue
-    workLightness: [0.82, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
-    healthHue: [20, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
+    workHue: [252, 0, 360, 1], // blue
+    workLightness: [0.78, 0.4, 0.9, 0.01], // the Work chips' own lightness: blue reads darker than the others at the same value
+    healthHue: [18, 0, 360, 1], // red: oklch(0.69 0.24 25), as in the reference
     // a symbol before the text: the clock on the badge, and one per tag (work.svg, friend.svg, health.svg)
     icons: true,
-    iconSize: [6.65, 3, 12, 0.05], // its height (the clock's 5.95 in Figma)
+    iconSize: [6.5, 3, 12, 0.05], // its height (the clock's 5.95 in Figma)
     iconGap: [1.5, 0.5, 4, 0.1],
     iconPaddingY: [2, 1, 4, 0.5], // above and below, on a chip with a symbol (the badge's 2 in Figma)
   },
@@ -196,17 +196,17 @@ export const tasksTodayConfig = {
   // kept up to date as the day moves on (Figma: Frame 63). In px as on the desktop card (see px)
   Count: {
     show: true,
-    size: [10, 8, 24, 0.5],
+    size: [11, 8, 24, 0.5],
     firstWeight: [500, 300, 800, 10], // the done count
     restWeight: [500, 300, 800, 10], // " / 6"
-    firstColor: "#262626",
-    restColor: "#a2a2a2",
+    firstColor: "#000000",
+    restColor: "#9f9f9f",
     tracking: [0, -0.5, 0.5, 0.01],
-    paddingX: [4.5, 0, 16, 0.25],
-    paddingY: [4.5, 0, 10, 0.25],
+    paddingX: [5.25, 0, 16, 0.25],
+    paddingY: [4, 0, 10, 0.25],
     radius: [5, 0, 24, 0.5],
     fill: "#f7f7f7",
-    borderWidth: [0.5, 0, 2, 0.25],
+    borderWidth: [0, 0, 2, 0.25],
     borderColor: "#ECECEC",
     gap: [3.5, 0, 16, 0.25], // from the title
     slashGap: [0.15, 0, 1, 0.05], // space either side of the slash, in em
@@ -243,7 +243,8 @@ export const tasksTodayConfig = {
     stagger: [0.08, 0, 0.3, 0.01], // between one task and the next
     barDelay: [0.45, 0, 1.5, 0.01], // after the last task starts coming in, the current task's bar (and ring) fills
     progress: { type: "spring", visualDuration: 0.6, bounce: 0 },
-    hoverLift: [1, 0, 4, 0.1],
+    hoverScale: [1.01, 1, 1.05, 0.0025], // on hover a card grows a little (it doesn't move up)
+    hoverMs: [120, 0, 400, 10], // how quick it grows (and back)
     replay: { type: "action" },
     copyValues: { type: "action", label: "Copy values" },
   },
@@ -255,7 +256,7 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-58", persist: import.meta.env.DEV, onAction });
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-62", persist: import.meta.env.DEV, onAction });
 }
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
@@ -961,11 +962,15 @@ function TaskRow({
       <motion.div
         initial={m.intro ? { opacity: 0, y: `${m.enterY}%` } : false}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: `${-(m.hoverLift / t.height) * 100}%` }}
-        // the coming-in waits its turn; once in, the hover lift doesn't wait
+        whileHover={{ scale: m.hoverScale }}
+        // the coming-in waits its turn; once in, the hover doesn't wait
         onAnimationComplete={() => setEntered(true)}
-        transition={{ ...(m.enter as Transition), delay: m.intro && !entered ? delay : 0 }}
+        transition={{ ...(m.enter as Transition), delay: m.intro && !entered ? delay : 0, scale: { duration: m.hoverMs / 1000, ease: "easeOut" } }}
         style={{
+          // its own layer: the browser scales the card as one picture on hover, instead of
+          // redrawing the text at every step (which made it wobble)
+          willChange: "transform",
+          backfaceVisibility: "hidden",
           display: "flex",
           alignItems: "center",
           gap: u(t.gap),
