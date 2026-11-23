@@ -541,6 +541,10 @@ html.work-grid .work .work-note-inner {
     align-items: center;
     justify-content: center;
     gap: 10px;
+    /* cards out of view (moved off by the carousel) aren't styled, laid out or painted, and
+       their CSS animations pause, so the loops in the other cards don't cost the one you're
+       on. Safe here: every card has a fixed size, and it already clips its content */
+    content-visibility: auto;
 }
 
 /* 0.5px edge, drawn on top so nothing inside the card covers it */

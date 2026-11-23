@@ -146,7 +146,7 @@ const SHOW_VIEW_SWITCH = false
                     <div class="work-item">
                         <div class="card card-business">
                             <span class="badge"><span class="badge-text"><span class="on-mouse">Click</span><span class="on-touch">Tap</span> to flip</span></span>
-                            <BusinessCard client:visible />
+                            <BusinessCard client:near />
                         </div>
                         <WorkNote text="My business card as a component. The blocks are the Eixample, the Barcelona neighbourhood I live in, chamfered corners and the Diagonal included. It tilts with your cursor (or your phone), flips on click for a short intro, and the email on the back copies with a click." />
                     </div>
@@ -154,14 +154,14 @@ const SHOW_VIEW_SWITCH = false
                     <div class="work-item">
                         <div class="card card-usage">
                             <span class="badge"><span class="badge-text">Open an agent</span></span>
-                            <WeeklyUsage client:visible />
+                            <WeeklyUsage client:near />
                         </div>
                         <WorkNote caseStudy="case-workload" />
                     </div>
 
                     <div class="work-item">
                         <div class="card card-route">
-                            <RouteFinder client:visible />
+                            <RouteFinder client:near />
                         </div>
                         <WorkNote text="An AI agent comparing six bridges for the best ETH → SOL swap. Instead of a spinner, it shows each option it checks and why it rules it out, so the final pick is easy to trust. The answer only lands once the title's shimmer has finished its pass, so the switch never happens mid-sweep." />
                     </div>
@@ -169,14 +169,14 @@ const SHOW_VIEW_SWITCH = false
                     <div class="work-item">
                         <div class="card card-files">
                             <span class="badge"><span class="badge-text">Drag files to stack</span></span>
-                            <FileStacks client:visible variants={instances.FileStacks} />
+                            <FileStacks client:near variants={instances.FileStacks} />
                         </div>
                         <WorkNote text="A file view where loose files get paper-clipped into stacks. Select a few and press Stack, or drop one file onto another; click a stack to fan it open, drag anything to the trash, filter by type. The clip makes grouping feel physical instead of being yet another folder." />
                     </div>
 
                     <div class="work-item">
                         <div class="card card-swap">
-                            <SwapCard client:visible variants={instances.SwapCard} />
+                            <SwapCard client:near variants={instances.SwapCard} />
                             <span class="badge badge-tight"><span class="badge-text">Try a swap</span></span>
                         </div>
                         <WorkNote spec="swap" text="An ETH → USDC swap card on a live price. Pick a preset or click the amount to type your own; go past your balance and the number shakes and stops at the max. The arrow on the seam flips the pair, every number rolls digit by digit instead of jumping, and the button walks through each step, from quote to done, so you always know where the swap is." />
@@ -192,7 +192,7 @@ const SHOW_VIEW_SWITCH = false
                     <div class="work-item">
                         <div class="card card-gas">
                             <span class="badge"><span class="badge-text">Pick a speed</span></span>
-                            <GasFeeBar client:visible variants={instances.GasFeeBar} />
+                            <GasFeeBar client:near variants={instances.GasFeeBar} />
                         </div>
                         <WorkNote text="A gas picker with three speeds: Standard, Fast and Rapid. One highlight slides between them and the price and wait time roll to their new values. The dots form a little flame: the more gas you pay for, the faster it flickers. Speed you can see, not just read." />
                     </div>
@@ -200,14 +200,14 @@ const SHOW_VIEW_SWITCH = false
                     <div class="work-item">
                         <div class="card card-dca">
                             <span class="badge"><span class="badge-text">Hold to confirm</span></span>
-                            <DCAFlow client:visible variants={instances.DCAFlow} />
+                            <DCAFlow client:near variants={instances.DCAFlow} />
                         </div>
                         <WorkNote text="Setting up a recurring crypto buy. The summary repeats every choice in plain words, and a hold-to-confirm button makes committing money a deliberate gesture rather than a single tap. Once confirmed, the key details stay on screen as the receipt." />
                     </div>
 
                     <div class="work-item">
                         <div class="card card-image card-tasks">
-                            <TasksToday client:visible />
+                            <TasksToday client:near />
                         </div>
                         <WorkNote text="A planner widget for the day. Scroll the list and it snaps task by task along a timeline, where a label reads Done, Now or Soon for whichever one sits beside it. The current task steps forward, with a bar and a ring showing how far along it is and a badge with the minutes left." />
                     </div>
@@ -223,7 +223,7 @@ const SHOW_VIEW_SWITCH = false
 
                     <div class="work-item">
                         <div class="card card-image card-gradient-widget">
-                            <WalletWidget client:visible variants={instances.WalletWidget} />
+                            <WalletWidget client:near variants={instances.WalletWidget} />
                         </div>
                         <WorkNote text="A portfolio widget whose gradient follows the time of day, so it looks different every time you open it. Today's value and change sit up top, with a slider showing where it is between its 24-hour low and high." />
                     </div>

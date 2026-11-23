@@ -154,7 +154,10 @@ if (row && track) {
     fitToHeight()
 
     // --- Geometry ------------------------------------------------------------
-    const maxOffset = () => Math.max(0, track.scrollWidth - row.clientWidth)
+    // cached: reading scrollWidth right after moving the track forced a full style + layout
+    // every frame; it's measured again whenever the row or a card changes size (onResize)
+    let maxCache = -1
+    const maxOffset = () => (maxCache < 0 ? (maxCache = Math.max(0, track.scrollWidth - row.clientWidth)) : maxCache)
     const clamp = (v: number) => Math.min(Math.max(v, 0), maxOffset())
     // resting places: each card's left edge, plus the very end
     const restPoints = () => {
@@ -177,11 +180,26 @@ if (row && track) {
     }
 
     let offset = 0
+    // While the row moves, <html data-carousel-moving>; REST_MS after it stops, a
+    // "carousel:rest" event. The cards' components wait for it before they start
+    // (lib/near-directive.ts), so starting one never lands mid-swipe.
+    const REST_MS = 150
+    let restTimer = 0
+    const html = document.documentElement
+    const markMoving = (forMs = 0) => {
+        if (!html.hasAttribute("data-carousel-moving")) html.setAttribute("data-carousel-moving", "")
+        clearTimeout(restTimer)
+        restTimer = window.setTimeout(() => {
+            html.removeAttribute("data-carousel-moving")
+            dispatchEvent(new Event("carousel:rest"))
+        }, forMs + REST_MS)
+    }
     const render = () => {
         track.style.transform = `translate3d(${-offset}px,0,0)`
+        markMoving()
     }
     const setDisabled = (btn: HTMLButtonElement | null, off: boolean) => {
-        if (!btn) return
+        if (!btn || btn.getAttribute("aria-disabled") === String(off)) return
         btn.setAttribute("aria-disabled", String(off))
         btn.tabIndex = off ? -1 : 0
     }
@@ -286,11 +304,14 @@ if (row && track) {
     ;["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => addEventListener(t, () => pageAnimating && stopPage(), { passive: true }))
 
     // --- Motion --------------------------------------------------------------
-    let raf = 0
+    // The settles (snap, step, fling) run as a Web Animation on the track's transform, so
+    // the compositor plays them: whatever the page is busy with meanwhile (a card loading,
+    // a component's own animation) can't make them stutter. offset is set to the target
+    // straight away; stop() reads back where the track really is and holds it there.
     let animating = false
-    let from = 0
     let to = 0
-    let start = 0
+    let motionAnim: Animation | null = null
+    const curveCss = ([x1, y1, x2, y2]: [number, number, number, number]) => `cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`
     // a CSS cubic-bezier, solved for x (Newton, with a bisection fallback)
     const bezier = ([x1, y1, x2, y2]: [number, number, number, number]) => {
         const at = (a: number, b: number, t: number) => ((1 - 3 * b + 3 * a) * t + (3 * b - 6 * a)) * t * t + 3 * a * t
@@ -318,42 +339,46 @@ if (row && track) {
     }
     const snapEase = bezier(SNAP_CURVE)
     const stepEase = bezier(STEP_CURVE)
-    let ease = snapEase
-    let duration = SNAP_MS
-    const frame = (now: number) => {
-        if (!animating) {
-            raf = 0
-            return
-        }
-        const p = Math.min((now - start) / duration, 1)
-        offset = from + (to - from) * ease(p)
+    // where the track is on screen right now, mid-animation included (in row px)
+    const shownOffset = () => {
+        const m = new DOMMatrixReadOnly(getComputedStyle(track).transform)
+        return -m.m41
+    }
+    // a settle under way stops where it is (the row stays put, nothing jumps)
+    const haltMotion = () => {
+        if (!motionAnim) return
+        if (motionAnim.playState === "running") offset = shownOffset()
+        motionAnim.cancel()
+        motionAnim = null
+        animating = false
         render()
         publish()
-        if (p < 1) raf = requestAnimationFrame(frame)
-        else {
-            animating = false
-            offset = to
-            render()
-            publish()
-            raf = 0
-        }
     }
     const stop = () => {
         endWheel() // (defined with the wheel input below; only called once everything is set up)
-        animating = false
-        if (raf) cancelAnimationFrame(raf)
-        raf = 0
+        haltMotion()
     }
     const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3)
     const animateTo = (target: number, kind: "snap" | "step" | "fling" = "snap") => {
         if (pinned()) return scrollToOffset(target, kind) // the page scrolls there; the row follows
-        ease = kind === "step" ? stepEase : kind === "fling" ? easeOutCubic : snapEase
-        duration = kind === "step" ? STEP_MS : kind === "fling" ? FLING_MS : SNAP_MS
-        from = offset
+        haltMotion()
+        const from = offset
         to = clamp(target)
-        start = performance.now()
+        offset = to
+        render()
+        publish()
+        if (Math.abs(to - from) < 0.5) return
+        const curve = kind === "step" ? curveCss(STEP_CURVE) : kind === "fling" ? "cubic-bezier(0.33, 1, 0.68, 1)" : curveCss(SNAP_CURVE)
+        const duration = kind === "step" ? STEP_MS : kind === "fling" ? FLING_MS : SNAP_MS
+        const anim = track.animate([{ transform: `translate3d(${-from}px,0,0)` }, { transform: `translate3d(${-to}px,0,0)` }], { duration, easing: curve })
+        motionAnim = anim
         animating = true
-        if (!raf) raf = requestAnimationFrame(frame)
+        markMoving(duration)
+        anim.onfinish = () => {
+            if (motionAnim !== anim) return
+            motionAnim = null
+            animating = false
+        }
     }
 
     let snapTimer = 0
@@ -505,14 +530,13 @@ if (row && track) {
     let glideEase = WHEEL_EASE_MS
     const where = () => (wheelRaf && wheelTarget !== null ? wheelTarget : offset)
     const moveBy = (d: number) => {
+        if (motionAnim) haltMotion() // (so where() below is where the row really is)
         const base = where()
         if (IS_MAC) stop()
         else {
             // only a snap in progress stops; a glide keeps running and just gets a new target
             // (restarting it on every step reset its clock, and it never moved until the input paused)
-            animating = false
-            if (raf) cancelAnimationFrame(raf)
-            raf = 0
+            haltMotion()
         }
         if (IS_MAC) {
             endWheel()
@@ -748,6 +772,7 @@ if (row && track) {
 
     // --- Resize: stay on the card that was showing ---------------------------------
     const onResize = () => {
+        maxCache = -1
         fitToHeight()
         const list = cards()
         let index = 0
@@ -760,6 +785,7 @@ if (row && track) {
             }
         })
         sizeCards()
+        maxCache = -1
         stop()
         offset = clamp(list[index]?.offsetLeft ?? 0)
         render()
@@ -788,6 +814,7 @@ if (row && track) {
         } catch {}
         showPressed()
         fitToHeight()
+        maxCache = -1
         offset = clamp(offset)
         render()
         publish()

@@ -1,4 +1,5 @@
 import { useDialKit, type DialConfig } from "dialkit";
+import { resolveDialValues } from "dialkit/store";
 import { animate, motion, useMotionValue, type MotionValue, type Transition } from "motion/react";
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 
@@ -256,8 +257,13 @@ function useTasksTodayDials(onAction: (a: string) => void) {
   // tuned values are kept in this browser on the dev server only (localhost:4322/tune/tasks);
   // on the site the defaults above are what everyone sees
   // (the id is versioned: a browser's saved values from the previous design are left behind)
-  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-62", persist: import.meta.env.DEV, onAction });
+  // on the built site only the defaults are read, without DialKit itself (its panel code
+  // was 200 KB of this card's script); DEV is fixed per build, so the hook order never changes
+  if (!import.meta.env.DEV) return SITE_VALUES;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useDialKit("TasksToday", tasksTodayConfig, { id: "tasks-today-62", persist: true, onAction });
 }
+const SITE_VALUES = resolveDialValues(tasksTodayConfig, {}) as ReturnType<typeof useDialKit<typeof tasksTodayConfig>>;
 
 const textBoxTrim = { textBox: "trim-both cap alphabetic" } as CSSProperties;
 

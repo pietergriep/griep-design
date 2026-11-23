@@ -782,7 +782,10 @@ export default function BusinessCard({
             Math.abs(s.vx) + Math.abs(s.vy) + Math.abs(s.vh) + (Math.abs(s.vf) + Math.abs(s.vr)) / 180 < 0.0005
         // The ambient waves and idle tilt keep the loop alive, except while the card is off-screen.
         const ambient = ((c.rippleStrength > 0 && c.rippleInterval > 0) || idle || s.device) && s.onScreen
-        if (settled && trailLeft === 0 && !ambient) {
+        // Off-screen the loop stops outright: the idle tilt's target keeps circling, so the
+        // springs never settle and it would otherwise run (and repaint) every frame out of view.
+        // Coming back into view kicks it again (the observer below).
+        if (!s.onScreen || (settled && trailLeft === 0 && !ambient)) {
             s.raf = 0
             return
         }

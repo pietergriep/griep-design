@@ -42,7 +42,7 @@ const tuneSave = {
     },
 }
 
-// Dev server only: tuning pages, left out of builds (localhost:4322/tune/wallet, /tune/tasks, /tune/swap)
+// Dev server only: tuning pages, left out of builds (localhost:4322/tune/wallet, /tune/tasks, /tune/swap, /tune/grid)
 const tunePages = {
     name: "tune-pages",
     hooks: {
@@ -51,6 +51,18 @@ const tunePages = {
             injectRoute({ pattern: "/tune/wallet", entrypoint: fileURLToPath(new URL("./src/dev/wallet.astro", import.meta.url)) })
             injectRoute({ pattern: "/tune/tasks", entrypoint: fileURLToPath(new URL("./src/dev/tasks.astro", import.meta.url)) })
             injectRoute({ pattern: "/tune/swap", entrypoint: fileURLToPath(new URL("./src/dev/swap.astro", import.meta.url)) })
+            injectRoute({ pattern: "/tune/grid", entrypoint: fileURLToPath(new URL("./src/dev/grid.astro", import.meta.url)) })
+        },
+    },
+}
+
+// client:near (src/lib/near-directive.ts): the carousel's cards start just before they
+// scroll in, while the row is at rest, instead of mid-swipe
+const nearDirective = {
+    name: "near-directive",
+    hooks: {
+        "astro:config:setup": ({ addClientDirective }) => {
+            addClientDirective({ name: "near", entrypoint: fileURLToPath(new URL("./src/lib/near-directive.ts", import.meta.url)) })
         },
     },
 }
@@ -59,7 +71,7 @@ const tunePages = {
 // A fully static site: `astro build` writes plain files to dist/, which Cloudflare serves as-is.
 export default defineConfig({
     site: "https://griep.design",
-    integrations: [react(), tunePages],
+    integrations: [react(), tunePages, nearDirective],
     // the dev toolbar would cover the preview; the site never shows it
     devToolbar: { enabled: false },
     vite: {
