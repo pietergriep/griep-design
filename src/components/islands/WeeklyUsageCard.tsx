@@ -21,6 +21,7 @@ import {
     type Ref,
 } from "react"
 import { createPortal } from "react-dom"
+import { OnScreenContext } from "../../lib/on-screen"
 
 /*
  * Agent overview card — built from Figma "Frame 31" (node 15:1347).
@@ -2149,6 +2150,11 @@ function TaskQueue({
     onCompleteRef.current = onComplete
     const onStatusRef = useRef(onStatus)
     onStatusRef.current = onStatus
+    // off screen (the carousel moved on) the bar holds where it is and carries on from there
+    const onScreen = useContext(OnScreenContext)
+    const onScreenRef = useRef(onScreen)
+    onScreenRef.current = onScreen
+    const resumeRef = useRef<(() => void) | undefined>(undefined)
 
     const total = tasks.length
     const first = useRef(Math.max(0, Math.min(initialDone, total)))
@@ -2169,10 +2175,20 @@ function TaskQueue({
         if (!running || holdLast || sliding) return
         const from = done === first.current ? startProgress : 0
         const { segments, total: duration } = makePlan(seed + done * 7919, from, speed * d.workSpeed)
-        const start = performance.now()
+        let start = performance.now()
         let raf = 0
         let last = -1
         const tick = (now: number) => {
+            if (!onScreenRef.current) {
+                const pausedAt = now
+                raf = 0
+                resumeRef.current = () => {
+                    resumeRef.current = undefined
+                    start += performance.now() - pausedAt
+                    raf = requestAnimationFrame(tick)
+                }
+                return
+            }
             const elapsed = now - start
             const p = elapsed >= duration ? 100 : progressAt(segments, elapsed)
             const rounded = Math.floor(p)
@@ -2188,8 +2204,14 @@ function TaskQueue({
             }
         }
         raf = requestAnimationFrame(tick)
-        return () => cancelAnimationFrame(raf)
+        return () => {
+            cancelAnimationFrame(raf)
+            resumeRef.current = undefined
+        }
     }, [done, running, holdLast, sliding, startProgress, speed, seed, d.workSpeed])
+    useEffect(() => {
+        if (onScreen) resumeRef.current?.()
+    }, [onScreen])
 
     // After a short pause, slide the next step up. This also resumes the list
     // when new subtasks arrive after everything was done.

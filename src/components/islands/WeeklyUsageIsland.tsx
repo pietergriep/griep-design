@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { BackdropPanel, DEFAULT_DESIGN, WeeklyUsageShowcase, backdropPaint, sampleAgents } from "./WeeklyUsageCard"
 import type { Design } from "./WeeklyUsageCard"
+import { OnScreenContext, useOnScreen } from "../../lib/on-screen"
 
 // The weekly usage / agents card (from Downloads/WeeklyUsageCard.tsx), on its own: no
 // settings panel, filling its carousel card, on the card's own background.
@@ -270,6 +271,9 @@ export function WorkloadCase({ view }: { view: "single" | "pair" }) {
 }
 
 export default function WeeklyUsageIsland() {
+    // the agents' work pauses while the carousel has this card out of view (lib/on-screen.ts)
+    const siteRoot = useRef<HTMLDivElement>(null)
+    const onScreen = useOnScreen(siteRoot)
     // dev only, the card's own settings panel (it saves in this browser; ask to bake values in):
     //   localhost:4322/?tune=usage         the panel at the right, the card in its carousel card
     //   localhost:4322/?tune=usage-studio  the card full screen on its own backdrop, everything
@@ -476,7 +480,8 @@ export default function WeeklyUsageIsland() {
             document.body,
         )
     return (
-        <div className="island-root" style={{ position: "absolute", inset: 0 }}>
+        <div ref={siteRoot} className="island-root" style={{ position: "absolute", inset: 0 }}>
+            <OnScreenContext.Provider value={onScreen}>
             <WeeklyUsageShowcase
                 key={tune || "site"}
                 panel={tune === "carousel"}
@@ -485,6 +490,7 @@ export default function WeeklyUsageIsland() {
                 mode="fill"
                 design={SITE_DESIGN}
             />
+            </OnScreenContext.Provider>
         </div>
     )
 }

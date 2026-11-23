@@ -8,6 +8,7 @@ import {
 } from "react"
 import type { CSSProperties } from "react"
 import { addPropertyControls, ControlType } from "framer"
+import { useLatest, useOnScreen } from "../../lib/on-screen"
 
 /**
  * GasFeeBar — the "Gas" tier picker (Standard / Fast / Rapid).
@@ -1014,6 +1015,9 @@ export default function GasFeeBar(props: Props) {
     const base = list.map((t) => t.gwei)
     const baseKey = base.join(",")
     const [prices, setPrices] = useState(base)
+    // the prices only wander while the card is on screen (lib/on-screen.ts)
+    const barRef = useRef<HTMLDivElement>(null)
+    const onScreen = useLatest(useOnScreen(barRef))
 
     useEffect(() => {
         const set = baseKey.split(",").map(Number)
@@ -1025,6 +1029,7 @@ export default function GasFeeBar(props: Props) {
         }
         setPrices((prev) => (prev.length === set.length ? prev : set))
         const id = setInterval(() => {
+            if (!onScreen.current) return
             setPrices((prev) =>
                 set.map((price, i) => {
                     const step = Math.random() < 0.5 ? -1 : 1
@@ -1138,7 +1143,7 @@ export default function GasFeeBar(props: Props) {
     } as CSSProperties
 
     return (
-        <div className="gas-fee-bar" style={vars}>
+        <div ref={barRef} className="gas-fee-bar" style={vars}>
             {/* Rendered here rather than injected, so the styles are in the HTML
           Framer serves and the bar never paints unstyled. */}
             <style>{CSS}</style>

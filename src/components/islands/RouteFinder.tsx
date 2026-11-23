@@ -196,8 +196,19 @@ function initRouteFinder(host: HTMLElement, settings: Settings) {
   });
 
   let route = [], cards = [], current = 0, timers = [], ranks = null;
-  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+  // Out of view (the carousel has moved on), the next step waits until the card is back,
+  // so the sequence doesn't keep working (and re-rendering) where nobody sees it: those
+  // bursts landed in the middle of other cards' animations and made them stutter.
+  let onScreen = true, held = [];
+  const later = (fn, ms) => timers.push(setTimeout(() => (onScreen ? fn() : held.push(fn)), ms));
+  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; held = []; };
+  const seen = new IntersectionObserver((es) => {
+    onScreen = es.some((e) => e.isIntersecting);
+    if (!onScreen || !held.length) return;
+    const go = held; held = [];
+    go.forEach((fn) => fn());
+  });
+  seen.observe(host);
 
   /* --- Stack ------------------------------------------------------------ */
   function place(card, slot) {
@@ -711,6 +722,7 @@ function initRouteFinder(host: HTMLElement, settings: Settings) {
   runChat();
   return () => {
     clearTimers();
+    seen.disconnect();
     try { roller.destroy(); } catch {}
   };
 }
