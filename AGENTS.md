@@ -29,7 +29,7 @@ Consult these guides before working on related tasks:
 
 ## Decisions
 - Copy must be honest: Pieter designs, Claude writes the code. Never claim he codes by hand ("build them into working interfaces").
-- Carousel: not pinned to page scroll; scrolling over cards moves it, elsewhere the page. Windows touchpads: all pixel input glides (TOUCHPAD_EASE_MS 140), axis locked per gesture.
+- Carousel: pinned to page scroll again (2026-11-23, SCROLL_DRIVEN true): scrolling anywhere moves the cards, the work sticks until the last card, then the page carries on; arrows scroll the page to a card; phones keep the finger swipe. Windows touchpads: all pixel input glides (TOUCHPAD_EASE_MS 140), axis locked per gesture.
 - Carousel performance: cards use client:near (src/lib/near-directive.ts): script loads when a card is a window-width away, the component starts when the row is at rest (carousel.ts sets data-carousel-moving / fires carousel:rest). Settles (snap/step/fling) are Web Animations (compositor). .card has content-visibility: auto, so off-screen cards don't render. Loops in React cards pause while their card is off screen (src/lib/on-screen.ts: Workload progress, gas prices; Route finder holds its next step), else they stutter whichever card is in view (e.g. the DCA sheet). Measure with a production build (preview "griep-build", port 4323), not the dev server.
 - Activities today (TasksToday.tsx): live countdown that moves on to the next activity; "3 / 6" count chip in desktop px scaled with the card; day-sentence intro tried and switched off (Day.show). Hover: whole card scales (Motion.hoverScale 1.01, hoverMs 120), willChange transform so text doesn't glitch; no lift, and not fill-only.
 

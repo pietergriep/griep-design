@@ -50,7 +50,7 @@ const VIEW_CURVE = "cubic-bezier(0.22, 1, 0.36, 1)"
 const VIEW_KEY = "work-view" // remembered per visitor (also read in Portfolio.astro's <head>)
 // true: scrolling down moves the row sideways (the work sticks until the last card);
 // false: the row only moves sideways (swipe, wheel over it, arrows)
-const SCROLL_DRIVEN = false
+const SCROLL_DRIVEN = true
 // false: on desktop a sideways trackpad swipe over the cards does nothing (scrolling,
 // the wheel and the arrows move them); phones and tablets still swipe with a finger
 const SIDEWAYS_SCROLL = true
