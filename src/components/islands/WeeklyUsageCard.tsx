@@ -56,6 +56,26 @@ export interface Design {
     fontFamily: string
     tracking: number
     titleText: string
+    /** Folder chip at the top right, beside the title ("" = none): the project the agents work in */
+    projectFolder: string
+    /** Grey label before the name ("Project:"); set, the chip drops its folder icon and chevron */
+    projectLabel: string
+    projectSize: number
+    projectPadX: number
+    projectPadY: number
+    projectRadius: number
+    projectGap: number
+    /** Folder icon's stroke, in its 24px viewBox */
+    projectIconStroke: number
+    projectBg: string
+    /** Colour of the folder icon and the "Project:" label ("" = the muted text colour) */
+    /** Show the "Project:" label (off: just the icon and the name) */
+    projectShowLabel: boolean
+    /** Chevron after the name in the labelled chip (the plain folder chip always has one) */
+    projectChevron: boolean
+    projectLabelColor: string
+    /** Colour of the project's name ("" = the text colour) */
+    projectNameColor: string
     titleSize: number
     titleWeight: number
     resetText: string
@@ -92,6 +112,10 @@ export interface Design {
     shareWeight: number
     shareTracking: number
     shareDisplay: string
+    /** Text size of the usage chip (shareDisplay "Chip") */
+    shareChipSize: number
+    /** Fill of the usage chip ("" = the Agents count chip's, closeBg) */
+    shareChipBg: string
     shareLabel: string
     // Colors
     backdrop: string
@@ -171,6 +195,8 @@ export interface Design {
     togglePadX: number
     togglePadY: number
     // Agent cards
+    /** Agent cards side by side: 1 is the list, 2 the 2x2 grid exploration */
+    agentColumns: number
     tileGap: number
     /** Agent cards shown per tab; the rest scroll into view */
     maxVisibleTiles: number
@@ -357,6 +383,19 @@ export const DEFAULT_DESIGN: Design = {
     fontFamily: "Geist",
     tracking: -0.02,
     titleText: "Workload",
+    projectFolder: "",
+    projectLabel: "",
+    projectSize: 3.2,
+    projectPadX: 1.5,
+    projectPadY: 1,
+    projectRadius: 1.5,
+    projectGap: 1,
+    projectIconStroke: 1,
+    projectBg: "#F2F2F2",
+    projectShowLabel: true,
+    projectChevron: false,
+    projectLabelColor: "",
+    projectNameColor: "",
     titleSize: 6,
     titleWeight: 500,
     resetText: "Reset in {d} days",
@@ -391,6 +430,8 @@ export const DEFAULT_DESIGN: Design = {
     shareWeight: 400,
     shareTracking: -0.0175,
     shareDisplay: "Label",
+    shareChipSize: 2.8,
+    shareChipBg: "",
     shareLabel: "{p}% of usage",
 
     backdrop: "#F6F6F6",
@@ -457,6 +498,7 @@ export const DEFAULT_DESIGN: Design = {
     togglePadX: 2.5,
     togglePadY: 2,
 
+    agentColumns: 1,
     tileGap: 3,
     maxVisibleTiles: 2,
     showScrollbar: true,
@@ -1638,6 +1680,19 @@ function ModelLabel({ label, effort, share }: { label: string; effort?: string; 
     )
 }
 
+/** "24%", counting smoothly when the share changes (the usage chip in an agent card) */
+function SharePercent({ value }: { value: number }) {
+    const d = useD()
+    // The % smaller, in the same proportion as in the big usage number (58%)
+    const unit = d.shareChipSize * (d.heroUnitSize / d.heroSize)
+    return (
+        <>
+            {Math.round(useAnimatedNumber(value, d.bigCountMs, false))}
+            <span style={{ fontSize: ut(unit) }}>%</span>
+        </>
+    )
+}
+
 /** "24% of usage", counting smoothly when the share changes */
 function ShareText({ value }: { value: number }) {
     const d = useD()
@@ -1781,7 +1836,43 @@ function ContextCounter({ used, limit }: { used: number; limit: number }) {
 }
 
 /** Small number chip, styled like the task counter */
-function CountChip({ value }: { value: number }) {
+/** The project the agents work in: a folder, its name and a chevron, in a soft pill */
+function ProjectChip({ name }: { name: string }) {
+    const d = useD()
+    const icon = u(d.projectSize * 1.15)
+    const svg = { width: icon, height: icon, flexShrink: 0, display: "block" } as const
+    return (
+        <span
+            style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: u(d.projectGap),
+                padding: `${u(d.projectPadY)} ${u(d.projectPadX)}`,
+                // No overhang: it starts at the card's padding (as far from the top as from the right)
+                // and the title row is as tall as the pill, so the title sits centred beside it
+                borderRadius: u(d.projectRadius),
+                background: d.projectBg,
+                flexShrink: 0,
+            }}
+        >
+            {/* Folder (folder-01-stroke-rounded): grey beside the "Project:" label, as the label is */}
+            <svg viewBox="0 0 24 24" fill="none" stroke={d.projectLabel ? d.projectLabelColor || alpha(d.text, d.mutedOpacity) : d.projectNameColor || d.text} strokeWidth={d.projectIconStroke} strokeLinecap="round" strokeLinejoin="round" style={svg} aria-hidden="true">
+                <path d="M13.6656 6.49446H16C18.8284 6.49446 20.2426 6.49446 21.1213 7.37314C22 8.25182 22 9.66603 22 12.4945V14.5C22 17.3284 22 18.7426 21.1213 19.6213C20.2426 20.5 18.8284 20.5 16 20.5H8C5.17157 20.5 3.75736 20.5 2.87868 19.6213C2 18.7426 2 17.3284 2 14.5V8.99183C2 6.65409 2 5.48521 2.61604 4.67881C2.7778 4.46706 2.96706 4.2778 3.17881 4.11604C3.98521 3.5 5.15409 3.5 7.49183 3.5C8.16633 3.5 8.50358 3.5 8.81392 3.60442C8.8976 3.63257 8.97932 3.66623 9.05854 3.70518C9.35239 3.84965 9.59179 4.08719 10.0706 4.56227L10.8483 5.33389C11.4254 5.9066 11.714 6.19295 12.08 6.3437C12.446 6.49446 12.8525 6.49446 13.6656 6.49446Z" />
+            </svg>
+            <span style={{ ...tx(d, d.projectSize, 400, d.projectNameColor || d.text), whiteSpace: "nowrap" }}>
+                {d.projectLabel && d.projectShowLabel && <span style={{ color: d.projectLabelColor || alpha(d.text, d.mutedOpacity) }}>{d.projectLabel} </span>}
+                {name}
+            </span>
+            {(!d.projectLabel || d.projectChevron) && (
+            <svg viewBox="0 0 24 24" fill="none" stroke={d.projectLabelColor || alpha(d.text, d.mutedOpacity)} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ ...svg, width: u(d.projectSize * 0.8), height: u(d.projectSize * 0.8) }} aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+            </svg>
+            )}
+        </span>
+    )
+}
+
+function CountChip({ value, size, bg }: { value: ReactNode; size?: number; bg?: string }) {
     const d = useD()
     return (
         <span
@@ -1791,11 +1882,11 @@ function CountChip({ value }: { value: number }) {
                 padding: `${u(d.counterPadY)} ${u(d.counterPadX)}`,
                 borderRadius: u(d.counterRadius),
                 // Same fill as the close button in an open agent
-                background: d.closeBg,
+                background: bg || d.closeBg,
                 flexShrink: 0,
             }}
         >
-            <span style={{ ...tx(d, d.agentCountSize), fontVariantNumeric: "tabular-nums" }}>{value}</span>
+            <span style={{ ...tx(d, size ?? d.agentCountSize), fontVariantNumeric: "tabular-nums" }}>{value}</span>
         </span>
     )
 }
@@ -2462,6 +2553,13 @@ function ShareSlot({
                         weight={d.shareWeight}
                         tracking={d.shareTracking}
                     />
+                </span>
+            )}
+            {d.shareDisplay === "Chip" && (
+                // The Agents count chip's look, centred on the name row (as tall as the name's cap
+                // height, like the loader and token counter); it overhangs, so the header keeps its height
+                <span style={{ display: "flex", alignItems: "center", height: u(d.nameSize * CAP), ...outWhenOpen }}>
+                    <CountChip value={<SharePercent value={agent.share} />} size={d.shareChipSize} bg={d.shareChipBg} />
                 </span>
             )}
             {expanded && (
@@ -4715,9 +4813,10 @@ export function WeeklyUsageCard({
 
                 {/* While an agent is open, everything else fades out and ignores clicks */}
                 <div style={{ display: "flex", flexDirection: "column", gap: u(d.sectionGap) }}>
-                    <h2 style={{ margin: 0, ...tx(d, d.titleSize, d.titleWeight), ...faded }} aria-hidden={hiddenAria}>
-                        {d.titleText}
-                    </h2>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: u(2), ...faded }} aria-hidden={hiddenAria}>
+                        <h2 style={{ margin: 0, ...tx(d, d.titleSize, d.titleWeight) }}>{d.titleText}</h2>
+                        {d.projectFolder && <ProjectChip name={d.projectFolder} />}
+                    </div>
 
                     {/* Hero + bar */}
                     <div
@@ -4785,8 +4884,9 @@ export function WeeklyUsageCard({
                             onScroll={onListScroll}
                             style={{
                                 gridArea: "1 / 1",
-                                display: "flex",
-                                flexDirection: "column",
+                                ...(d.agentColumns > 1
+                                    ? { display: "grid", gridTemplateColumns: `repeat(${d.agentColumns}, minmax(0, 1fr))`, alignItems: "start" }
+                                    : { display: "flex", flexDirection: "column" }),
                                 gap: u(d.tileGap),
                                 ...(listMax !== null
                                     ? {
@@ -4822,6 +4922,8 @@ export function WeeklyUsageCard({
                                         key={a.id}
                                         style={{
                                             display: shown(a) || isOpen ? "grid" : "none",
+                                            // one column that may shrink: in the grid, long status lines would otherwise widen the card
+                                            gridTemplateColumns: "minmax(0, 1fr)",
                                             gridTemplateRows: out ? "0fr" : "1fr",
                                             marginBottom: out ? `calc(-1 * ${u(d.tileGap)})` : 0,
                                             transition: out
@@ -5257,7 +5359,7 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
             n("shareUnitSize", "Agent %", 2, 14, 0.1),
             sel("shareWeight", "Agent weight", WEIGHTS),
             n("shareTracking", "Agent spacing", -0.08, 0.08, 0.0025, "em"),
-            sel("shareDisplay", "Agent usage shown as", ["Label", "Big number", "Hidden"]),
+            sel("shareDisplay", "Agent usage shown as", ["Label", "Big number", "Chip", "Hidden"]),
             txt("shareLabel", "Usage label", { hint: "{p} = the agent's share of the weekly limit" }),
         ],
     },
@@ -5346,6 +5448,7 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
     {
         title: "Agent cards",
         fields: [
+            n("agentColumns", "Columns (2 = grid)", 1, 2, 1, ""),
             n("tileGap", "Gap between cards", 0, 12, 0.25),
             n("maxVisibleTiles", "Cards shown per tab (rest scroll)", 1, 6, 1, ""),
             b("showScrollbar", "Scrollbar"),

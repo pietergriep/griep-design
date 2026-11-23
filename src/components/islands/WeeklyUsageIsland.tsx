@@ -6,7 +6,7 @@ import type { Design } from "./WeeklyUsageCard"
 // The weekly usage / agents card (from Downloads/WeeklyUsageCard.tsx), on its own: no
 // settings panel, filling its carousel card, on the card's own background.
 // The site's settings on top of the card's own defaults:
-const DESIGN: Partial<Design> = {
+export const SITE_DESIGN: Partial<Design> = {
     backdrop: "transparent",
     backdropRatio: "Fill screen", // the carousel card is its frame
     fit: 0.83,
@@ -50,7 +50,7 @@ const DESIGN: Partial<Design> = {
 // The studio view (?tune=usage-studio): the same card on its own framed backdrop
 // The carousel's settings, only the backdrop is its own
 const STUDIO: Partial<Design> = {
-    ...DESIGN,
+    ...SITE_DESIGN,
     backdrop: "#F8F8F8",
     backdropRatio: "1:1.414 (A4)", // a tall A-paper frame (1415 × 2000)
     autoPromptSec: 0, // agents don't send prompts by themselves (for now)
@@ -126,7 +126,8 @@ const loadDesign = (key: string): Partial<Design> => {
  * as the one it was drawn for (1964 x 1254), smaller on a wider one (a 16:9 video) so
  * both stay in view. Used by the pair view and the case study.
  */
-function PairCards({ scale = 1, autoSec, out = false }: { scale?: number; autoSec: number; out?: boolean }) {
+// x: where the right card starts, from the left card's start (u); the card is 34.9 wide
+function PairCards({ scale = 1, x = 40.8, autoSec, out = false }: { scale?: number; x?: number; autoSec: number; out?: boolean }) {
     return (
         <>
             <style>
@@ -135,7 +136,7 @@ function PairCards({ scale = 1, autoSec, out = false }: { scale?: number; autoSe
             </style>
             {[
                 { x: 0, y: 0, open: undefined },
-                { x: 40.8, y: 13.75, open: "reviewer" },
+                { x, y: 13.75, open: "reviewer" },
             ].map((f, i) => (
                 // fades in on load, the right card a little after the left; out the same way
                 <div
@@ -143,7 +144,7 @@ function PairCards({ scale = 1, autoSec, out = false }: { scale?: number; autoSe
                     style={{
                         ["--u" as string]: `calc(min(1cqw, 1.566cqh) * ${scale})`,
                         position: "absolute",
-                        left: `calc((100cqw - 75.7 * var(--u)) / 2 + ${f.x} * var(--u))`,
+                        left: `calc((100cqw - ${x + 34.9} * var(--u)) / 2 + ${f.x} * var(--u))`,
                         top: `calc((100cqh - (34.9 * 749 / 685 + 13.75) * var(--u)) / 2 + ${f.y} * var(--u))`,
                         width: "calc(34.9 * var(--u))",
                         aspectRatio: "685 / 749",
@@ -155,7 +156,7 @@ function PairCards({ scale = 1, autoSec, out = false }: { scale?: number; autoSe
                     <WeeklyUsageShowcase
                         panel={false}
                         mode="fill"
-                        design={{ ...DESIGN, fit: PAIR_FIT, autoPromptSec: autoSec }}
+                        design={{ ...SITE_DESIGN, fit: PAIR_FIT, autoPromptSec: autoSec }}
                         openAgentId={f.open}
                         agents={PAIR_AGENTS}
                     />
@@ -168,7 +169,11 @@ function PairCards({ scale = 1, autoSec, out = false }: { scale?: number; autoSe
 // The case study (under the Workload card, "Case study"): the card on its own or the
 // pair, on its own photo (already motion-blurred, so no blur or overlay on top)
 const CASE_FIT = 0.775 // how much of its frame the single card fills
-const CASE_PAIR_SCALE = 1.25 // the pair's cards, 1 = as in the pair view
+// the pair's cards, 1 = as in the pair view, and where the right one starts (see PairCards):
+// the gap between the two is as wide as the space either side of them (each 2.9u, on the
+// case study's frame of 80 x 63u)
+const CASE_PAIR_SCALE = 1.33
+const CASE_PAIR_X = 36.25
 const CASE_BACKDROP: Partial<Design> = { backdropImage: "/media/usage/case-backdrop.webp", backdropBlur: 0, backdropOverlayOpacity: 0 }
 const CASE_AUTO_SEC = 0 // no prompts by themselves: the pair only moves when someone uses it
 const CASE_PAIR_IN = 0.4 // how much of the pair's frame shows before its cards fade in (0–1)
@@ -259,7 +264,7 @@ export function WorkloadCase({ view }: { view: "single" | "pair" }) {
         <div ref={root} className="island-root" style={{ position: "absolute", inset: 0, overflow: "hidden", containerType: "size" }}>
             <div style={{ position: "absolute", inset: -2 * Math.max(2, d.backdropBlur), background: backdropPaint(d), filter: d.backdropBlur > 0 ? `blur(${d.backdropBlur}px)` : undefined }} />
             <div style={{ position: "absolute", inset: 0, background: d.backdropOverlay, opacity: d.backdropOverlayOpacity }} />
-            {active && (view === "single" ? single() : seen && (phone ? single(CASE_PHONE_OPEN) : <PairCards key={run} scale={CASE_PAIR_SCALE} autoSec={CASE_AUTO_SEC} />))}
+            {active && (view === "single" ? single() : seen && (phone ? single(CASE_PHONE_OPEN) : <PairCards key={run} scale={CASE_PAIR_SCALE} x={CASE_PAIR_X} autoSec={CASE_AUTO_SEC} />))}
         </div>
     )
 }
@@ -478,7 +483,7 @@ export default function WeeklyUsageIsland() {
                 panelPortal={tune === "carousel" ? document.body : undefined}
                 storageKey={CAROUSEL_KEY}
                 mode="fill"
-                design={DESIGN}
+                design={SITE_DESIGN}
             />
         </div>
     )

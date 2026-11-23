@@ -1,0 +1,56 @@
+---
+// Dev server only (injected in astro.config.mjs, never built): the
+// Workload card with its agents in a 2x2 grid (the layout exploration),
+// tuned with DialKit at localhost:4322/tune/grid.
+import "../styles/global.css"
+import GridTune from "./GridTune.tsx"
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="robots" content="noindex" />
+        <title>Workload grid · tune</title>
+        <link rel="preload" href="/fonts/Geist-Variable.latin.woff2" as="font" type="font/woff2" crossorigin />
+    </head>
+    <body class="tune-page">
+        <a class="tune-back" href="/">← Portfolio</a>
+        <main class="tune-stage">
+            <GridTune client:only="react" />
+        </main>
+        <style is:global>
+            /* the card as it sits in the carousel, centred; no page fade-in here */
+            body.tune-page {
+                animation: none;
+                opacity: 1;
+            }
+            .tune-back {
+                position: fixed;
+                top: 20px;
+                left: var(--gutter);
+                font-size: 14px;
+                color: rgb(140, 140, 140);
+                text-decoration: none;
+            }
+            .tune-back:hover {
+                color: rgb(20, 20, 20);
+            }
+            .tune-stage {
+                min-height: 100dvh;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+            }
+            .tune-note {
+                min-height: 1.4em;
+                margin: 0;
+                font-size: 14px;
+                color: rgb(140, 140, 140);
+            }
+        </style>
+    </body>
+</html>
