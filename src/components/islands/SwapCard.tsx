@@ -123,6 +123,9 @@ const CSS = `
   cursor: pointer;
   transition: opacity 200ms ease, transform 200ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
   -webkit-tap-highlight-color: transparent;
+  /* its own layer, like the panels (translateZ): in Safari, inside the carousel's
+     scroll-linked row, a plain button sank beneath the panels' layers despite its z-index */
+  will-change: transform;
 }
 .swap-card--notched .swap-card__flip { box-shadow: 0 0 0 calc(var(--sc-flip-border) * var(--sc-scale)) #fff; }
 /* The Sell panel's edge runs on around the button: the same hairline, on the button's
@@ -142,7 +145,7 @@ const CSS = `
   z-index: 1; /* above the hover fill */
   width: 58%;
   height: 58%;
-  transition: transform 480ms cubic-bezier(0.3, 0, 0.2, 1);
+  transition: transform 480ms cubic-bezier(0.3, 0, 0.2, 1);  will-change: transform; /* the same, for the arrow's turn */
 }
 /* the hover fill: inset from the edge, so a thin white rim stays around it */
 .swap-card__flip::after {
@@ -154,6 +157,9 @@ const CSS = `
   opacity: 0;
   transition: opacity 150ms ease;
   pointer-events: none;
+  /* kept on a layer of its own: otherwise Safari gives it one for each hover fade and
+     takes it away after, and the colours flicker as it does */
+  will-change: opacity;
 }
 /* while a swap runs the pair can't flip: the button stays, it just doesn't respond */
 .swap-card:not(.swap-card--static) .swap-card__flip { pointer-events: none; }
