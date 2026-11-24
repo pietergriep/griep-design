@@ -243,10 +243,45 @@ if (row && track) {
         pin.style.height = `${stage.offsetHeight + maxOffset() * fit + PIN_HOLD}px`
         pinStart = natural - top
     }
+    // Where the browser can (ScrollTimeline: Safari 26+, Chrome), it moves the row with the
+    // scroll itself, in the same frame as the page. Set from the scroll event instead, the row
+    // trails the page by a frame in Safari, whose scrolling runs apart from the page's script:
+    // that was the stutter there. The scroll event still keeps offset (and the arrows) up to
+    // date; the animation just wins over the inline transform while it's on.
+    let scrollAnim: Animation | null = null
+    let linked = ""
+    const linkToScroll = () => {
+        const range = document.documentElement.scrollHeight - innerHeight
+        const max = maxOffset()
+        const on = pinned() && "ScrollTimeline" in window && range > 0 && max > 0
+        const key = on ? `${range}|${pinStart}|${max}|${fit}` : ""
+        if (key === linked) return
+        linked = key
+        scrollAnim?.cancel()
+        scrollAnim = null
+        if (!on) return
+        const a = Math.min(1, pinStart / range)
+        const b = Math.min(1, (pinStart + max * fit) / range)
+        const at = (x: number) => `translate3d(${-x}px,0,0)`
+        const Timeline = (window as unknown as { ScrollTimeline: new (o: object) => AnimationTimeline }).ScrollTimeline
+        scrollAnim = track.animate(
+            [
+                { offset: 0, transform: at(0) },
+                { offset: a, transform: at(0) },
+                { offset: b, transform: at(max) },
+                { offset: 1, transform: at(max) },
+            ],
+            { timeline: new Timeline({ source: document.documentElement, axis: "block" }), fill: "both", easing: "linear" } as KeyframeAnimationOptions,
+        )
+    }
+    // the page's height changes (a case study opening, images loading) move where the row's
+    // stretch sits on the timeline
+    new ResizeObserver(() => linkToScroll()).observe(document.documentElement)
     const fromScroll = () => {
         if (!pinned()) return
         offset = clamp((scrollY - pinStart) / fit)
-        render()
+        if (scrollAnim) markMoving()
+        else render()
         publish()
     }
     const smoothScroll = !matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -792,6 +827,7 @@ if (row && track) {
         publish()
         // pinned, the row follows the scroll instead
         layoutPin()
+        linkToScroll()
         fromScroll()
     }
     addEventListener("resize", onResize)
