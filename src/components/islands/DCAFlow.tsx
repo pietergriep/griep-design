@@ -1173,7 +1173,9 @@ const CSS = `
 
 /* lets the pointer through to the buttons below until "Finish setup" itself is in
    (it turns its own pointer-events on), so the custom cursor sees those buttons */
-.dca .finish-wrap { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 44px; pointer-events: none; }
+/* will-change: its own layer. In Safari, inside the carousel's scroll-linked row, it
+   otherwise sank beneath the shader's layer and the footnote and button vanished. */
+.dca .finish-wrap { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 44px; pointer-events: none; will-change: transform; }
 .dca .footnote {
   margin-bottom: 26px; font-size: var(--dca-footnote-size, 13px); font-weight: 400; line-height: 1.46;
   letter-spacing: -0.1px; color: #252525; opacity: 0;
